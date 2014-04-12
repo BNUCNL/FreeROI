@@ -1,0 +1,136 @@
+#! /bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+"""Main application for PyBP GUI.
+
+"""
+import os
+import sys
+import argparse
+
+from froi.gui.base import utils as froi_utils
+from PyQt4.QtGui import QApplication
+from froi.gui.main import BpMainWindow
+
+def main():
+    # get data directory
+    data_dir = froi_utils.get_data_dir()
+
+    # get labelconfig settings
+    label_config_dir = os.path.join(data_dir, 'labelconfig')
+    label_config_suffix = 'lbl'
+    config_file = os.listdir(label_config_dir)
+    config_file = [item[0:-(len(label_config_suffix)+1)] for item in config_file
+                   if item.split('.')[-1] == label_config_suffix]
+
+    parser = argparse.ArgumentParser(description='FreeROI GUI',
+                                     prog='freeroi',
+                                     usage='%(prog)s [-img Nifti-file '
+                                           '-lt low-threshold-value '
+                                           '-ht high-threshold-value '
+                                           '-c colormap] [-img ...] '
+                                           '[-n new_volume_name] '
+                                           '[-label label-configuration] '
+                                           '[-h]\n'
+                                           'Attention: -n parameter could not '
+                                           'be used alone')
+    parser.add_argument('-img',
+                        dest='img_list',
+                        metavar='Nifti-file',
+                        required=False,
+                        action='append',
+                        help='specify a nifti file you want to see')
+    parser.add_argument('-lt',
+                        dest='low_thresh',
+                        metavar='low-threshold-value',
+                        required=False,
+                        type=float,
+                        action='append',
+                        help='Low threshold value when image display')
+    parser.add_argument('-ht',
+                        dest='high_thresh',
+                        metavar='high-threshold-value',
+                        required=False,
+                        type=float,
+                        action='append',
+                        help='High threshold value when image display')
+    parser.add_argument('-c',
+                        dest='colormap',
+                        metavar='colormap',
+                        choices=['gray', 
+                                 'red2yellow',
+                                 'blue2cyanblue',
+                                 'red',
+                                 'green',
+                                 'blue',
+                                 'rainbow'] + config_file,
+                        required=False,
+                        action='append',
+                        help='Specify the colormap the image would display in')
+    parser.add_argument('-n',
+                        dest='new_vol_names',
+                        metavar='new_volume_name',
+                        required=False,
+                        action='append',
+                        help='Specify a new volume name')
+    parser.add_argument('-label',
+                        dest='label_config',
+                        metavar='reference_label_configuration',
+                        choices=config_file,
+                        required=False,
+                        help='Specify a label configuration name')
+    
+    args = parser.parse_args()
+
+    # Start GUI
+    app = QApplication([])
+
+    win = BpMainWindow()
+    win.config_extra_settings(data_dir)
+    win.show()
+
+    # add images
+    if not args.img_list is None:
+        if len(args.img_list) != len(args.low_thresh) or \
+           len(args.img_list) != len(args.high_thresh) or \
+           len(args.img_list) != len(args.colormap):
+               print 'Input error, please check it out.'
+               sys.exit()
+        else:
+            try:
+                win._add_template_img(args.img_list[0], 
+                                      view_min=args.low_thresh[0],
+                                      view_max=args.high_thresh[0],
+                                      colormap=args.colormap[0])
+                if args.label_config:
+                    win._label_config_center.set_label_config(args.label_config)
+            except:
+                print 'Load template image error!'
+                sys.exit()
+            for i in range(1,len(args.img_list)):
+                colormap = args.colormap[i]
+                if colormap not in ['gray', 'red2yellow', 'blue2cyanblue', 
+                                    'red', 'green', 'blue', 'rainbow']:
+                    colormap = \
+                    win._label_config_center.get_label_config_by_name(colormap)
+                try:
+                    win._add_img(args.img_list[i], view_min=args.low_thresh[i],
+                                 view_max=args.high_thresh[i], 
+                                 colormap=colormap)
+                except:
+                    print 'Load image ' + args.img_list[i] + ' error!'
+                    raise
+                    sys.exit()
+            if args.new_vol_names:
+                for i in range(len(args.new_vol_names)):
+                    try:
+                        win._new_image(data=None, name=args.new_vol_names[i],
+                                       colormap='gray')
+                    except:
+                        print 'Could not create volume ' + args.new_vol_names[i]
+                        raise
+                        sys.exit()
+    sys.exit(app.exec_())
+            
+if __name__ == '__main__':
+    main()

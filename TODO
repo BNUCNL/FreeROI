@@ -1,0 +1,50 @@
+Aims for long term evolution
+-----------------------------
+1. image orientation detection.
+2. color scheme editor. 
+4. New segmentation methods: N-cut, K-means.
+
+TO DO LIST
+----------
+
+** Version: 0.1.5
+
+1. Fix bugs.
+2. Improve GUI and group related functions together.
+------------------------------------------------------------------------
+
+** Version: 0.1.4
+
+1. Add Analyses module (descriptive statistic for 3D ROI), including related 
+   algorithms and graphic interface.
+2. ROI boundary detection.
+3. Extract time courses from a voxel or a ROI (a pre-defined ROI or defined 
+   manually on the image, such as a square, a circle or a irregular shape draw
+   with Livewire algorithm).
+4. Transformation form ROI (volume) to label (surface).
+-------------------------------------------------------------------------
+
+** Version: 0.1.3
+
+1. The cursor could be clicked and `moved` in OrthView to select different 
+   slice dynamically.
+2. Link the OrthView to the ROI selector.  
+3. Label size in OrthView could change dynamically to fit the size of the
+   window. 
+4. Slice number in GridView should change dynamically to fit the width of 
+   the ImageView widget.     
+5. Coordinate panel could be used to select a specified position.
+6. Add Region Grow Algorithm.
+7. Add regular ROI generation.
+8. 4D data support.
+---------------------------------------------------------------------------
+
+** Version: 0.1.2
+Issues should be finished before 2012.11.15
+
+1. Automitically update 'value' and 'label' when current selected volume is
+   being changed.
+2. Add user-configuration file in users' home directory to specify some 
+   parameters fitting users' habits.
+3. Separate zoom scale factors of GridView and that of OrthView.
+---------------------------------------------------------------------------

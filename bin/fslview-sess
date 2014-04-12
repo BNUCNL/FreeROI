@@ -1,0 +1,87 @@
+#! /bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+"""Main application for PyBP GUI.
+
+"""
+import os
+import sys
+import argparse
+import subprocess
+
+def main():
+    parser = argparse.ArgumentParser(description='fslview for batch processing')
+
+    parser.add_argument('-df',
+                        dest='srcdir_file',
+                        metavar='a file containing source directory',
+                        required=True,
+                        help='specify a directory path containing whole data')
+    parser.add_argument('-sf',
+                        dest='sessid_file',
+                        metavar='sessid file',
+                        required=True,
+                        help='a session ID file containing all subjects')
+    parser.add_argument('-c',
+                        dest='contrast',
+                        metavar='contrast name',
+                        required=True,
+                        help='specify a contrast name to load data')
+    parser.add_argument('-f',
+                        dest='file_name',
+                        metavar='activation file',
+                        required=True,
+                        help='specify the activation file name')
+    parser.add_argument('-lt',
+                        dest='low_thresh',
+                        metavar='low threshold value for display',
+                        required=True,
+                        help='low threshold value for display')
+    parser.add_argument('-ht',
+                        dest='high_thresh',
+                        metavar='upper threshold value for display',
+                        required=True,
+                        help='upper threshold value for display')
+    parser.add_argument('-l',
+                        dest='label_file',
+                        metavar='individual label file',
+                        required=True,
+                        help='specify the label file name')
+    
+    args = parser.parse_args()
+
+    template_file = r'/usr/local/neurosoft/fsl/data/standard/' + \
+                     'MNI152_T1_2mm_brain.nii.gz'
+
+    if not os.path.exists(args.srcdir_file):
+        print 'Source directory file does not exist.'
+        sys.exit()
+    else:
+        sesspar = open(args.srcdir_file).readlines()
+        sesspar = [line.strip() for line in sesspar]
+        sesspar = sesspar[0]
+    if not os.path.exists(args.sessid_file):
+        print 'Session ID file does not exist.'
+        sys.exit()
+    else:
+        sessid = open(args.sessid_file).readlines()
+        sessid = [line.strip() for line in sessid]
+
+    for subj in sessid:
+        temp_dir = os.path.join(sesspar, subj, args.contrast)
+        if os.path.exists(temp_dir):
+            file_path = os.path.join(temp_dir, args.file_name)
+            label_path = os.path.join(temp_dir, args.label_file)
+            print temp_dir
+            subprocess.call(['cd', temp_dir], shell=True)
+            subprocess.call(['fslview', '-m', 'ortho',
+                             file_path, '-l', 'Red-Yellow',
+                             '-b', ','.join([args.low_thresh,args.high_thresh]),
+                             template_file,
+                             label_path, '-l', 'Random-Rainbow',
+                             '-b', '0,20'])
+        else:
+            print subj + "'s data does not exist!"
+            
+if __name__ == '__main__':
+    main()

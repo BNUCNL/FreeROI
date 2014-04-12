@@ -1,0 +1,10 @@
+The files here are used to build an exectable version of FreeROI on Windows platform based on pyinstaller 2.0.
+
+Before building the exe file, we should copy the files in directory `support/rthooks` into directory `pyinstaller/support` and update the file rthooks.dat.
+
+File freeroi.spec is used to configure the building process. Copy this file into the directory `pyinstaller/freeroi`.
+
+Enter into the pyinstaller directory, run the command python pyinstaller.py freeroi/freeroi/spec in the cmd.exe to build the exectable version.
+
+Finally, copy the file skimage._shared.transfrom.pyd into the dist directory.
+

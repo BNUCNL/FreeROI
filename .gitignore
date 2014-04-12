@@ -1,0 +1,8 @@
+*.pyc
+*~
+*.swp
+*.so
+*.pyd
+*.dll
+_build
+.idea

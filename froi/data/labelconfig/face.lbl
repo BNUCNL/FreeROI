@@ -1,0 +1,13 @@
+  0  Unknown            0   0   0    0   
+  1  r_OFA             23 220  60    0   
+  2  l_OFA            141  60  20    0   
+  3  r_pFus            63 100  60    0   
+  4  l_pFus           220 180 140    0   
+  5  r_aFus            13 140 250    0   
+  6  l_aFus            26  60   0    0   
+  7  r_pcSTS           26  60  75    0   
+  8  l_pcSTS           63 180 180    0   
+  9  r_pSTS            25  60 250    0   
+ 10  l_pSTS            60  25  25    0   
+ 11  r_aSTS           180  20  20    0   
+ 12  l_aSTS           220  20 100    0   

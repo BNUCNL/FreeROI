@@ -1,0 +1,135 @@
+#! /bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+"""Main application for PyBP GUI.
+
+"""
+import os
+import sys
+import argparse
+import subprocess
+
+def main():
+    parser = argparse.ArgumentParser(description='PyBP for batch processing')
+
+    parser.add_argument('-df',
+                        dest='srcdir_file',
+                        metavar='a file containing source directory',
+                        required=True,
+                        help='specify a directory path containing whole data')
+    parser.add_argument('-sf',
+                        dest='sessid_file',
+                        metavar='sessid file',
+                        required=True,
+                        help='a session ID file containing all subjects')
+    parser.add_argument('-c',
+                        dest='contrast',
+                        metavar='contrast name',
+                        required=True,
+                        help='specify a contrast name to load data')
+    #parser.add_argument('-stat',
+    #                    dest='file_name',
+    #                    metavar='activation file',
+    #                    required=True,
+    #                    help='specify the activation file name')
+    parser.add_argument('-img',
+                        dest='img_list',
+                        metavar='Nifti-file',
+                        required=True,
+                        action='append',
+                        help='specify the nifti file name')
+    parser.add_argument('-lt',
+                        dest='low_thresh',
+                        metavar='low threshold value for display',
+                        required=True,
+                        action='append',
+                        help='low threshold value for display')
+    parser.add_argument('-ht',
+                        dest='high_thresh',
+                        metavar='upper threshold value for display',
+                        required=True,
+                        action='append',
+                        help='upper threshold value for display')
+    parser.add_argument('-color',
+                        dest='colormap',
+                        metavar='colormap',
+                        required=True,
+                        action='append',
+                        help='specify the colormap the image would display in')
+    parser.add_argument('-labelvol',
+                        dest='label_file',
+                        metavar='absolute label file',
+                        required=False,
+                        help='specify the group label file name')
+    parser.add_argument('-label',
+                        dest='label_config',
+                        metavar='reference_label_configuration',
+                        required=True,
+                        help='specify a label configuration name')
+    parser.add_argument('-new',
+                        dest='out_volume',
+                        metavar='output volume name',
+                        required=False,
+                        help='specify the output volume name')
+    args = parser.parse_args()
+
+    temp_path = os.path.dirname(os.path.join(os.getcwd(), __file__))
+    temp_path = temp_path.split('/')
+    temp_path.pop()
+    root_dir = '/'.join(temp_path)
+    template_file = os.path.join(root_dir, 'froi', 'data', 'standard',
+                                 'MNI152_T1_2mm_brain.nii.gz')
+
+    if not os.path.exists(args.srcdir_file):
+        print 'Source directory file does not exist.'
+        sys.exit()
+    else:
+        sesspar = open(args.srcdir_file).readlines()
+        sesspar = [line.strip() for line in sesspar]
+        sesspar = sesspar[0]
+    if not os.path.exists(args.sessid_file):
+        print 'Session ID file does not exist.'
+        sys.exit()
+    else:
+        sessid = open(args.sessid_file).readlines()
+        sessid = [line.strip() for line in sessid]
+        
+    if len(args.img_list) != len(args.low_thresh) or \
+       len(args.img_list) != len(args.high_thresh) or \
+       len(args.img_list) != len(args.colormap):
+           print 'Input error, please check it out.'
+           sys.exit()
+
+    for subj in sessid:
+        temp_dir = os.path.join(sesspar, subj, args.contrast)
+        if os.path.exists(temp_dir):
+            print temp_dir
+            args_list = []
+            for idx in range(len(args.img_list)):
+                file_path = os.path.join(temp_dir, args.img_list[idx])
+                if not os.path.exists(file_path):
+                    file_path = os.path.join(temp_dir, 
+                                             args.img_list[idx] + '.nii.gz')
+                    if not os.path.exists(file_path):
+                        file_path = os.path.join(temp_dir,
+                                                 args.img_list[idx] + '.nii')
+                args_list += ['-img', file_path,
+                              '-lt', args.low_thresh[idx],
+                              '-ht', args.high_thresh[idx],
+                              '-c', args.colormap[idx]]
+            if args.label_file:
+                args_list = ['-img', args.label_file, '-lt', '0',
+                             '-ht', '20', '-c', args.label_config] + args_list
+            subprocess.call(['cd', temp_dir], shell=True)
+            cmd_list = ['freeroi', '-img', template_file, '-lt', '3000',
+                        '-ht', '8000', '-c', 'gray'] + \
+                       args_list + \
+                       ['-label', args.label_config]
+            if args.out_volume:
+                cmd_list += ['-n', args.out_volume]
+            subprocess.call(cmd_list)
+        else:
+            print subj + "'s data does not exist!"
+            
+if __name__ == '__main__':
+    main()
