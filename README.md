@@ -16,9 +16,10 @@ Currently supports the following systems:
 * mac osx
 * windows
 
-Notes: For Windows users, an exectable version is available. Unzip the package,
-and store the directory in a place which path has no Chinese characters. Double
-click *freeroi.exe* to run the program.
+Notes: For Windows users, an exectable version is
+[available](http://sourceforge.net/projects/freeroi/files/?source=navbar).
+Unzip the package, and store the directory in a place which path has no 
+Chinese characters. Double click *freeroi.exe* to run the program.
 
 ## Dependency
 
