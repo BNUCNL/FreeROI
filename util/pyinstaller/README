@@ -4,7 +4,7 @@ Before building the exe file, we should copy the files in directory `support/rth
 
 File freeroi.spec is used to configure the building process. Copy this file into the directory `pyinstaller/freeroi`.
 
-Enter into the pyinstaller directory, run the command python pyinstaller.py freeroi/freeroi/spec in the cmd.exe to build the exectable version.
+Enter into the pyinstaller directory, run the command python pyinstaller.py freeroi/freeroi.spec in the cmd.exe to build the exectable version.
 
 Finally, copy the file skimage._shared.transfrom.pyd into the dist directory.
 
