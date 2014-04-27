@@ -908,7 +908,7 @@ class BpMainWindow(QMainWindow):
         Initialize ROI Dialog
 
         """
-        self.roidialog = ROIDialog(self.model, self._label_config_center)
+        self.roidialog = ROIDialog(self.model, self._label_config_center, self)
         self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
         self.roidialog.roi_edit_enabled.connect(self._roi_edit_enable)
         self.roidialog.roi_batch_enabled.connect(self._roi_batch_enable)
