@@ -101,7 +101,7 @@ class BpMainWindow(QMainWindow):
         self.center()
         # set window icon
         self.setWindowIcon(QIcon(os.path.join(self._icon_dir,
-                                              'logo_no_name.png')))
+                                              'logo.png')))
 
         self._init_configuration()
 
