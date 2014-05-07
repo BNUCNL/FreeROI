@@ -27,6 +27,11 @@ Unzip the package, double click *freeroi.exe* to run the program.
 For \*uix users, a guide about how to install is available on
 `FreeROI@Github <https://github.com/BNUCNL/FreeROI>`_.
 
+Also, we have created a google group for collaboration. If you hava any
+question about FreeROI, welcome join the group:
+`nitk-user@googlegroups.com <https://groups.google.com/forum/#!forum/nitk-user>`_.
+
+
 Manual
 ======
 
