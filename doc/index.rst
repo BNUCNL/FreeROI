@@ -11,7 +11,7 @@ data. Its goal is to provide a user-friendly interface for neuroimaging
 researchers to visualize and analyze their data, especially in defining region
 of interest (ROI) for ROI analysis.
 
-The lastest version is 0.2.0.
+The latest version is 0.2.0.
 
 Currently, FreeROI could run on multiple platforms, including:
 
@@ -24,7 +24,7 @@ For windows users, an exectable version is
 `available <http://sourceforge.net/projects/freeroi/files/?source=navbar>`_.
 Unzip the package, double click *freeroi.exe* to run the program.
 
-For \*uix users, a guide about how to install is available on
+For other users, a guide about how to install is available on
 `FreeROI@Github <https://github.com/BNUCNL/FreeROI>`_.
 
 Also, we have created a google group for collaboration. If you hava any
