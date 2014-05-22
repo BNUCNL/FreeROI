@@ -463,7 +463,7 @@ class VolumeDataset(object):
                return self._data[xyz[0], xyz[1], xyz[2]]
         else:
             if self.is_4d():
-               return self._data[xyz[0], xyz[1], xyz[2],:]
+               return self._data[xyz[0], xyz[1], xyz[2], :]
             else:
                return self._data[xyz[0], xyz[1], xyz[2]]
 

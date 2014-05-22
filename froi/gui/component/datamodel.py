@@ -531,11 +531,11 @@ class VolumeListModel(QAbstractListModel):
         row = self.currentIndex().row()
         return self._data[row].redo_stack_not_empty()
 
-    def get_current_value(self, xyz,time_course=False):
+    def get_current_value(self, xyz, time_course=False):
         row = self.currentIndex().row()
-        return self._data[row].get_value(xyz,time_course)
+        return self._data[row].get_value(xyz, time_course)
 
-    def get_row_value(self, xyz,row):
+    def get_row_value(self, xyz, row):
         return self._data[row].get_value(xyz)
 
     def get_current_value_label(self, value):

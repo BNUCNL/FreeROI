@@ -557,7 +557,7 @@ class BpMainWindow(QMainWindow):
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Add new file',
                                                 temp_dir,
-                                                'Nifti files (*.nii.gz *.nii)')
+                                                "Nifti files (*.nii *.nii.gz)")
         if not file_name.isEmpty():
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
