@@ -391,11 +391,12 @@ class VolumeDataset(object):
         
         """
         try:
+            if isinstance(y, list):
+                y_trans = [self._y_shift - item for item in y]
             if self.is_4d():
-                orig_data = self._data[self._y_shift - y,
-                                       x, z, self._time_point]
+                orig_data = self._data[y_trans, x, z, self._time_point]
             else:
-                orig_data = self._data[self._y_shift - y, x, z]
+                orig_data = self._data[y_trans, x, z]
             if np.any(orig_data != 0) and not ignore:
                 force = QMessageBox.question(None, "Replace?",
                         "Would you like to replace the original values?",
@@ -404,14 +405,12 @@ class VolumeDataset(object):
                 if force == QMessageBox.No:
                     return
             if self.is_4d():
-                self.undo_stack.push((x, y, z,
-                                      self._data[self._y_shift - y,
-                                                 x, z, self._time_point]))
-                self._data[self._y_shift - y, x, z, self._time_point] = value
+                self.undo_stack.push((x, y, z, self._data[y_trans, x, z,
+                                                          self._time_point]))
+                self._data[y_trans, x, z, self._time_point] = value
             else:
-                self.undo_stack.push((x, y, z,
-                                      self._data[self._y_shift - y, x, z]))
-                self._data[self._y_shift - y, x, z] = value
+                self.undo_stack.push((x, y, z, self._data[y_trans, x, z]))
+                self._data[y_trans, x, z] = value
             try:
                 for z_ in range(min(z), max(z)+1):
                     self.update_rgba(z_)
