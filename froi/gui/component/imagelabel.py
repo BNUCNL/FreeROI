@@ -112,9 +112,10 @@ class ImageLabel(QLabel):
                                          horizon_src[1],
                                          horizon_targ[0],
                                          horizon_targ[1])
-            vertical_src = (0, (current_pos[1] + 0.5) * scale)
+            vertical_src = (0,
+                            (self.model.getX() - current_pos[1] - 0.5) * scale)
             vertical_targ = (self.pm.size().width(),
-                             (current_pos[1] + 0.5) * scale)
+                             (self.model.getX() - current_pos[1] - 0.5) * scale)
             self.voxels_painter.drawLine(vertical_src[0],
                                          vertical_src[1],
                                          vertical_targ[0],
@@ -140,7 +141,7 @@ class ImageLabel(QLabel):
                 self.drawing = False
             else:
                 scale = self.model.get_scale_factor('grid')
-                y = int(np.floor(e.y()/scale))
+                y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
                 x = int(np.floor(e.x()/scale))
                 roi_val = self.model.get_current_roi_val(x, y, self.n_slice)
                 if roi_val != 0:
@@ -149,13 +150,13 @@ class ImageLabel(QLabel):
         else:
             if self.painter_status.is_roi_selection():
                 scale = self.model.get_scale_factor('grid')
-                y = int(np.floor(e.y()/scale))
+                y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
                 x = int(np.floor(e.x()/scale))
                 roi_val = self.model.get_current_roi_val(x, y, self.n_slice)
                 if roi_val != 0:
                     self.painter_status.get_draw_settings()._update_roi(roi_val)
             scale = self.model.get_scale_factor('grid')
-            y = int(np.floor(e.y()/scale))
+            y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
             x = int(np.floor(e.x()/scale))
             self.model.set_cross_pos([x, y, self.n_slice])
        
@@ -185,7 +186,8 @@ class ImageLabel(QLabel):
            self.painter_status.is_roi_tool()):
             scale = self.model.get_scale_factor('grid')
             pix_to_vox = lambda (x,y,z): (int(np.floor(x/scale)), 
-                                          int(np.floor(y/scale)), 
+                                          self.model.getX() - 1 - \
+                                            int(np.floor(y/scale)), 
                                           z)
             voxels = map(pix_to_vox, list(self.voxels))
             if voxels:
