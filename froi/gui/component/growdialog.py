@@ -27,17 +27,18 @@ class GrowDialog(QDialog):
         self.setWindowTitle("Region Growing")
 
         # initialize widgets
+        xyz = self._model.get_cross_pos()
         #source_label = QLabel("Source")
         self.source_combo = QComboBox()
         pointx_label = QLabel("Seed point x")
         self.pointx_edit = QLineEdit()
-        self.pointx_edit.setText('45')
+        self.pointx_edit.setText(str(xyz[0]))
         pointy_label = QLabel("Seed point y")
         self.pointy_edit = QLineEdit()
-        self.pointy_edit.setText('60')
+        self.pointy_edit.setText(str(xyz[1]))
         pointz_label = QLabel("Seed point z")
         self.pointz_edit = QLineEdit()
-        self.pointz_edit.setText('45')
+        self.pointz_edit.setText(str(xyz[2]))
 
 
         number_label = QLabel("Number of voxels")
@@ -116,7 +117,7 @@ class GrowDialog(QDialog):
 
         try:
             pointx=int(pointx)
-            pointy=108-int(pointy)
+            pointy=int(pointy)
             pointz=int(pointz)
             number=int(number)
         except ValueError:
