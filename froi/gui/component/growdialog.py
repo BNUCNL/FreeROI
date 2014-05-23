@@ -99,6 +99,13 @@ class GrowDialog(QDialog):
         pointz = self.pointz_edit.text()
         number = self.number_edit.text()
 
+        if int(pointx) < 0 or int(pointx) > self._model.getX() - 1:
+            raise ValueError, "x coordinate is out of range"
+        if int(pointy) < 0 or int(pointy) > self._model.getY() - 1:
+            raise ValueError, "y coordinate is out of range"
+        if int(pointz) < 0 or int(pointz) > self._model.getZ() - 1:
+            raise ValueError, "z coordinate is out of range"
+
         if not vol_name:
             self.out_edit.setFocus()
             return
@@ -120,8 +127,11 @@ class GrowDialog(QDialog):
             pointy=int(pointy)
             pointz=int(pointz)
             number=int(number)
-        except ValueError:
+        except ValueError :
             self.number_edit.selectAll()
+            self.pointx_edit.selectAll()
+            self.pointy_edit.selectAll()
+            self.pointz_edit.selectAll()
             return
 
         source_row = self.source_combo.currentIndex()
