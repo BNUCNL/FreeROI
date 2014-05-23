@@ -263,13 +263,16 @@ class VolumeListModel(QAbstractListModel):
         >>> model.addItem(filepath)
 
         """
-        vol = VolumeDataset(source, self._label_config_center, name, header,
-                            view_min, view_max, alpha, colormap,
-                            [self._cross_pos[0],
-                             self._cross_pos[1],
-                             self._cross_pos[2]])
         if self.rowCount():
+            vol = VolumeDataset(source, self._label_config_center, name, header,
+                                view_min, view_max, alpha, colormap,
+                                [0, 0, 0])
             if self._data[0].get_data_shape()[0:3] == vol.get_data_shape()[0:3]:
+                vol = VolumeDataset(source, self._label_config_center, name,
+                                    header, view_min, view_max, alpha,
+                                    colormap, [self._cross_pos[0],
+                                               self._cross_pos[1],
+                                               self._cross_pos[2]])
                 ok = self.insertRow(0, vol)
                 if ok:
                     self.repaint_slices.emit(-1)
@@ -280,6 +283,11 @@ class VolumeListModel(QAbstractListModel):
                 print 'Mismatch data size!'
                 return False
         else:
+            vol = VolumeDataset(source, self._label_config_center, name, header,
+                                view_min, view_max, alpha, colormap,
+                                [self._cross_pos[0],
+                                 self._cross_pos[1],
+                                 self._cross_pos[2]])
             ok = self.insertRow(0, vol)
             if ok:
                 self.repaint_slices.emit(-1)

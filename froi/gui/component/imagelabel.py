@@ -337,7 +337,10 @@ class ImageLabel3d(QLabel):
         picture.
 
         """
-        return (self.horizontal_valid_range()[0] <= x < self.horizontal_valid_range()[1] and self.vertical_valid_range()[0] <= y < self.vertical_valid_range()[1])
+        return (self.horizontal_valid_range()[0] <= x < \
+                self.horizontal_valid_range()[1] and \
+                self.vertical_valid_range()[0] <= y < \
+                self.vertical_valid_range()[1])
 
     def mouseReleaseEvent(self, e):
         """
@@ -428,11 +431,11 @@ class SagittalImageLabel(ImageLabel3d):
                                          horizon_src[1],
                                          horizon_targ[0],
                                          horizon_targ[1])
-            vertical_src = ((current_pos[1] + 0.5) * scale + \
-                            self.pic_src_point[0],
+            vertical_src = ((self.model.getX() - current_pos[1] - 0.5) * \
+                            scale + self.pic_src_point[0],
                             0)
-            vertical_targ = ((current_pos[1] + 0.5) * scale + \
-                             self.pic_src_point[0],
+            vertical_targ = ((self.model.getX() - current_pos[1] - 0.5) * \
+                             scale + self.pic_src_point[0],
                              self.size().height())
             self.voxels_painter.drawLine(vertical_src[0],
                                          vertical_src[1],
@@ -449,7 +452,8 @@ class SagittalImageLabel(ImageLabel3d):
         """
         self.voxels_painter.setPen(self.painter_status.get_drawing_color())
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
-        points = [QPoint(self.pic_src_point[0] + v[1], 
+        points = [QPoint(self.pic_src_point[0] + \
+                            self.model.getX() * scale - v[1], 
                          self.pic_src_point[1] + \
                             self.model.getZ() * scale - v[2]) 
                   for v in voxels
@@ -474,7 +478,7 @@ class SagittalImageLabel(ImageLabel3d):
                 scale = self.model.get_scale_factor('orth') * \
                         self._expanding_factor
                 new_voxels = [(self.model.get_cross_pos()[0] * scale, 
-                               x - x_margin, 
+                               self.model.getX() * scale - x + x_margin, 
                                self.model.getZ() * scale - y + y_margin)
                               for x in xrange(X - size/2, X + size/2 + 1) 
                               for y in xrange(Y - size/2, Y + size/2 + 1)
@@ -489,7 +493,7 @@ class SagittalImageLabel(ImageLabel3d):
                         self._expanding_factor
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
-                x = int(np.floor(x/scale))
+                x = self.model.getX() - 1 - int(np.floor(x/scale))
                 y = self.model.getZ() - 1 - int(np.floor(y/scale))
                 roi_val = self.model.get_current_roi_val(
                             self.model.get_cross_pos()[0], x, y)
@@ -506,7 +510,7 @@ class SagittalImageLabel(ImageLabel3d):
                         self._expanding_factor
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
-                x = int(np.floor(x/scale))
+                x = self.model.getX() - int(np.floor(x/scale))
                 y = self.model.getZ() - int(np.floor(y/scale))
                 roi_val = self.model.get_current_roi_val(
                             self.model.get_cross_pos()[0], x, y)
@@ -517,7 +521,7 @@ class SagittalImageLabel(ImageLabel3d):
             scale = self.model.get_scale_factor('orth') * self._expanding_factor
             x = e.x() - self.pic_src_point[0]
             y = e.y() - self.pic_src_point[1]
-            x = int(np.floor(x/scale))
+            x = self.model.getX() - 1 - int(np.floor(x/scale))
             y = self.model.getZ() - 1 - int(np.floor(y/scale))
             current_pos = [self.model.get_cross_pos()[0], x, y]
             self.model.set_cross_pos(current_pos)
@@ -538,7 +542,7 @@ class SagittalImageLabel(ImageLabel3d):
             y_margin = self.pic_src_point[1]
             scale = self.model.get_scale_factor('orth') * self._expanding_factor
             new_voxels = [(self.model.get_cross_pos()[0] * scale, 
-                           x - x_margin, 
+                           self.model.getX() * scale - x + x_margin, 
                            self.model.getZ() * scale - y + y_margin)
                           for x in xrange(X - size/2, X + size/2 + 1) 
                           for y in xrange(Y - size/2, Y + size/2 + 1)
@@ -554,7 +558,7 @@ class SagittalImageLabel(ImageLabel3d):
                 scale=self.model.get_scale_factor('orth')*self._expanding_factor
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
-                x = int(np.floor(x/scale))
+                x = self.model.getX() - 1 - int(np.floor(x/scale))
                 y = self.model.getZ() - 1 - int(np.floor(y/scale))
                 current_pos = [self.model.get_cross_pos()[0], x, y]
                 self.model.set_cross_pos(current_pos)
@@ -630,10 +634,11 @@ class AxialImageLabel(ImageLabel3d):
         if self.model.display_cross():
             scale = self.model.get_scale_factor('orth') * self._expanding_factor
             current_pos = self.model.get_cross_pos()
-            horizon_src = (0, (current_pos[1] + 0.5) * scale + \
-                              self.pic_src_point[1])
-            horizon_targ = (self.size().width(), (current_pos[1] + 0.5) * \
-                                                 scale + self.pic_src_point[1])
+            horizon_src = (0, (self.model.getX() - current_pos[1] - 0.5) * \
+                              scale + self.pic_src_point[1])
+            horizon_targ = (self.size().width(), 
+                            (self.model.getX() - current_pos[1] - 0.5) * \
+                            scale + self.pic_src_point[1])
             self.voxels_painter.setPen(QColor(0, 255, 0, 255))
             self.voxels_painter.drawLine(horizon_src[0],
                                          horizon_src[1],
@@ -660,7 +665,8 @@ class AxialImageLabel(ImageLabel3d):
         self.voxels_painter.setPen(self.painter_status.get_drawing_color())
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         points = [QPoint(self.pic_src_point[0] + v[0], 
-                         self.pic_src_point[1] + v[1])
+                         self.pic_src_point[1] + \
+                            self.model.getX() * scale - v[1])
                   for v in voxels
                   if v[2] == (self.model.get_cross_pos()[2] * scale)]
         if points:
@@ -683,7 +689,7 @@ class AxialImageLabel(ImageLabel3d):
                 scale = self.model.get_scale_factor('orth') * \
                         self._expanding_factor
                 new_voxels = [(x - x_margin, 
-                               y - y_margin, 
+                               self.model.getX() * scale - y + y_margin, 
                                self.model.get_cross_pos()[2] * scale)
                               for x in xrange(X - size/2, X + size/2 + 1)
                               for y in xrange(Y - size/2, Y + size/2 + 1)
@@ -699,7 +705,7 @@ class AxialImageLabel(ImageLabel3d):
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
                 x = int(np.floor(x/scale))
-                y = int(np.floor(y/scale))
+                y = self.model.getX() - 1 - int(np.floor(y/scale))
                 roi_val = self.model.get_current_roi_val(
                             x, y, self.model.get_cross_pos()[2])
                 if roi_val != 0:
@@ -716,7 +722,7 @@ class AxialImageLabel(ImageLabel3d):
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
                 x = int(np.floor(x/scale))
-                y = int(np.floor(y/scale))
+                y = self.model.getX() - 1 - int(np.floor(y/scale))
                 roi_val = self.model.get_current_roi_val(
                             x, y, self.model.get_cross_pos()[2])
                 if roi_val != 0:
@@ -727,7 +733,7 @@ class AxialImageLabel(ImageLabel3d):
             x = e.x() - self.pic_src_point[0]
             y = e.y() - self.pic_src_point[1]
             x = int(np.floor(x/scale))
-            y = int(np.floor(y/scale))
+            y = self.model.getX() - 1 - int(np.floor(y/scale))
             current_pos = [x, y, self.model.get_cross_pos()[2]]
             self.model.set_cross_pos(current_pos)
 
@@ -747,7 +753,7 @@ class AxialImageLabel(ImageLabel3d):
             y_margin = self.pic_src_point[1]
             scale = self.model.get_scale_factor('orth') * self._expanding_factor
             new_voxels = [(x - x_margin, 
-                           y - y_margin, 
+                           self.model.getX() * scale - y + y_margin, 
                            self.model.get_cross_pos()[2] * scale)
                           for x in xrange(X - size/2, X + size/2 + 1)
                           for y in xrange(Y - size/2, Y + size/2 + 1)
@@ -764,7 +770,7 @@ class AxialImageLabel(ImageLabel3d):
                 x = e.x() - self.pic_src_point[0]
                 y = e.y() - self.pic_src_point[1]
                 x = int(np.floor(x/scale))
-                y = int(np.floor(y/scale))
+                y = self.model.getX() - 1 - int(np.floor(y/scale))
                 current_pos = [x, y, self.model.get_cross_pos()[2]]
                 self.model.set_cross_pos(current_pos)
         elif self.painter_status.is_hand():
