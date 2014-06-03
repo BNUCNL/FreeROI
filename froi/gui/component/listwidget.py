@@ -401,7 +401,7 @@ class LayerView(QWidget):
         self._coord_x.setValue(int(xyz[0]))
         self._coord_y.setValue(int(xyz[1]))
         self._coord_z.setValue(int(xyz[2]))
-        value = self._model.get_current_value([xyz[1], xyz[0], xyz[2]])
+        value = self._model.get_current_value([xyz[0], xyz[1], xyz[2]])
         self._coord_value.setText(str(value))
         self._coord_label.setText(self._model.get_current_value_label(value))
 

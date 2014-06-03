@@ -85,7 +85,7 @@ class BinarizationDialog(QDialog):
             return
 
         try:
-            threshold = int(threshold)
+            threshold = float(threshold)
         except ValueError:
             self.threshold_edit.selectAll()
             return

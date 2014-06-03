@@ -98,12 +98,14 @@ class VolumeDataset(object):
                 raise ValueError("Data dimension does not match.")
         else:
             img = nib.load(source)
-            # FIXME: only fit in Unix/Linux systems
             basename = os.path.basename(source.strip('/'))
             self._name = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
             data = img.get_data()
             self._data = np.rot90(data)
             self._header = img.get_header()
+
+        # For convenience, define a shift variable
+        self._y_shift = self.get_data_shape()[1] - 1
 
         if view_min == None:
             self._view_min = self._data.min()
@@ -243,7 +245,7 @@ class VolumeDataset(object):
 
     def update_coronal_rgba(self):
         f = self._rendering_factory()
-        idx = self._cross_pos[1]
+        idx = self._y_shift - self._cross_pos[1]
         if self.is_4d():
             self._coronal_rgba = f(np.rot90(self._data[idx, :, :,
                                                        self._time_point]))
@@ -389,20 +391,26 @@ class VolumeDataset(object):
         
         """
         try:
+            if isinstance(y, list):
+                y_trans = [self._y_shift - item for item in y]
             if self.is_4d():
-                orig_data = self._data[x, y, z, self._time_point]
+                orig_data = self._data[y_trans, x, z, self._time_point]
             else:
-                orig_data = self._data[x, y, z]
+                orig_data = self._data[y_trans, x, z]
             if np.any(orig_data != 0) and not ignore:
-                force = QMessageBox.question(None, "Replace?", "Would you like to replace the original values?", QMessageBox.Yes, QMessageBox.No)
+                force = QMessageBox.question(None, "Replace?",
+                        "Would you like to replace the original values?",
+                        QMessageBox.Yes,
+                        QMessageBox.No)
                 if force == QMessageBox.No:
                     return
             if self.is_4d():
-                self.undo_stack.push((x, y, z, self._data[x, y, z, self._time_point]))
-                self._data[x, y, z, self._time_point] = value
+                self.undo_stack.push((x, y, z, self._data[y_trans, x, z,
+                                                          self._time_point]))
+                self._data[y_trans, x, z, self._time_point] = value
             else:
-                self.undo_stack.push((x, y, z, self._data[x, y, z]))
-                self._data[x, y, z] = value
+                self.undo_stack.push((x, y, z, self._data[y_trans, x, z]))
+                self._data[y_trans, x, z] = value
             try:
                 for z_ in range(min(z), max(z)+1):
                     self.update_rgba(z_)
@@ -458,14 +466,15 @@ class VolumeDataset(object):
     def get_value(self, xyz, time_course=False):
         if not time_course:
            if self.is_4d():
-               return self._data[xyz[0], xyz[1], xyz[2], self._time_point]
+               return self._data[self._y_shift - xyz[1],
+                                 xyz[0], xyz[2], self._time_point]
            else:
-               return self._data[xyz[0], xyz[1], xyz[2]]
+               return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
         else:
             if self.is_4d():
-               return self._data[xyz[0], xyz[1], xyz[2],:]
+               return self._data[self._y_shift - xyz[1], xyz[0], xyz[2], :]
             else:
-               return self._data[xyz[0], xyz[1], xyz[2]]
+               return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
 
     def get_lthr_data(self):
         """
@@ -500,11 +509,15 @@ class VolumeDataset(object):
             data = self._data[..., self._time_point]
         else:
             data = self._data
-        return (data==roi).nonzero()
+        coord = (data==roi).nonzero()
+        #return (data==roi).nonzero()
+        return (coord[1], self._y_shift - coord[0], coord[2])
 
     def get_coord_val(self, x, y, z):
         if self.is_4d():
-            return self._data[y, x, z, self._time_point]
+            #return self._data[y, x, z, self._time_point]
+            return self._data[self._y_shift - y, x, z, self._time_point]
         else:
-            return self._data[y, x, z]
+            #return self._data[y, x, z]
+            return self._data[self._y_shift - y, x, z]
 
