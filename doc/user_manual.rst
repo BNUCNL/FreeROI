@@ -9,3 +9,4 @@ User Manual
     user_manual/basics.dataviewing.rst
     user_manual/roianalysis.rst
     user_manual/toolkit.rst
+    user_manual/q_and_a.rst
