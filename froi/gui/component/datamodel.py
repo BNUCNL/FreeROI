@@ -36,8 +36,9 @@ class VolumeListModel(QAbstractListModel):
         self._selected_indexes = []
         self._grid_scale_factor = 1.0
         self._orth_scale_factor = 1.0
-        # FIXME current position should be initialized when the first volume added.
-        # The current position is a 4D data.
+        # FIXME current position should be initialized when the first
+        # volume added.
+        # The current position is a 3D data.
         self._cross_pos = [0, 0, 0]
         self._display_cross = True
         self._connect_undo_redo()
@@ -262,14 +263,16 @@ class VolumeListModel(QAbstractListModel):
         >>> model.addItem(filepath)
 
         """
-
-        vol = VolumeDataset(source, self._label_config_center, name, header,
-                            view_min, view_max, alpha, colormap,
-                            [self._cross_pos[0],
-                             self._cross_pos[1],
-                             self._cross_pos[2]])
         if self.rowCount():
+            vol = VolumeDataset(source, self._label_config_center, name, header,
+                                view_min, view_max, alpha, colormap,
+                                [0, 0, 0])
             if self._data[0].get_data_shape()[0:3] == vol.get_data_shape()[0:3]:
+                vol = VolumeDataset(source, self._label_config_center, name,
+                                    header, view_min, view_max, alpha,
+                                    colormap, [self._cross_pos[0],
+                                               self._cross_pos[1],
+                                               self._cross_pos[2]])
                 ok = self.insertRow(0, vol)
                 if ok:
                     self.repaint_slices.emit(-1)
@@ -280,6 +283,11 @@ class VolumeListModel(QAbstractListModel):
                 print 'Mismatch data size!'
                 return False
         else:
+            vol = VolumeDataset(source, self._label_config_center, name, header,
+                                view_min, view_max, alpha, colormap,
+                                [self._cross_pos[0],
+                                 self._cross_pos[1],
+                                 self._cross_pos[2]])
             ok = self.insertRow(0, vol)
             if ok:
                 self.repaint_slices.emit(-1)
@@ -422,7 +430,8 @@ class VolumeListModel(QAbstractListModel):
         elif type == 'orth':
             return self._orth_scale_factor
 
-    def modify_voxels(self, coord_list=None, value=None, roi=None, target_row=None, ignore=True):
+    def modify_voxels(self, coord_list=None, value=None, roi=None,
+                      target_row=None, ignore=True):
         """
         Set (x, y, z) voxel's value on specific layer.
 
@@ -432,8 +441,8 @@ class VolumeListModel(QAbstractListModel):
 
         if coord_list is not None:
             row = self.currentIndex().row()
-            x = [item[1] for item in coord_list]
-            y = [item[0] for item in coord_list]
+            x = [item[0] for item in coord_list]
+            y = [item[1] for item in coord_list]
             z = [item[2] for item in coord_list]
             self._data[row].set_voxel(x, y, z, value, ignore)
             self.repaint_slices.emit(coord_list[0][2])
@@ -531,11 +540,11 @@ class VolumeListModel(QAbstractListModel):
         row = self.currentIndex().row()
         return self._data[row].redo_stack_not_empty()
 
-    def get_current_value(self, xyz,time_course=False):
+    def get_current_value(self, xyz, time_course=False):
         row = self.currentIndex().row()
-        return self._data[row].get_value(xyz,time_course)
+        return self._data[row].get_value(xyz, time_course)
 
-    def get_row_value(self, xyz,row):
+    def get_row_value(self, xyz, row):
         return self._data[row].get_value(xyz)
 
     def get_current_value_label(self, value):

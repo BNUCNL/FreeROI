@@ -557,7 +557,7 @@ class BpMainWindow(QMainWindow):
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Add new file',
                                                 temp_dir,
-                                                'Nifti files (*.nii.gz *.nii)')
+                                                "Nifti files (*.nii *.nii.gz)")
         if not file_name.isEmpty():
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
@@ -645,7 +645,8 @@ class BpMainWindow(QMainWindow):
                 self.list_view.setCurrentIndex(self.model.index(0))
             self.is_save_configure = True
         else:
-            QMessageBox.information(self,'FreeROI', 'Cannot load ' + "filename" + '.')
+            QMessageBox.information(self,'FreeROI', 'Cannot load ' + \
+                                    file_path + ': due to mismatch data size.')
 
     def __new_image(self):
         self._new_image()
