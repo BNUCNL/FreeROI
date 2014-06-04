@@ -11,8 +11,6 @@ data. Its goal is to provide a user-friendly interface for neuroimaging
 researchers to visualize and analyze their data, especially in defining region
 of interest (ROI) for ROI analysis.
 
-The latest version is 0.2.0.
-
 Currently, FreeROI could run on multiple platforms, including:
 
 * ubuntu/debian
@@ -40,6 +38,7 @@ Manual
 
    user_manual.rst
    devel_manual.rst
+   changelog.rst
 
 
 
