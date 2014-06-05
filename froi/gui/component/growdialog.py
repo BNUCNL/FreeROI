@@ -27,17 +27,18 @@ class GrowDialog(QDialog):
         self.setWindowTitle("Region Growing")
 
         # initialize widgets
+        xyz = self._model.get_cross_pos()
         #source_label = QLabel("Source")
         self.source_combo = QComboBox()
         pointx_label = QLabel("Seed point x")
         self.pointx_edit = QLineEdit()
-        self.pointx_edit.setText('45')
+        self.pointx_edit.setText(str(xyz[0]))
         pointy_label = QLabel("Seed point y")
         self.pointy_edit = QLineEdit()
-        self.pointy_edit.setText('60')
+        self.pointy_edit.setText(str(xyz[1]))
         pointz_label = QLabel("Seed point z")
         self.pointz_edit = QLineEdit()
-        self.pointz_edit.setText('45')
+        self.pointz_edit.setText(str(xyz[2]))
 
 
         number_label = QLabel("Number of voxels")
@@ -98,6 +99,19 @@ class GrowDialog(QDialog):
         pointz = self.pointz_edit.text()
         number = self.number_edit.text()
 
+        if int(number) <= 0:
+            QMessageBox.about(self, self.tr("number error"),self.tr("voxel number is out of range"))
+            return
+        if int(pointx) < 0 or int(pointx) > self._model.getY() - 1:
+            QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate x is out of range"))
+            return
+        if int(pointy) < 0 or int(pointy) > self._model.getX() - 1:
+            QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate y is out of range"))
+            return
+        if int(pointz) < 0 or int(pointz) > self._model.getZ() - 1:
+            QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate z is out of range"))
+            return
+
         if not vol_name:
             self.out_edit.setFocus()
             return
@@ -116,11 +130,14 @@ class GrowDialog(QDialog):
 
         try:
             pointx=int(pointx)
-            pointy=108-int(pointy)
+            pointy=int(pointy)
             pointz=int(pointz)
             number=int(number)
-        except ValueError:
+        except ValueError :
             self.number_edit.selectAll()
+            self.pointx_edit.selectAll()
+            self.pointy_edit.selectAll()
+            self.pointz_edit.selectAll()
             return
 
         source_row = self.source_combo.currentIndex()
