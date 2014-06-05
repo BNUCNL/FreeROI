@@ -101,12 +101,16 @@ class GrowDialog(QDialog):
 
         if int(number) <= 0:
             QMessageBox.about(self, self.tr("number error"),self.tr("voxel number is out of range"))
-        if int(pointx) < 0 or int(pointx) > self._model.getX() - 1:
+            return
+        if int(pointx) < 0 or int(pointx) > self._model.getY() - 1:
             QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate x is out of range"))
-        if int(pointy) < 0 or int(pointy) > self._model.getY() - 1:
+            return
+        if int(pointy) < 0 or int(pointy) > self._model.getX() - 1:
             QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate y is out of range"))
+            return
         if int(pointz) < 0 or int(pointz) > self._model.getZ() - 1:
             QMessageBox.about(self, self.tr("coordinate error"),self.tr("coordinate z is out of range"))
+            return
 
         if not vol_name:
             self.out_edit.setFocus()
