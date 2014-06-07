@@ -7,15 +7,22 @@ Aims for long term evolution
 TO DO LIST
 ----------
 
+** Version: 0.2.2
+
+1. Add a new function to calculate the size of a ROI
+2. Clarify the function of ROI merging.
+3. Report the stat info (i.e., peak location, peak value, and cluster size) of
+   a ROI (combined with issue 2).
+---------------------------------------------------------------------------
+
 ** Version: 0.2.1
 
 1. Fix bug in local maximum: clarify the function of least distance, there is
    something wrong while it is set as 0.
-2. Add a new function to calculate the size of a ROI
-3. Clarify the function of ROI merging.
-4. Report the stat info (i.e., peak location, peak value, and cluster size) of
-   a ROI (combined with issue 2).
-5. Decimal numbers could not be specified in the binarization function.
+2. Decimal numbers could be specified in the binarization function.
+3. Modify the coordinate system used in the software, making it consistent
+   with the intuition.
+4. Fix bugs in the OrthView.
 ------------------------------------------------------------------------
 
 ** Version: 0.2.0
