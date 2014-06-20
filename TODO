@@ -12,7 +12,7 @@ TO DO LIST
 1. Add a new function to calculate the size of a ROI
 2. Clarify the function of ROI merging.
 3. Report the stat info (i.e., peak location, peak value, and cluster size) of
-   a ROI (combined with issue 2).
+   a ROI (combined with issue 1).
 ---------------------------------------------------------------------------
 
 ** Version: 0.2.1
