@@ -98,14 +98,14 @@ def main():
                sys.exit()
         else:
             try:
-                win._add_template_img(args.img_list[0], 
-                                      view_min=args.low_thresh[0],
-                                      view_max=args.high_thresh[0],
-                                      colormap=args.colormap[0])
+                win._add_img(args.img_list[0], 
+                             view_min=args.low_thresh[0],
+                             view_max=args.high_thresh[0],
+                             colormap=args.colormap[0])
                 if args.label_config:
                     win._label_config_center.set_label_config(args.label_config)
             except:
-                print 'Load template image error!'
+                print 'Load first image error!'
                 sys.exit()
             for i in range(1,len(args.img_list)):
                 colormap = args.colormap[i]
