@@ -204,3 +204,18 @@ def extract_mean_ts(source, mask):
         data = np.array([data])
     return data
 
+def voxel_number(source_data, voxel_value):
+    """
+    Compute the voxel number which voxel value equal to #voxel_value#.
+
+    """
+    if voxel_value:
+        source_data[source_data!=voxel_value] = 0
+        source_data[source_data==voxel_value] = 1
+        return source_data.sum()
+    else:
+        source_data[source_data!=0] = 1
+        data_shape = source_data.shape
+        whole_voxel_num = data_shape[0] * data_shape[1] * data_shape[2]
+        return whole_voxel_num - source_data.sum()
+
