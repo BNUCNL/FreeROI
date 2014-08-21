@@ -71,7 +71,7 @@ class MeanTSDialog(QDialog):
         output_name = '_'.join([str(source_name), str(mask_name)]) + '.csv'
         file_path = os.path.join(str(QDir.currentPath()), output_name)
         path = QFileDialog.getSaveFileName(self, 'Save file as ...',
-                                           file_path, 'csv files (*.csv *.txt)')
+                                        file_path, 'csv files (*.csv *.txt)')
         if not path.isEmpty():
             source_row = self.source_combo.currentIndex()
             mask_row = self.mask_combo.currentIndex()

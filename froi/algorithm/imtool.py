@@ -118,7 +118,7 @@ def inverse_transformation(data):
     """
     return -data
 
-def cluster_labeling(data, threshold, conn=1):
+def cluster_labeling(data, threshold, conn=2):
     """
     Label different clusters in an image.
 

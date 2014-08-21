@@ -44,6 +44,7 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
+from component.clusterstatsdialog import ClusterStatsDialog
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -1118,7 +1119,7 @@ class BpMainWindow(QMainWindow):
         new_dialog.exec_()
 
     def _cluster(self):
-        new_dialog = ClusterDialog(self.model)
+        new_dialog = ClusterDialog(self.model, self)
         new_dialog.exec_()
 
     def _functional_module_set_enabled(self, status):

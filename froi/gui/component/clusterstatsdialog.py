@@ -4,6 +4,8 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+from froi.io import csv
+
 class ClusterStatsDialog(QDialog):
     """
     A dialog for reporting cluster stats.
@@ -12,6 +14,12 @@ class ClusterStatsDialog(QDialog):
     def __init__(self, cluster_info, parent=None):
         super(ClusterStatsDialog, self).__init__(parent)
         self._cluster_info = cluster_info
+
+        self.setWindowModality(Qt.NonModal)
+        self.setWindowFlags(Qt.Tool | \
+                            Qt.CustomizeWindowHint | \
+                            Qt.WindowTitleHint)
+
         self._init_gui()
         self._create_actions()
 
@@ -24,12 +32,18 @@ class ClusterStatsDialog(QDialog):
         self.setWindowTitle("Cluster Stats")
 
         # initialize widgets
-        cluster_idx = QLabel("Cluster Index")
+        cluster_idx = QLabel("Index")
+        cluster_idx.setAlignment(Qt.AlignCenter)
         peak_val = QLabel("Peak")
-        peak_coord_x = QLabel("Peak X")
-        peak_coord_y = QLabel("Peak Y")
-        peak_coord_z = QLabel("Peak Z")
+        peak_val.setAlignment(Qt.AlignCenter)
+        peak_coord_x = QLabel("Peak_X")
+        peak_coord_x.setAlignment(Qt.AlignCenter)
+        peak_coord_y = QLabel("Peak_Y")
+        peak_coord_y.setAlignment(Qt.AlignCenter)
+        peak_coord_z = QLabel("Peak_Z")
+        peak_coord_z.setAlignment(Qt.AlignCenter)
         cluster_extent = QLabel("Size")
+        cluster_extent.setAlignment(Qt.AlignCenter)
 
         # layout config
         grid_layout = QGridLayout()
@@ -44,24 +58,31 @@ class ClusterStatsDialog(QDialog):
         row_idx = 1
         for line in self._cluster_info:
             idx = QLabel(str(line[0]))
+            idx.setAlignment(Qt.AlignCenter)
             peak_val = QLabel(str(line[1]))
+            peak_val.setAlignment(Qt.AlignCenter)
             coord_x = QLabel(str(line[2]))
+            coord_x.setAlignment(Qt.AlignCenter)
             coord_y = QLabel(str(line[3]))
+            coord_y.setAlignment(Qt.AlignCenter)
             coord_z = QLabel(str(line[4]))
+            coord_z.setAlignment(Qt.AlignCenter)
             extent = QLabel(str(line[5]))
-            grid_layout.addWidget(cluster_idx, row_idx, 0)
+            extent.setAlignment(Qt.AlignCenter)
+            grid_layout.addWidget(idx, row_idx, 0)
             grid_layout.addWidget(peak_val, row_idx, 1)
-            grid_layout.addWidget(peak_coord_x, row_idx, 2)
-            grid_layout.addWidget(peak_coord_y, row_idx, 3)
-            grid_layout.addWidget(peak_coord_z, row_idx, 4)
-            grid_layout.addWidget(cluster_extent, row_idx, 5)
+            grid_layout.addWidget(coord_x, row_idx, 2)
+            grid_layout.addWidget(coord_y, row_idx, 3)
+            grid_layout.addWidget(coord_z, row_idx, 4)
+            grid_layout.addWidget(extent, row_idx, 5)
+            row_idx += 1
 
         # button config
-        #self.save_button = QPushButton("Run")
+        self.save_button = QPushButton("Export to csv file")
         self.cancel_button = QPushButton("Close")
 
         hbox_layout = QHBoxLayout()
-        #hbox_layout.addWidget(self.run_button)
+        hbox_layout.addWidget(self.save_button)
         hbox_layout.addWidget(self.cancel_button)
 
         vbox_layout = QVBoxLayout()
@@ -71,34 +92,20 @@ class ClusterStatsDialog(QDialog):
         self.setLayout(vbox_layout)
 
     def _create_actions(self):
-        #self.run_button.clicked.connect(self._cluster)
+        self.save_button.clicked.connect(self._save)
         self.cancel_button.clicked.connect(self.done)
 
-    def _cluster(self):
-        vol_name = str(self.out_edit.text())
-        threshold = self.threshold_edit.text()
+    def _save(self):
+        """
+        Export cluster stats info to a file.
 
-        if not vol_name:
-            self.out_edit.setFocus()
-            return
-        if not threshold:
-            self.threshold_edit.setFocus()
-            return
+        """
+        path = QFileDialog.getSaveFileName(self, 'Save file as ...',
+                                           'output.csv',
+                                           'csv files (*.csv *.txt)')
+        if not path.isEmpty():
+            labels = ['index', 'max value', 'X', 'Y', 'Z', 'size']
+            csv.nparray2csv(self._cluster_info, labels, path)
+            self.done(0)
 
-        try:
-            threshold = float(threshold)
-        except ValueError:
-            self.threshold_edit.selectAll()
-            return
-
-        current_row = self._model.currentIndex().row()
-        source_data = self._model.data(self._model.index(current_row),
-                                       Qt.UserRole + 6)
-        new_vol = imtool.cluster_labeling(source_data, threshold)
-        self._model.addItem(new_vol,
-                            None,
-                            vol_name,
-                            self._model._data[0].get_header(),
-                            None, None, 255, 'rainbow')
-        self.done(0)
 
