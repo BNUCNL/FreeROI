@@ -32,6 +32,7 @@ class ClusterStatsDialog(QDialog):
         self.setWindowTitle("Cluster Stats")
 
         # initialize widgets
+        scroll_content = QWidget()
         cluster_idx = QLabel("Index")
         cluster_idx.setAlignment(Qt.AlignCenter)
         peak_val = QLabel("Peak")
@@ -77,6 +78,14 @@ class ClusterStatsDialog(QDialog):
             grid_layout.addWidget(extent, row_idx, 5)
             row_idx += 1
 
+        # add labels into a scroll area
+        scroll_content.setLayout(grid_layout)
+        scrollarea = QScrollArea()
+        scrollarea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        scrollarea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #scrollarea.setWidgetResizable(False)
+        scrollarea.setWidget(scroll_content)
+        
         # button config
         self.save_button = QPushButton("Export to csv file")
         self.cancel_button = QPushButton("Close")
@@ -86,7 +95,7 @@ class ClusterStatsDialog(QDialog):
         hbox_layout.addWidget(self.cancel_button)
 
         vbox_layout = QVBoxLayout()
-        vbox_layout.addLayout(grid_layout)
+        vbox_layout.addWidget(scrollarea)
         vbox_layout.addLayout(hbox_layout)
 
         self.setLayout(vbox_layout)
