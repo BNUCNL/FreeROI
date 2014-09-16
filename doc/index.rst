@@ -40,6 +40,19 @@ Manual
    devel_manual.rst
    changelog.rst
 
+Developers
+==========
+
+* `Lijie Huang <mailto:huanglijie.seal@gmail.com>`_
+* `Zetian Yang <mailto:zetian.yang@gmail.com>`_
+* Guangfu Zhou
+* Zhaoguo Liu
+
+We also thanks the following for their contributing to this software:
+
+* Xiaobin Dang
+* moloney 
+
 
 
 Indices and tables
