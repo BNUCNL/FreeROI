@@ -51,7 +51,7 @@ Developers
 
 We also thank the following for their contributing to this software:
 
-* moloney 
+* `moloney <https://github.com/moloney>`_
 
 
 
