@@ -47,10 +47,10 @@ Developers
 * `Zetian Yang <mailto:zetian.yang@gmail.com>`_
 * Guangfu Zhou
 * Zhaoguo Liu
-
-We also thanks the following for their contributing to this software:
-
 * Xiaobin Dang
+
+We also thank the following for their contributing to this software:
+
 * moloney 
 
 
