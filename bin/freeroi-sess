@@ -22,40 +22,22 @@ def main():
                         metavar='sessid file',
                         required=True,
                         help='a session ID file containing all subjects')
+    parser.add_argument('-t',
+                        dest='task',
+                        metavar='task name',
+                        required=True,
+                        help='specify a task name to load data')
     parser.add_argument('-c',
                         dest='contrast',
                         metavar='contrast name',
                         required=True,
                         help='specify a contrast name to load data')
-    #parser.add_argument('-stat',
-    #                    dest='file_name',
-    #                    metavar='activation file',
-    #                    required=True,
-    #                    help='specify the activation file name')
     parser.add_argument('-img',
-                        dest='img_list',
-                        metavar='Nifti-file',
+                        dest='img_list', type=list, nargs=4,
+                        metavar=('Nifti-file','low_thresh','high_thresh','colormap'),
                         required=True,
                         action='append',
-                        help='specify the nifti file name')
-    parser.add_argument('-lt',
-                        dest='low_thresh',
-                        metavar='low threshold value for display',
-                        required=True,
-                        action='append',
-                        help='low threshold value for display')
-    parser.add_argument('-ht',
-                        dest='high_thresh',
-                        metavar='upper threshold value for display',
-                        required=True,
-                        action='append',
-                        help='upper threshold value for display')
-    parser.add_argument('-color',
-                        dest='colormap',
-                        metavar='colormap',
-                        required=True,
-                        action='append',
-                        help='specify the colormap the image would display in')
+                        help='specify the nifti file name and its low_thresh,high_thresh,colormap')
     parser.add_argument('-labelvol',
                         dest='label_file',
                         metavar='absolute label file',
@@ -93,30 +75,32 @@ def main():
     else:
         sessid = open(args.sessid_file).readlines()
         sessid = [line.strip() for line in sessid]
-        
-    if len(args.img_list) != len(args.low_thresh) or \
-       len(args.img_list) != len(args.high_thresh) or \
-       len(args.img_list) != len(args.colormap):
-           print 'Input error, please check it out.'
-           sys.exit()
 
     for subj in sessid:
-        temp_dir = os.path.join(sesspar, subj, args.contrast)
+        temp_dir = os.path.join(sesspar, subj, args.task, args.contrast)
         if os.path.exists(temp_dir):
             print temp_dir
             args_list = []
             for idx in range(len(args.img_list)):
-                file_path = os.path.join(temp_dir, args.img_list[idx])
+                for st in range(len(args.img_list[idx])):
+                    for s in range(len(args.img_list[idx][st])):
+                        if s == 0:
+                            string = args.img_list[idx][st][s]
+                        else:
+                            string = string + args.img_list[idx][st][s]
+                    args.img_list[idx][st] = string
+
+                file_path = os.path.join(temp_dir, args.img_list[idx][0])
                 if not os.path.exists(file_path):
-                    file_path = os.path.join(temp_dir, 
-                                             args.img_list[idx] + '.nii.gz')
+                    file_path = os.path.join(temp_dir,
+                                             args.img_list[idx][0] + '.nii.gz')
                     if not os.path.exists(file_path):
                         file_path = os.path.join(temp_dir,
-                                                 args.img_list[idx] + '.nii')
+                                                 args.img_list[idx][0] + '.nii')
                 args_list += ['-img', file_path,
-                              '-lt', args.low_thresh[idx],
-                              '-ht', args.high_thresh[idx],
-                              '-c', args.colormap[idx]]
+                              '-lt', args.img_list[idx][1],
+                              '-ht', args.img_list[idx][2],
+                              '-c', args.img_list[idx][3]]
             if args.label_file:
                 args_list = ['-img', args.label_file, '-lt', '0',
                              '-ht', '20', '-c', args.label_config] + args_list
@@ -130,6 +114,6 @@ def main():
             subprocess.call(cmd_list)
         else:
             print subj + "'s data does not exist!"
-            
+
 if __name__ == '__main__':
     main()
