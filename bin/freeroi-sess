@@ -1,7 +1,7 @@
 #! /bin/env python
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Main application for PyBP GUI.
+"""Main application for FreeROI GUI.
 
 """
 import os
@@ -10,7 +10,7 @@ import argparse
 import subprocess
 
 def main():
-    parser = argparse.ArgumentParser(description='PyBP for batch processing')
+    parser = argparse.ArgumentParser(description='FreeROI for batch processing')
 
     parser.add_argument('-df',
                         dest='srcdir_file',
@@ -22,50 +22,27 @@ def main():
                         metavar='sessid file',
                         required=True,
                         help='a session ID file containing all subjects')
+    parser.add_argument('-t',
+                        dest='task',
+                        metavar='task name',
+                        required=True,
+                        help='specify a task name to load data')
     parser.add_argument('-c',
                         dest='contrast',
                         metavar='contrast name',
                         required=True,
                         help='specify a contrast name to load data')
-    #parser.add_argument('-stat',
-    #                    dest='file_name',
-    #                    metavar='activation file',
-    #                    required=True,
-    #                    help='specify the activation file name')
     parser.add_argument('-img',
-                        dest='img_list',
-                        metavar='Nifti-file',
+                        dest='img_list', nargs=4,
+                        metavar=('Nifti-file','low_thresh','high_thresh','colormap'),
                         required=True,
                         action='append',
-                        help='specify the nifti file name')
-    parser.add_argument('-lt',
-                        dest='low_thresh',
-                        metavar='low threshold value for display',
-                        required=True,
-                        action='append',
-                        help='low threshold value for display')
-    parser.add_argument('-ht',
-                        dest='high_thresh',
-                        metavar='upper threshold value for display',
-                        required=True,
-                        action='append',
-                        help='upper threshold value for display')
-    parser.add_argument('-color',
-                        dest='colormap',
-                        metavar='colormap',
-                        required=True,
-                        action='append',
-                        help='specify the colormap the image would display in')
-    parser.add_argument('-labelvol',
-                        dest='label_file',
-                        metavar='absolute label file',
+                        help='specify the nifti file name and its low_thresh,high_thresh,colormap')
+    parser.add_argument('-ref', nargs=4,
+                        dest='ref_file',
+                        metavar=('reference_file','low_thresh','high_thresh','colormap'),
                         required=False,
-                        help='specify the group label file name')
-    parser.add_argument('-label',
-                        dest='label_config',
-                        metavar='reference_label_configuration',
-                        required=True,
-                        help='specify a label configuration name')
+                        help='specify the reference file name and its low_thresh,high_thresh,colormap')
     parser.add_argument('-new',
                         dest='out_volume',
                         metavar='output volume name',
@@ -93,43 +70,39 @@ def main():
     else:
         sessid = open(args.sessid_file).readlines()
         sessid = [line.strip() for line in sessid]
-        
-    if len(args.img_list) != len(args.low_thresh) or \
-       len(args.img_list) != len(args.high_thresh) or \
-       len(args.img_list) != len(args.colormap):
-           print 'Input error, please check it out.'
-           sys.exit()
 
     for subj in sessid:
-        temp_dir = os.path.join(sesspar, subj, args.contrast)
+        temp_dir = os.path.join(sesspar, subj, args.task, args.contrast)
         if os.path.exists(temp_dir):
             print temp_dir
             args_list = []
             for idx in range(len(args.img_list)):
-                file_path = os.path.join(temp_dir, args.img_list[idx])
+                file_path = os.path.join(temp_dir, args.img_list[idx][0])
                 if not os.path.exists(file_path):
-                    file_path = os.path.join(temp_dir, 
-                                             args.img_list[idx] + '.nii.gz')
+                    file_path = os.path.join(temp_dir,
+                                             args.img_list[idx][0] + '.nii.gz')
                     if not os.path.exists(file_path):
                         file_path = os.path.join(temp_dir,
-                                                 args.img_list[idx] + '.nii')
+                                                 args.img_list[idx][0] + '.nii')
                 args_list += ['-img', file_path,
-                              '-lt', args.low_thresh[idx],
-                              '-ht', args.high_thresh[idx],
-                              '-c', args.colormap[idx]]
-            if args.label_file:
-                args_list = ['-img', args.label_file, '-lt', '0',
-                             '-ht', '20', '-c', args.label_config] + args_list
+                              '-lt', args.img_list[idx][1],
+                              '-ht', args.img_list[idx][2],
+                              '-c', args.img_list[idx][3]]
+            if args.ref_file:
+                if not os.path.exists(args.ref_file[0]):
+                    args.ref_file[0] = os.path.join(args.ref_file[0] + '.nii.gz')
+                    if not os.path.exists(args.ref_file[0]):
+                        args.ref_file[0] = os.path.join(args.ref_file[0] + '.nii')
+                args_list = ['-img', args.ref_file[0], '-lt',  args.ref_file[1],
+                             '-ht',  args.ref_file[2], '-c',  args.ref_file[3]] + args_list
             subprocess.call(['cd', temp_dir], shell=True)
             cmd_list = ['freeroi', '-img', template_file, '-lt', '3000',
-                        '-ht', '8000', '-c', 'gray'] + \
-                       args_list + \
-                       ['-label', args.label_config]
+                        '-ht', '8000', '-c', 'gray'] + args_list
             if args.out_volume:
                 cmd_list += ['-n', args.out_volume]
             subprocess.call(cmd_list)
         else:
             print subj + "'s data does not exist!"
-            
+
 if __name__ == '__main__':
     main()
