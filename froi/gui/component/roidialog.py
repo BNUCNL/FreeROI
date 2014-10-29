@@ -184,7 +184,8 @@ class ROIDialog(QDialog, DrawSettings):
         return True
 
     def _run(self):
-        if self.target_box.isEnabled() and str(self.target_box.currentText()) == 'New Volume':
+        if self.target_box.isEnabled() and \
+           str(self.target_box.currentText()) == 'New Volume':
             self._model.new_image(None, None, 'rainbow')
         vol_index = self._model.currentIndex()
         vol_data = self._model.data(vol_index, Qt.UserRole + 6)  

@@ -118,7 +118,7 @@ def inverse_transformation(data):
     """
     return -data
 
-def cluster_labeling(data, threshold, conn=1):
+def cluster_labeling(data, threshold, conn=2):
     """
     Label different clusters in an image.
 
@@ -203,4 +203,47 @@ def extract_mean_ts(source, mask):
         data = source.sum() / mask.sum()
         data = np.array([data])
     return data
+
+def voxel_number(source_data, voxel_value):
+    """
+    Compute the voxel number which voxel value equal to #voxel_value#.
+
+    """
+    if voxel_value:
+        source_data[source_data!=voxel_value] = 0
+        source_data[source_data==voxel_value] = 1
+        return source_data.sum()
+    else:
+        source_data[source_data!=0] = 1
+        data_shape = source_data.shape
+        whole_voxel_num = data_shape[0] * data_shape[1] * data_shape[2]
+        return whole_voxel_num - source_data.sum()
+
+def cluster_stats(source_data, cluster_data):
+    """
+    Get the cluster size, and the peak value, coordinate based on the
+    #source_data#.
+
+    """
+    if not source_data.shape == cluster_data.shape:
+        print 'Inconsistent data shape.'
+        return
+    cluster_info = []
+    cluster_idx = np.unique(cluster_data)
+    for idx in cluster_idx:
+        if idx:
+            mask = cluster_data.copy()
+            mask[mask!=idx] = 0
+            mask[mask==idx] = 1
+            extent = mask.sum()
+            masked_src = source_data * mask
+            max_val = masked_src.max()
+            max_coord = np.unravel_index(masked_src.argmax(),
+                                         masked_src.shape)
+            cluster_info.append([idx, max_val, max_coord[0], max_coord[1],
+                                 max_coord[2], extent])
+    cluster_info = np.array(cluster_info)
+    cluster_extent = cluster_info[..., -1]
+    cluster_info = cluster_info[np.argsort(cluster_extent)[::-1]]
+    return cluster_info
 

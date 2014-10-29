@@ -11,24 +11,22 @@ data. Its goal is to provide a user-friendly interface for neuroimaging
 researchers to visualize and analyze their data, especially in defining region
 of interest (ROI) for ROI analysis.
 
-The lastest version is 0.2.0.
-
 Currently, FreeROI could run on multiple platforms, including:
 
 * ubuntu/debian
 * centos/redhat/fedora
-* max os x
+* mac osx
 * windows
 
 For windows users, an exectable version is
 `available <http://sourceforge.net/projects/freeroi/files/?source=navbar>`_.
 Unzip the package, double click *freeroi.exe* to run the program.
 
-For \*uix users, a guide about how to install is available on
+For other users, a guide about how to install is available on
 `FreeROI@Github <https://github.com/BNUCNL/FreeROI>`_.
 
 Also, we have created a google group for collaboration. If you hava any
-question about FreeROI, welcome join the group:
+question about FreeROI, just feel free to join the group:
 `nitk-user@googlegroups.com <https://groups.google.com/forum/#!forum/nitk-user>`_.
 
 
@@ -40,6 +38,20 @@ Manual
 
    user_manual.rst
    devel_manual.rst
+   changelog.rst
+
+Developers
+==========
+
+* `Lijie Huang <mailto:huanglijie.seal@gmail.com>`_
+* `Zetian Yang <mailto:zetian.yang@gmail.com>`_
+* Guangfu Zhou
+* Zhaoguo Liu
+* Xiaobin Dang
+
+We also thank the following for their contributing to this software:
+
+* `moloney <https://github.com/moloney>`_
 
 
 

@@ -39,8 +39,9 @@ class LabelConfig(object):
         with open(filepath, 'r') as f:
             for line in f:
                 line = line.split()
-                self.label_index[line[1]] = int(line[0])
-                self.label_color[line[1]] = QColor(int(line[2]), int(line[3]), int(line[4]))
+                if line:
+                    self.label_index[line[1]] = int(line[0])
+                    self.label_color[line[1]] = QColor(int(line[2]), int(line[3]), int(line[4]))
         return tmp_dict
 
     def dump(self):

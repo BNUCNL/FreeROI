@@ -75,12 +75,12 @@ by a few clicks, liberating users from complex command lines.
 
 #. Local Maxima Detection
 
-   This tool is used for extract local maxima from an image. The local maxima
-   could be used for defining ROIs with regular shape.
+   This tool is used for extract local peak/maxima from an image. The local 
+   peak could be used for defining ROIs with regular shape.
 
-   To extract the local maxima from an image, a least distance of local maximum
-   is needed. If the distance between two local maximum is less than this lower
-   bound, the smaller local maxima would be discarded.
+   To extract the local peak from an image, a least distance *min_distance*
+   is needed. Peaks are the local maxima in a region of 2 * *min_distance* + 1
+   (i.e. peaks are separated by at least *min_distance*).
 
    .. image:: imgs/local_max.png
 
