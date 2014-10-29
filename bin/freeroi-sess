@@ -50,7 +50,10 @@ def main():
                         help='specify the output volume name')
     args = parser.parse_args()
 
-    root_dir = '/usr/local/neurosoft/labtool/FreeROI/'
+    temp_path = os.path.dirname(os.path.join(os.getcwd(), __file__))
+    temp_path = temp_path.split('/')
+    temp_path.pop()
+    root_dir = '/'.join(temp_path)
     template_file = os.path.join(root_dir, 'froi', 'data', 'standard',
                                  'MNI152_T1_2mm_brain.nii.gz')
 
