@@ -694,12 +694,14 @@ class BpMainWindow(QMainWindow):
         else:
             temp_dir = self._temp_dir
         file_path = os.path.join(temp_dir,
-                                 str(self.model.data(index, Qt.DisplayRole))+'.nii.gz')
-        path = QFileDialog.getSaveFileName(
+                                  str(self.model.data(index, Qt.DisplayRole)))
+        path,filters = QFileDialog.getSaveFileNameAndFilter(
             self,
             'Save image as...',
             file_path,
-            'Nifti files (*.nii.gz *.nii)')
+            '.nii.gz;;.nii',)
+        #print path,filters
+        path=path+filters
         if not path.isEmpty():
             if sys.platform == 'win32':
                 path = unicode(path).encode('gb2312')
