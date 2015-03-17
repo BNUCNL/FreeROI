@@ -689,19 +689,22 @@ class BpMainWindow(QMainWindow):
 
         """
         index = self.model.currentIndex()
-        if self._temp_dir == None:
+        if not self._temp_dir:
             temp_dir = str(QDir.currentPath())
         else:
             temp_dir = self._temp_dir
         file_path = os.path.join(temp_dir,
                                   str(self.model.data(index, Qt.DisplayRole)))
-        path,filters = QFileDialog.getSaveFileNameAndFilter(
+        file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii)"
+        path,filter = QFileDialog.getSaveFileNameAndFilter(
             self,
             'Save image as...',
             file_path,
-            '.nii.gz;;.nii',)
-        #print path,filters
-        path=path+filters
+            file_types,)
+        if filter == 'NIFTI file(*.nii)':
+            path += '.nii'
+        else:
+            path += '.nii.gz'
         if not path.isEmpty():
             if sys.platform == 'win32':
                 path = unicode(path).encode('gb2312')
