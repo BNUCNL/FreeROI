@@ -7,6 +7,15 @@ Aims for long term evolution
 TO DO LIST
 ----------
 
+** Version: 0.2.3
+
+1. Add support for saving files as NIFTI file (nii)
+2. Add support for label management
+3. Add image registration tools (affine transformation)
+4. Add `Atlas reference` tools (ref: fslview)
+5. Update automatic methods for image segment
+-------------------------------------------------------------------------
+
 ** Version: 0.2.2
 
 1. Add a new function to calculate the size of a ROI
