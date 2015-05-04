@@ -30,6 +30,7 @@ from component.no_gui_tools import inverse_image
 from component.smoothingdialog import SmoothingDialog
 from component.growdialog import GrowDialog
 from component.watersheddialog import WatershedDialog
+from component.supervoxeldialog import SupervoxelDialog
 from component.clusterdialog import ClusterDialog
 from component.regularroidialog import RegularROIDialog
 from component.roi2gwmidialog import Roi2gwmiDialog
@@ -351,11 +352,19 @@ class BpMainWindow(QMainWindow):
 
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'watershed.png')),
+            self._icon_dir, 'watershed.png')),
                                              self.tr("Watershed"),
                                              self)
         self._actions['watershed'].triggered.connect(self._watershed)
         self._actions['watershed'].setEnabled(False)
+
+        # Supervoxel action
+        self._actions['supervoxel'] = QAction(QIcon(os.path.join(
+            self._icon_dir, 'supervoxel.png')),
+                                             self.tr("Supervoxel"),
+                                             self)
+        self._actions['supervoxel'].triggered.connect(self._supervoxel)
+        self._actions['supervoxel'].setEnabled(False)
 
         # Cluster action
         self._actions['cluster'] = QAction(QIcon(os.path.join(
@@ -793,6 +802,7 @@ class BpMainWindow(QMainWindow):
         segment_tools = self.tool_menu.addMenu(self.tr("Segmentation"))
         segment_tools.addAction(self._actions['region_grow'])
         segment_tools.addAction(self._actions['watershed'])
+        segment_tools.addAction(self._actions['supervoxel'])
         segment_tools.addAction(self._actions['cluster'])
         roi_tools = self.tool_menu.addMenu(self.tr("ROI Tools"))
         roi_tools.addAction(self._actions['edge_dete'])
@@ -1104,6 +1114,10 @@ class BpMainWindow(QMainWindow):
         new_dialog = WatershedDialog(self.model, self)
         new_dialog.exec_()
 
+    def _supervoxel(self):
+        new_dialog = SupervoxelDialog(self.model, self)
+        new_dialog.exec_()
+
     def _cluster(self):
         new_dialog = ClusterDialog(self.model)
         new_dialog.exec_()
@@ -1117,6 +1131,7 @@ class BpMainWindow(QMainWindow):
         self._actions['smoothing'].setEnabled(status)
         self._actions['region_grow'].setEnabled(status)
         self._actions['watershed'].setEnabled(status)
+        self._actions['supervoxel'].setEnabled(status)
         self._actions['cluster'].setEnabled(status)
         self._actions['opening'].setEnabled(status)
         self._actions['binarydilation'].setEnabled(status)
