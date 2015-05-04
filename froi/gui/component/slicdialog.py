@@ -7,21 +7,21 @@ from PyQt4.QtGui import *
 from froi.algorithm import segment
 from skimage.segmentation import slic
 
-class SupervoxelDialog(QDialog):
+class SLICDialog(QDialog):
     """
-    A dialog for supervoxel options
+    A dialog for SLIC options
 
     """
 
     def __init__(self, model, main_win, parent=None):
-        super(SupervoxelDialog, self).__init__(parent)
+        super(SLICDialog, self).__init__(parent)
         self._model = model 
         self._main_win = main_win
         self._init_gui()
         self._create_actions()
 
     def _init_gui(self):
-        self.setWindowTitle("Supervoxel")
+        self.setWindowTitle("SLIC")
         self.vol_combo = QComboBox()
         self.vol_combo.addItems(QStringList(self._model.getItemList()))
         row = self._model.currentIndex().row()
@@ -70,7 +70,7 @@ class SupervoxelDialog(QDialog):
     def _create_actions(self):
         self.vol_combo.currentIndexChanged.connect(self._create_output)
         self.slic_zero_checkbox.clicked.connect(self._disable_compactness)
-        self.run_button.clicked.connect(self._supervoxel)
+        self.run_button.clicked.connect(self._slic)
         self.cancel_button.clicked.connect(self.done)
 
     def _disable_compactness(self):
@@ -84,7 +84,7 @@ class SupervoxelDialog(QDialog):
         output_name = '_'.join([str(vol_name), 'sv'])
         self.out_edit.setText(output_name)
 
-    def _supervoxel(self):
+    def _slic(self):
         import numpy as np
         n_segments = self.n_segments_edit.text()
         compactness = self.compactness_edit.text()
