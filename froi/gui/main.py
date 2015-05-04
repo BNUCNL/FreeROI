@@ -194,7 +194,7 @@ class BpMainWindow(QMainWindow):
 
         # Open template action
         self._actions['add_template'] = QAction(QIcon(os.path.join(
-                                                        self._icon_dir, 'open.png')),
+                                                         self._icon_dir, 'open.png')),
                                                   self.tr("&Open standard volume"),
                                                   self)
         self._actions['add_template'].setShortcut(self.tr("Ctrl+O"))
@@ -212,7 +212,7 @@ class BpMainWindow(QMainWindow):
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
-                                                        self._icon_dir, 'remove.png')),
+                                                         self._icon_dir, 'remove.png')),
                                                   self.tr("&Remove volume"),
                                                   self)
         self._actions['remove_image'].setShortcut(self.tr("Ctrl+R"))
@@ -230,7 +230,7 @@ class BpMainWindow(QMainWindow):
 
         # Save image
         self._actions['save_image'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'save.png')),
+                                                      self._icon_dir, 'save.png')),
                                                 self.tr("&Save volume as..."),
                                                 self)
         self._actions['save_image'].setShortcut(self.tr("Ctrl+S"))
@@ -311,7 +311,7 @@ class BpMainWindow(QMainWindow):
 
         # Extract mean time course
         self._actions['meants'] = QAction(QIcon(os.path.join(
-                                                 self._icon_dir, 'voxel_curve.png')),
+                                                  self._icon_dir, 'voxel_curve.png')),
                                            self.tr("Extract Mean Time Course"),
                                            self)
         self._actions['meants'].triggered.connect(self._meants)
@@ -327,7 +327,7 @@ class BpMainWindow(QMainWindow):
 
         # Inversion action
         self._actions['inverse'] = QAction(QIcon(os.path.join(
-                                                  self._icon_dir, 'inverse.icon')),
+                                                   self._icon_dir, 'inverse.icon')),
                                              self.tr("Inversion"),
                                              self)
         self._actions['inverse'].triggered.connect(self._inverse)
@@ -343,7 +343,7 @@ class BpMainWindow(QMainWindow):
 
         # Region Growing action
         self._actions['region_grow'] = QAction(QIcon(os.path.join(
-                                                       self._icon_dir, 'grow.png')),
+                                                        self._icon_dir, 'grow.png')),
                                                  self.tr("Region Growing"),
                                                  self)
         self._actions['region_grow'].triggered.connect(self._region_grow)
