@@ -9,6 +9,7 @@ from PyQt4.QtGui import *
 from froi.gui.base.utils import *
 from growdialog import GrowDialog
 from watersheddialog import WatershedDialog
+from slicdialog import SLICDialog
 from clusterdialog import ClusterDialog
 from intersectdialog import IntersectDialog
 from localmaxdialog import LocalMaxDialog
@@ -48,6 +49,13 @@ class BasicWidget(QDialog):
                                                          'watershed.png')))
         self.watershed_button.setEnabled(True)
         self.watershed_button.setToolTip("Watershed")
+
+        self.slic_button = QPushButton()
+        self.slic_button.setFocusPolicy(Qt.NoFocus)
+        self.slic_button.setIcon(QIcon(os.path.join(self._icon_dir,
+                                                         'slic.png')))
+        self.slic_button.setEnabled(True)
+        self.slic_button.setToolTip("SLIC")
 
         self.cluster_button = QPushButton()
         self.cluster_button.setFocusPolicy(Qt.NoFocus)
@@ -94,12 +102,13 @@ class BasicWidget(QDialog):
         gridlayout = QGridLayout(self)
         gridlayout.addWidget(self.grow_button, 0, 0)
         gridlayout.addWidget(self.watershed_button, 0, 1)
-        gridlayout.addWidget(self.cluster_button, 0, 2)
-        gridlayout.addWidget(self.localmax_button, 1, 0)
-        gridlayout.addWidget(self.intersect_button, 1, 1)
-        gridlayout.addWidget(self.inverse_button, 1, 2)
-        gridlayout.addWidget(self.bin_button, 2, 0)
-        gridlayout.addWidget(self.smooth_button, 2, 1)
+        gridlayout.addWidget(self.slic_button, 0, 2)
+        gridlayout.addWidget(self.cluster_button, 1, 0)
+        gridlayout.addWidget(self.localmax_button, 1, 1)
+        gridlayout.addWidget(self.intersect_button, 1, 2)
+        gridlayout.addWidget(self.inverse_button, 2, 0)
+        gridlayout.addWidget(self.bin_button, 2, 1)
+        gridlayout.addWidget(self.smooth_button, 2, 2)
 
     def _create_actions(self):
         """
@@ -107,6 +116,7 @@ class BasicWidget(QDialog):
         """
         self.grow_button.clicked.connect(self._grow_clicked)
         self.watershed_button.clicked.connect(self._watershed_clicked)
+        self.slic_button.clicked.connect(self._slic_clicked)
         self.cluster_button.clicked.connect(self._cluster_clicked)
         self.localmax_button.clicked.connect(self._localmax_clicked)
         self.intersect_button.clicked.connect(self._intersect_clicked)
@@ -130,6 +140,15 @@ class BasicWidget(QDialog):
         """
         if self.watershed_button.isEnabled():
             new_dialog = WatershedDialog(self._model, self)
+            new_dialog.exec_()
+
+    def _slic_clicked(self):
+        """
+        supervoxel clicked
+
+        """
+        if self.slic_button.isEnabled():
+            new_dialog = SLICDialog(self._model, self)
             new_dialog.exec_()
 
     def _cluster_clicked(self):

@@ -30,6 +30,7 @@ from component.no_gui_tools import inverse_image
 from component.smoothingdialog import SmoothingDialog
 from component.growdialog import GrowDialog
 from component.watersheddialog import WatershedDialog
+from component.slicdialog import SLICDialog
 from component.clusterdialog import ClusterDialog
 from component.regularroidialog import RegularROIDialog
 from component.roi2gwmidialog import Roi2gwmiDialog
@@ -195,34 +196,34 @@ class BpMainWindow(QMainWindow):
 
         # Open template action
         self._actions['add_template'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'open.png')),
-                                            self.tr("&Open standard volume"),
-                                            self)
+                                                      self._icon_dir, 'open.png')),
+                                                self.tr("&Open standard volume"),
+                                                self)
         self._actions['add_template'].setShortcut(self.tr("Ctrl+O"))
         self._actions['add_template'].triggered.connect(self._add_template)
         self._actions['add_template'].setEnabled(True)
 
         # Add a new image action
         self._actions['add_image'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'add.png')),
-                                            self.tr("&Add volume"),
-                                            self)
+                                                   self._icon_dir, 'add.png')),
+                                             self.tr("&Add volume"),
+                                             self)
         self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
         self._actions['add_image'].triggered.connect(self._add_image)
         self._actions['add_image'].setEnabled(True)
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'remove.png')),
-                                            self.tr("&Remove volume"),
-                                            self)
+                                                      self._icon_dir, 'remove.png')),
+                                                self.tr("&Remove volume"),
+                                                self)
         self._actions['remove_image'].setShortcut(self.tr("Ctrl+R"))
         self._actions['remove_image'].triggered.connect(self._remove_image)
         self._actions['remove_image'].setEnabled(False)
 
         # New image
         self._actions['new_image'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'create.png')),
+                                                   self._icon_dir, 'create.png')),
                                              self.tr("&New volume"),
                                              self)
         self._actions['new_image'].setShortcut(self.tr("Ctrl+N"))
@@ -231,7 +232,7 @@ class BpMainWindow(QMainWindow):
 
         # Save image
         self._actions['save_image'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'save.png')),
+                                                    self._icon_dir, 'save.png')),
                                               self.tr("&Save volume as..."),
                                               self)
         self._actions['save_image'].setShortcut(self.tr("Ctrl+S"))
@@ -256,7 +257,7 @@ class BpMainWindow(QMainWindow):
 
         # Quit action
         self._actions['quit'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'quit.png')),
+                                              self._icon_dir, 'quit.png')),
                                         self.tr("&Quit"),
                                         self)
         self._actions['quit'].setShortcut(self.tr("Ctrl+Q"))
@@ -264,7 +265,7 @@ class BpMainWindow(QMainWindow):
 
         # Grid view action
         self._actions['grid_view'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'gridview.png')),
+                                                   self._icon_dir, 'gridview.png')),
                                              self.tr("Lightbox"),
                                              self)
         self._actions['grid_view'].triggered.connect(self._grid_view)
@@ -272,7 +273,7 @@ class BpMainWindow(QMainWindow):
 
         # Orth view action
         self._actions['orth_view'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'orthview.png')),
+                                                   self._icon_dir, 'orthview.png')),
                                              self.tr("Orthographic"),
                                              self)
         self._actions['orth_view'].triggered.connect(self._orth_view)
@@ -280,7 +281,7 @@ class BpMainWindow(QMainWindow):
 
         # return original size
         self._actions['original_view'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'original_size.png')),
+                                                       self._icon_dir, 'original_size.png')),
                                                  self.tr("Reset view"),
                                                  self)
         self._actions['original_view'].triggered.connect(self._reset_view)
@@ -288,16 +289,15 @@ class BpMainWindow(QMainWindow):
 
         # whether display the cross hover
         self._actions['cross_hover_view'] = QAction(QIcon(os.path.join(
-                                    self._icon_dir, 'cross_hover_enable.png')),
-                                                self.tr("Disable cross hover"),
-                                                self)
-        self._actions['cross_hover_view'].triggered.connect(
-                                            self._display_cross_hover)
+                                                          self._icon_dir, 'cross_hover_enable.png')),
+                                                    self.tr("Disable cross hover"),
+                                                    self)
+        self._actions['cross_hover_view'].triggered.connect(self._display_cross_hover)
         self._actions['cross_hover_view'].setEnabled(False)
 
         # Binaryzation view action
         self._actions['binarization'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'binarization.png')),
+                                                      self._icon_dir, 'binarization.png')),
                                                 self.tr("Binarization"),
                                                 self)
         self._actions['binarization'].triggered.connect(self._binarization)
@@ -305,15 +305,15 @@ class BpMainWindow(QMainWindow):
 
         # Intersection action
         self._actions['intersect'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'intersect.png')),
+                                                   self._icon_dir, 'intersect.png')),
                                              self.tr("Intersection"),
                                              self)
         self._actions['intersect'].triggered.connect(self._intersect)
         self._actions['intersect'].setEnabled(False)
 
         # Extract mean time course
-        self._actions['meants'] = QAction(QIcon(os.path.join(self._icon_dir,
-                                                            'voxel_curve.png')),
+        self._actions['meants'] = QAction(QIcon(os.path.join(
+                                                self._icon_dir, 'voxel_curve.png')),
                                           self.tr("Extract Mean Time Course"),
                                           self)
         self._actions['meants'].triggered.connect(self._meants)
@@ -327,23 +327,23 @@ class BpMainWindow(QMainWindow):
 
         # Local Max action
         self._actions['localmax'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'localmax.png')),
-                                             self.tr("Local Max"),
-                                             self)
+                                                  self._icon_dir, 'localmax.png')),
+                                            self.tr("Local Max"),
+                                            self)
         self._actions['localmax'].triggered.connect(self._local_max)
         self._actions['localmax'].setEnabled(False)
 
         # Inversion action
         self._actions['inverse'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'inverse.icon')),
-                                             self.tr("Inversion"),
-                                             self)
+                                                 self._icon_dir, 'inverse.icon')),
+                                           self.tr("Inversion"),
+                                           self)
         self._actions['inverse'].triggered.connect(self._inverse)
         self._actions['inverse'].setEnabled(False)
 
         # Smoothing action
         self._actions['smoothing'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'smoothing.png')),
+                                                   self._icon_dir, 'smoothing.png')),
                                              self.tr("Smoothing"),
                                              self)
         self._actions['smoothing'].triggered.connect(self._smooth)
@@ -351,25 +351,33 @@ class BpMainWindow(QMainWindow):
 
         # Region Growing action
         self._actions['region_grow'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'grow.png')),
-                                             self.tr("Region Growing"),
-                                             self)
+                                                     self._icon_dir, 'grow.png')),
+                                               self.tr("Region Growing"),
+                                               self)
         self._actions['region_grow'].triggered.connect(self._region_grow)
         self._actions['region_grow'].setEnabled(False)
 
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'watershed.png')),
+                                                   self._icon_dir, 'watershed.png')),
                                              self.tr("Watershed"),
                                              self)
         self._actions['watershed'].triggered.connect(self._watershed)
         self._actions['watershed'].setEnabled(False)
 
+        # SLIC action
+        self._actions['slic'] = QAction(QIcon(os.path.join(
+                                              self._icon_dir, 'slic.png')),
+                                        self.tr("SLIC"),
+                                        self)
+        self._actions['slic'].triggered.connect(self._slic)
+        self._actions['slic'].setEnabled(False)
+
         # Cluster action
         self._actions['cluster'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'cluster.png')),
-                                             self.tr("Cluster"),
-                                             self)
+                                                 self._icon_dir, 'cluster.png')),
+                                           self.tr("Cluster"),
+                                           self)
         self._actions['cluster'].triggered.connect(self._cluster)
         self._actions['cluster'].setEnabled(False)
 
@@ -379,26 +387,22 @@ class BpMainWindow(QMainWindow):
         self._actions['opening'].setEnabled(False)
 
         # Binary_erosion view action
-        self._actions['binaryerosion'] = QAction(self.tr("Binary Erosion"),
-                                                 self)
+        self._actions['binaryerosion'] = QAction(self.tr("Binary Erosion"), self)
         self._actions['binaryerosion'].triggered.connect(self._binaryerosion)
         self._actions['binaryerosion'].setEnabled(False)
 
         # Binary_dilation view action
-        self._actions['binarydilation'] = QAction(self.tr("Binary Dilation"),
-                                                  self)
+        self._actions['binarydilation'] = QAction(self.tr("Binary Dilation"), self)
         self._actions['binarydilation'].triggered.connect(self._binarydilation)
         self._actions['binarydilation'].setEnabled(False)
 
         # grey_erosion view action
-        self._actions['greyerosion'] = QAction(self.tr("Grey Erosion"),
-                                               self)
+        self._actions['greyerosion'] = QAction(self.tr("Grey Erosion"), self)
         self._actions['greyerosion'].triggered.connect(self._greyerosion)
         self._actions['greyerosion'].setEnabled(False)
 
         # grey_dilation view action
-        self._actions['greydilation'] = QAction(self.tr("Grey Dilation"),
-                                                self)
+        self._actions['greydilation'] = QAction(self.tr("Grey Dilation"), self)
         self._actions['greydilation'].triggered.connect(self._greydilation)
         self._actions['greydilation'].setEnabled(False)
 
@@ -408,14 +412,14 @@ class BpMainWindow(QMainWindow):
 
         # About Qt
         self._actions['about_qt'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'qt.png')),
+                                                  self._icon_dir, 'qt.png')),
                                             self.tr("About Qt"),
                                             self)
         self._actions['about_qt'].triggered.connect(qApp.aboutQt)
 
         # Hand
         self._actions['hand'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'hand.png')),
+                                              self._icon_dir, 'hand.png')),
                                         self.tr("Hand"),
                                         self)
         self._actions['hand'].triggered.connect(self._hand_enable)
@@ -425,7 +429,7 @@ class BpMainWindow(QMainWindow):
 
         # Cursor
         self._actions['cursor'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'cursor.png')),
+                                                self._icon_dir, 'cursor.png')),
                                           self.tr("Cursor"),
                                           self)
         self._actions['cursor'].triggered.connect(self._cursor_enable)
@@ -435,53 +439,56 @@ class BpMainWindow(QMainWindow):
 
         # Edit
         self._actions['edit'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'edit.png')),
-                                         self.tr("Edit"), self)
+                                              self._icon_dir, 'edit.png')),
+                                        self.tr("Edit"),
+                                        self)
         self._actions['edit'].triggered.connect(self._roidialog_enable)
         self._actions['edit'].setCheckable(True)
         self._actions['edit'].setChecked(False)
 
         # Undo
         self._actions['undo'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'undo.png')),
+                                              self._icon_dir, 'undo.png')),
                                         self.tr("Undo"),
                                         self)
         self._actions['undo'].triggered.connect(self._undo)
 
         # Redo
         self._actions['redo'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'redo.png')),
+                                              self._icon_dir, 'redo.png')),
                                         self.tr("Redo"),
                                         self)
         self._actions['redo'].triggered.connect(self._redo)
 
         # sphere and cube roi
         self._actions['regular_roi'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir,
-                                                'sphere_and_cube.png')),
-                                               self.tr("Regular ROI"), self)
+                                                     self._icon_dir, 'sphere_and_cube.png')),
+                                               self.tr("Regular ROI"),
+                                               self)
         self._actions['regular_roi'].triggered.connect(self._regular_roi)
         self._actions['regular_roi'].setEnabled(False)
 
         # ROI to Interface
         self._actions['r2i'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'r2i.png')),
-                                       self.tr("ROI2Interface"), self)
+                                             self._icon_dir, 'r2i.png')),
+                                       self.tr("ROI2Interface"),
+                                       self)
         self._actions['r2i'].triggered.connect(self._r2i)
         self._actions['r2i'].setEnabled(False)
 
         # Edge detection for ROI
         self._actions['edge_dete'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir,
-                                                'edge_detection.png')),
-                                             self.tr("Edge Detection"), self)
+                                                   self._icon_dir, 'edge_detection.png')),
+                                             self.tr("Edge Detection"),
+                                             self)
         self._actions['edge_dete'].triggered.connect(self._edge_detection)
         self._actions['edge_dete'].setEnabled(False)
 
         # ROI Merging
         self._actions['roi_merge'] = QAction(QIcon(os.path.join(
-                                                self._icon_dir, 'merging.png')),
-                                             self.tr("ROI Merging"), self)
+                                                   self._icon_dir, 'merging.png')),
+                                             self.tr("ROI Merging"),
+                                             self)
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
 
@@ -808,6 +815,7 @@ class BpMainWindow(QMainWindow):
         segment_tools = self.tool_menu.addMenu(self.tr("Segmentation"))
         segment_tools.addAction(self._actions['region_grow'])
         segment_tools.addAction(self._actions['watershed'])
+        segment_tools.addAction(self._actions['slic'])
         segment_tools.addAction(self._actions['cluster'])
         roi_tools = self.tool_menu.addMenu(self.tr("ROI Tools"))
         roi_tools.addAction(self._actions['edge_dete'])
@@ -1123,6 +1131,10 @@ class BpMainWindow(QMainWindow):
         new_dialog = WatershedDialog(self.model, self)
         new_dialog.exec_()
 
+    def _slic(self):
+        new_dialog = SLICDialog(self.model, self)
+        new_dialog.exec_()
+
     def _cluster(self):
         new_dialog = ClusterDialog(self.model, self)
         new_dialog.exec_()
@@ -1137,6 +1149,7 @@ class BpMainWindow(QMainWindow):
         self._actions['smoothing'].setEnabled(status)
         self._actions['region_grow'].setEnabled(status)
         self._actions['watershed'].setEnabled(status)
+        self._actions['slic'].setEnabled(status)
         self._actions['cluster'].setEnabled(status)
         self._actions['opening'].setEnabled(status)
         self._actions['binarydilation'].setEnabled(status)
