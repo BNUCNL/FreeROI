@@ -44,7 +44,7 @@ class LabelDialog(QDialog, DrawSettings):
         color_label = QLabel('Color:')
         label = str(self.combobox.currentText())
         if label:
-            self.color_button = ColorButton(self._label_config.get_current_label_color(label))
+            self.color_button = ColorButton(self._label_config_center.get_current_label_color(label))
         else:
             self.color_button = ColorButton()
 
@@ -74,7 +74,7 @@ class LabelDialog(QDialog, DrawSettings):
     
     def _update_combobox(self):
         self.combobox.clear()
-        label_list = self._label_config.get_current_label_list()
+        label_list = self._label_config_center.get_current_label_list()
         self.combobox.addItems(QStringList(label_list))
         #pass
 

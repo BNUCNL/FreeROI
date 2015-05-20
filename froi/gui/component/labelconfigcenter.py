@@ -196,16 +196,18 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         return index in self.get_current_label_config().label_index.values()
 
     def get_current_label_list(self):
-        return self.get_current_label_config().label_index.keys()
+        return self.get_all_labelconfig_names()
 
 
     def add_current_label(self, label, index=None, color=None):
         if index is None:
             index = self.new_index()
         if color is None:
-            color = default_color
+            color = self.default_color()
         if self.has_current_index(index):
             raise ValueError, 'Index already exists, choose another one'
+        if self.has_current_label(label):
+            raise ValueError, 'Label Name already exists, choose another one'
         self.get_current_label_config().label_index[label] = index
         self.get_current_label_config().label_color[label] = color
 

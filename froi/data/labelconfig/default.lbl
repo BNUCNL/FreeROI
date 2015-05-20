@@ -2,7 +2,7 @@
   2	region2                  	  0 255   0
   3	region3                  	  0   0 255
   4	region4                  	 23 220  60
-  5	region5                  	141  60  20
+  5	region5                  	255   0   0
   6	region6                  	 63 100  60
   7	region7                  	220 180 140
   8	region8                  	 13 140 250
@@ -13,3 +13,4 @@
  13	region13                 	 60  25  25
  14	region14                 	180  20  20
  15	region15                 	220  20 100
+ 16	SPL                      	  0  85 127
