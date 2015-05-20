@@ -125,6 +125,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
     def is_drawing_valid(self):
         return self.config_combobox.currentIndex() != 0
 
+
     def get_current_list_view_index(self):
         idx = self.config_combobox.currentIndex()
         if idx == 0:
@@ -178,8 +179,47 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         if self.is_drawing_valid():
             return self.label_configs[self.config_combobox.currentIndex() - 1]
 
-    def get_value_label(self, value):
+    def get_current_index_label(self, value):
         if not self.is_drawing_valid():
             return QString()
         return self.get_current_label_config().get_index_label(value)
 
+    def get_current_label_index(self, label):
+        if not self.is_drawing_valid():
+            return QString()
+        return self.get_current_label_config().get_label_index(label)
+
+    def has_current_label(self, label):
+        return label in self.get_all_labelconfig_names()
+
+    def has_current_index(self, index):
+        return index in self.get_current_label_config().label_index.values()
+
+    def get_current_label_list(self):
+        return self.get_all_labelconfig_names()
+
+
+    def add_current_label(self, label, index=None, color=None):
+        if index is None:
+            index = self.new_index()
+        if color is None:
+            color = self.default_color()
+        if self.has_current_index(index):
+            raise ValueError, 'Index already exists, choose another one'
+        if self.has_current_label(label):
+            raise ValueError, 'Label Name already exists, choose another one'
+        self.get_current_label_config().label_index[label] = index
+        self.get_current_label_config().label_color[label] = color
+
+    def get_current_label_color(self, label):
+        if label:
+            if self.has_current_label(label):
+                return self.get_current_label_config().label_color[label]
+
+    def current_save(self):
+        self.get_current_label_config().save()
+
+    def remove_current_label(self, label):
+        if self.has_current_label(label):
+            del self.get_current_label_config().label_index[label]
+            del self.get_current_label_config().label_color[label]

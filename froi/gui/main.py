@@ -37,6 +37,7 @@ from component.roi2gwmidialog import Roi2gwmiDialog
 from component.no_gui_tools import edge_detection
 from component.roimergedialog import ROIMergeDialog
 from component.opendialog import OpenDialog
+from component.labeldialog import LabelDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog
 from component.binaryerosiondialog import BinaryerosionDialog
@@ -356,6 +357,14 @@ class BpMainWindow(QMainWindow):
                                                self)
         self._actions['region_grow'].triggered.connect(self._region_grow)
         self._actions['region_grow'].setEnabled(False)
+
+        # Lable Management action
+        self._actions['label_management'] = QAction(QIcon(os.path.join(
+                                        self._icon_dir, 'intersect.png')),
+                                               self.tr("Label Management"),
+                                               self)
+        self._actions['label_management'].triggered.connect(self._label_manage)
+        self._actions['label_management'].setEnabled(False)
 
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
@@ -804,6 +813,7 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
+        self.tool_menu.addAction(self._actions['label_management'])
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -997,6 +1007,21 @@ class BpMainWindow(QMainWindow):
         new_dialog = VoxelStatsDialog(self.model, self)
         new_dialog.show()
 
+    def _label_edit_enable(self):
+        """
+        Label edit enabled.
+
+        """
+        self._label_config_center.set_is_roi_edit(True)
+        self.painter_status.set_draw_settings(self._label_config_center)
+        self.image_view.set_cursor(Qt.CrossCursor)
+        self.image_view.set_label_mouse_tracking(True)
+
+    def _label_manage(self):
+        label_dialog = LabelDialog(self.model, self._label_config_center, self)
+        label_dialog.label_edit_enabled.connect(self._label_edit_enable)
+        label_dialog.show()
+
     def _ld_lbl(self):
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Load Label File',
@@ -1157,6 +1182,7 @@ class BpMainWindow(QMainWindow):
         self._actions['greydilation'].setEnabled(status)
         self._actions['greyerosion'].setEnabled(status)
         self._actions['regular_roi'].setEnabled(status)
+        self._actions['label_management'].setEnabled(status)
         self._actions['r2i'].setEnabled(status)
         self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)

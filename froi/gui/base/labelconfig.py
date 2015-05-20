@@ -57,11 +57,14 @@ class LabelConfig(object):
         else:
             return 1
 
+    def default_color(self):
+        return QColor(255, 0, 0)
+
     def add_label(self, label, index=None, color=None):
         if index is None:
             index = self.new_index()
         if color is None:
-            color = default_color
+            color = self.default_color()
         if self.has_index(index):
             raise ValueError, 'Index already exists, choose another one'
         self.label_index[label] = index
