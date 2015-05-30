@@ -941,6 +941,7 @@ class BpMainWindow(QMainWindow):
         Initialize ROI Dialog
 
         """
+        self._actions['label_management'].setEnabled(False)
         self.roidialog = ROIDialog(self.model, self._label_config_center, self)
         self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
         self.roidialog.roi_edit_enabled.connect(self._roi_edit_enable)
@@ -1018,9 +1019,9 @@ class BpMainWindow(QMainWindow):
         self.image_view.set_label_mouse_tracking(True)
 
     def _label_manage(self):
-        label_dialog = LabelDialog(self.model, self._label_config_center, self)
-        label_dialog.label_edit_enabled.connect(self._label_edit_enable)
-        label_dialog.show()
+        self.label_dialog = LabelDialog(self.model, self._label_config_center, self)
+        self.label_dialog.label_edit_enabled.connect(self._label_edit_enable)
+        self.label_dialog.exec_()
 
     def _ld_lbl(self):
         file_name = QFileDialog.getOpenFileName(self,
