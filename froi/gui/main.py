@@ -38,6 +38,7 @@ from component.no_gui_tools import edge_detection
 from component.roimergedialog import ROIMergeDialog
 from component.opendialog import OpenDialog
 from component.labeldialog import LabelDialog
+from component.labelmanagedialog import LabelManageDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog
 from component.binaryerosiondialog import BinaryerosionDialog
@@ -1019,9 +1020,9 @@ class BpMainWindow(QMainWindow):
         self.image_view.set_label_mouse_tracking(True)
 
     def _label_manage(self):
-        self.label_dialog = LabelDialog(self.model, self._label_config_center, self)
-        self.label_dialog.label_edit_enabled.connect(self._label_edit_enable)
-        self.label_dialog.exec_()
+        self.label_manage_dialog = LabelManageDialog(self.model, self.label_configs, self)
+        self.label_manage_dialog.label_edit_enabled.connect(self._label_edit_enable)
+        self.label_manage_dialog.exec_()
 
     def _ld_lbl(self):
         file_name = QFileDialog.getOpenFileName(self,

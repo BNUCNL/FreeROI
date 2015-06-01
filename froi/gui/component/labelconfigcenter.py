@@ -33,6 +33,9 @@ class ConfigLabelModel(QAbstractListModel):
         if role == Qt.UserRole:
             return self._label_index[row][0]
 
+    def removeRow(self, index):
+        del self._label_index[index]
+
 class LabelConfigCenter(QGroupBox, DrawSettings):
     """
     A Qwidget for label config chooser.
