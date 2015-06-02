@@ -13,6 +13,7 @@ from PyQt4.QtGui import *
 from ..base.labelconfig import LabelConfig
 from toolstabwidget import ToolsTabWidget
 from basicwidget import BasicWidget
+from atlastabwidget import AtlasTabWidget
 from froi.gui.base.utils import *
 
 class LayerView(QWidget):
@@ -159,9 +160,11 @@ class LayerView(QWidget):
         self._unity_tabwidget = QTabWidget()
         self.basic_widget = BasicWidget(self._model, self)
         self.ROItools_widget = ToolsTabWidget(self._model, self)
+        self.Atlas_widget = AtlasTabWidget(self._model, self)
 
         self._unity_tabwidget.addTab(self.basic_widget, "Basic")
         self._unity_tabwidget.addTab(self.ROItools_widget, "ROI")
+        self._unity_tabwidget.addTab(self.Atlas_widget, "Atlas")
 
         hlayout = QHBoxLayout(self._unity_info_panel)
         hlayout.addWidget(self._unity_tabwidget)
