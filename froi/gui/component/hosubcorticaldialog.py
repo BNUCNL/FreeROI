@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from PyQt4.QtGui import *
+import nibabel as nib
 from froi.io.xml_api import *
 
 
@@ -15,6 +16,7 @@ class HOsubcorticalDialog(QDialog):
         self._model = model
         self._main_win = main_win
         self._init_gui()
+
 
     def _init_gui(self):
         """
@@ -38,10 +40,10 @@ class HOsubcorticalDialog(QDialog):
         atlas_label.setFont(QFont("Roman times", 10, QFont.Bold))
 
         prob_label = QLabel()
-        string = '38% Lateral Occipital Cortex'+'\n'
-        string += '13% Occipital Pole'+'\n'
-        string += '5% Occipital Fusiform Gyrus'+'\n'
-        prob_label.setText(string)
+        prob_list = extract_atlasprob('HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
+        label_list = xmlread_labellist('HarvardOxford-Subcortical.xml','label')
+        display = sorting(label_list, prob_list)
+        prob_label.setText(display)
 
 
         # layout config
