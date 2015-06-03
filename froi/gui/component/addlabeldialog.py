@@ -7,20 +7,19 @@ class AddLabelDialog(QDialog):
     A dialog for adding a new label.
 
     """
-    def __init__(self, label_config, parent=None):
+    def __init__(self, parent=None, edit_label=None):
         super(AddLabelDialog, self).__init__(parent)
-        self._label_config = label_config
-
+        self._edit_label = edit_label
+        self._new_label = []
         self._init_gui()
         self._create_actions()
 
     def _init_gui(self):
-        self.setWindowTitle("Add a new label")
         label_label = QLabel("Label")
         self.label_edit = QLineEdit()
         index_label = QLabel("Index")
         self.index_edit = QLineEdit()
-        #self.index_edit.setText(str(self._label_config.new_index()))
+        self.index_edit.setEnabled(self._edit_label is None)
         color_label = QLabel("Color")
         self.color_button = ColorButton()
 
@@ -45,6 +44,12 @@ class AddLabelDialog(QDialog):
 
         self.setLayout(vbox_layout)
 
+        if self._edit_label:
+            self.index_edit.setText(self._edit_label[0])
+            self.label_edit.setText(self._edit_label[1])
+            self.color_button._set_current_color(self._edit_label[2])
+            self.add_button.setText("Edit")
+
     def _create_actions(self):
         self.add_button.clicked.connect(self._add_label)
         self.cancel_button.clicked.connect(self.done)
@@ -68,27 +73,14 @@ class AddLabelDialog(QDialog):
             QMessageBox.critical(self, "Color invalid",
                                  "Please choose a valid color for your label.")
             return
-
-        if self._label_config.has_current_label(label):
-            button = QMessageBox.warning(self, "Label exists!",
-                                         "The label you input already exists, if you change its "
-                                         "index, the old voxel valuse you've write won't be "
-                                         "updated. Are you sure that you "
-                                         "want to overwrite its settings?",
-                                         QMessageBox.Yes,
-                                         QMessageBox.No)
-            if button != QMessageBox.Yes:
-                self.label_edit.setFocus()
-                return
-            self._label_config.remove_label(label)
-        if self._label_config.has_current_index(index):
-            QMessageBox.critical(self, "Index exists!",
-                                 "The index you input already exists, you must choose"
-                                 " another index!")
-            self.index_edit.setFocus()
-            return
-        self._label_config.add_current_label(label, index, color)
+        self._new_label.append(index)
+        self._new_label.append(str(label))
+        self._new_label.append(color)
         self.done(0)
+
+    def get_new_label(self):
+        if self._new_label:
+            return self._new_label
 
 class ColorButton(QPushButton):
     """
@@ -101,18 +93,19 @@ class ColorButton(QPushButton):
 
     def __init__(self, init_color=None, parent=None):
         super(ColorButton, self).__init__(parent)
-        if init_color is None:
+        if not init_color:
             init_color = self.default_color
         self.current_color = init_color
         self._update_icon()
         self.clicked.connect(self._choose_color)
 
     def _update_icon(self):
-        icon_image = QImage(self.icon_size, QImage.Format_RGB888)
-        icon_image.fill(self.current_color.rgb())
-        icon_image = icon_image.rgbSwapped()
-        icon_pm = QPixmap.fromImage(icon_image)
-        self.setIcon(QIcon(icon_pm))
+        if self.current_color:
+            icon_image = QImage(self.icon_size, QImage.Format_RGB888)
+            icon_image.fill(self.current_color.rgb())
+            icon_image = icon_image.rgbSwapped()
+            icon_pm = QPixmap.fromImage(icon_image)
+            self.setIcon(QIcon(icon_pm))
 
     def _choose_color(self):
         color = QColorDialog.getColor(self.current_color, self)

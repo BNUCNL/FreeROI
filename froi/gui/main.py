@@ -1020,7 +1020,8 @@ class BpMainWindow(QMainWindow):
         self.image_view.set_label_mouse_tracking(True)
 
     def _label_manage(self):
-        self.label_manage_dialog = LabelManageDialog(self.model, self.label_configs, self)
+        self.label_manage_dialog = LabelManageDialog(self.model, self.label_configs, self.label_config_dir,
+                                                     self.label_config_suffix, self)
         self.label_manage_dialog.label_edit_enabled.connect(self._label_edit_enable)
         self.label_manage_dialog.exec_()
 

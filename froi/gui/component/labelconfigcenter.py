@@ -33,8 +33,19 @@ class ConfigLabelModel(QAbstractListModel):
         if role == Qt.UserRole:
             return self._label_index[row][0]
 
+    def insertRow(self, index_row, index, label):
+        self._label_index.append((label, index))
+        self.dataChanged.emit(index_row, index_row)
+
     def removeRow(self, index):
-        del self._label_index[index]
+        del self._label_index[index.row()]
+        self.dataChanged.emit(index, index)
+
+    def editRow(self, index, label):
+        current_index = self._label_index[index.row()][1]
+        del self._label_index[index.row()]
+        self._label_index.insert(index.row(), (label, current_index))
+        self.dataChanged.emit(index, index)
 
 class LabelConfigCenter(QGroupBox, DrawSettings):
     """

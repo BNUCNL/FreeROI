@@ -36,7 +36,7 @@ class LabelConfig(object):
 
     def load(self, filepath):
         tmp_dict = collections.OrderedDict()
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r+') as f:
             for line in f:
                 line = line.split()
                 if line:
@@ -46,10 +46,13 @@ class LabelConfig(object):
 
     def dump(self):
         if hasattr(self, 'filepath'):
-            with open(self.filepath, 'w') as f:
+            with open(self.filepath, 'r+') as f:
                 for label in self.label_index:
                     color = self.label_color[label]
                     f.write('%3d\t%-25s\t%3d %3d %3d\n' % (self.label_index[label], label, color.red(), color.green(), color.blue()))
+
+    def get_filepath(self):
+        return self.filepath
 
     def new_index(self):
         if self.label_index:
@@ -74,6 +77,13 @@ class LabelConfig(object):
         if self.has_label(label):
             del self.label_index[label]
             del self.label_color[label]
+
+    def edit_label(self, old_label, label, color):
+        if self.has_label(old_label):
+            self.label_index[label] = self.get_label_index(old_label)
+            self.label_color[label] = color
+            if old_label != label:
+                del self.label_index[old_label]
 
     def has_label(self, label):
         return label in self.label_index.keys()

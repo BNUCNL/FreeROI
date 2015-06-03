@@ -8,7 +8,6 @@ from drawsettings import DrawSettings
 from addlabeldialog import *
 from labelconfigcenter import ConfigLabelModel
 
-
 class LabelEditDialog(QDialog, DrawSettings):
     """
     A dialog window for label selection.
@@ -64,31 +63,19 @@ class LabelEditDialog(QDialog, DrawSettings):
         self.del_label.clicked.connect(self._del_label)
         self.edit_label.clicked.connect(self._edit_label)
 
-    def _update_items(self):
-        """
-        Add items for combo box.
-
-        """
-        index = self._model.currentIndex()
-        label_pairs = self._model.data(index, Qt.UserRole + 4)
-        label_names = label_pairs.keys()
-        self.combobox.clear()
-        self.combobox.addItems(label_names)
-
-    def _update_label_color(self, color):
-        label = str(self.combobox.currentText())
-        if label:
-            self._label_config.update_label_color(label, color)
-            self.color_changed.emit()
-        
     def _add_label(self):
         """
         Add a new label.
 
         """
-        add_dialog = AddLabelDialog(self._label_config)
+        add_dialog = AddLabelDialog(self)
+        add_dialog.setWindowTitle("Add a new label")
         add_dialog.exec_()
-        self._update_combobox()
+        new_label = add_dialog.get_new_label()
+        if new_label:
+            self._label_model.insertRow(self.list_view.currentIndex(), new_label[0], new_label[1])
+            self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
+            self._label_configs.save()
 
     def _del_label(self):
         """
@@ -104,19 +91,27 @@ class LabelEditDialog(QDialog, DrawSettings):
                  QMessageBox.Yes,
                 QMessageBox.No)
         if button == QMessageBox.Yes:
-            print 'index: ', self._label_configs.get_label_index(str(label))
-            self._label_model.removeRow(self.list_view.currentIndex().row())
+            self._label_model.removeRow(self.list_view.currentIndex())
             self._label_configs.remove_label(str(label))
             self._label_configs.save()
 
     def _edit_label(self):
-        self._label_config.current_save()
+        item_text = self.list_view.currentIndex().data().toString().split(' ')
+        index = str(item_text[0])
+        label = str(item_text[1])
+        print 'color: ', self._label_configs.get_label_color(label)
+        add_dialog = AddLabelDialog(self, (index, label, self._label_configs.get_label_color(label)))
+        add_dialog.setWindowTitle("Edit the label")
+        add_dialog.exec_()
+        edit_label = add_dialog.get_new_label()
+
+        if edit_label:
+            self._label_model.editRow(self.list_view.currentIndex(), edit_label[1])
+            self._label_configs.edit_label(label, edit_label[1], edit_label[2])
+            self._label_configs.save()
 
     def _save_label(self):
         self._label_config.current_save()
-        
-    def is_valid_label(self):
-        return self.combobox.currentText()
 
 
 
