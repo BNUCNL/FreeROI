@@ -48,7 +48,8 @@ class LabelManageDialog(QDialog, DrawSettings):
         self.list_view_model = QStandardItemModel(self.list_view)
         # list_view_model.appendRow(QStandardItem("None"))
         for x in self._label_configs:
-            self.list_view_model.appendRow(QStandardItem(x.get_name()))
+            self.list_view_model.appendRow(QStandardItem(QIcon(os.path.join( 'G:/github/FreeROI/froi/gui/icon/',
+                                                                             'logo.png')),  x.get_name()))
         self.list_view.setModel(self.list_view_model)
 
         self.add_label = QPushButton('Add')
@@ -66,13 +67,6 @@ class LabelManageDialog(QDialog, DrawSettings):
 
         self.setLayout(vbox_layout)
 
-    def _update_combobox(self):
-        self.combobox.clear()
-        # label_list = self._label_config_center.get_current_label_list()
-        # self.combobox.addItems(QStringList(label_list))
-        # self._label_config_center._update_labels()
-        #pass
-
     def _create_actions(self):
         """
         Create some actions.
@@ -81,17 +75,6 @@ class LabelManageDialog(QDialog, DrawSettings):
         self.add_label.clicked.connect(self._add_label)
         self.del_label.clicked.connect(self._del_label)
         self.edit_label.clicked.connect(self._edit_label)
-
-    def _update_items(self):
-        """
-        Add items for combo box.
-
-        """
-        index = self._model.currentIndex()
-        label_pairs = self._model.data(index, Qt.UserRole + 4)
-        label_names = label_pairs.keys()
-        self.combobox.clear()
-        self.combobox.addItems(label_names)
 
     def _update_label_color(self, color):
         label = str(self.combobox.currentText())
@@ -119,14 +102,11 @@ class LabelManageDialog(QDialog, DrawSettings):
             self._label_model = map(ConfigLabelModel, self._label_configs)
             self.list_view_model.appendRow(QStandardItem(new_label_group_name))
 
-
     def _del_label(self):
         """
         Delete a existing label.
 
         """
-        print 'row: ', self.list_view.currentIndex().row()
-        print 'filepath:  ', self._label_configs[self.list_view.currentIndex().row()].get_filepath()
         os.remove(self._label_configs[self.list_view.currentIndex().row()].get_filepath())
         del self._label_configs[self.list_view.currentIndex().row()]
         self.list_view_model.removeRow(self.list_view.currentIndex().row())

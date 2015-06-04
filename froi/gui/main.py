@@ -37,7 +37,6 @@ from component.roi2gwmidialog import Roi2gwmiDialog
 from component.no_gui_tools import edge_detection
 from component.roimergedialog import ROIMergeDialog
 from component.opendialog import OpenDialog
-from component.labeldialog import LabelDialog
 from component.labelmanagedialog import LabelManageDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog

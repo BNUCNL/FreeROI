@@ -6,7 +6,6 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 from addlabeldialog import *
-from labelconfigcenter import ConfigLabelModel
 
 class LabelEditDialog(QDialog, DrawSettings):
     """
@@ -83,9 +82,7 @@ class LabelEditDialog(QDialog, DrawSettings):
 
         """
         item_text = self.list_view.currentIndex().data().toString().split(' ')
-        index = item_text[0]
         label = item_text[1]
-        print 'label: ', label
         button = QMessageBox.warning(self, "Delete label",
                 "Are you sure that you want to delete label %s ?" % label,
                  QMessageBox.Yes,
@@ -99,7 +96,6 @@ class LabelEditDialog(QDialog, DrawSettings):
         item_text = self.list_view.currentIndex().data().toString().split(' ')
         index = str(item_text[0])
         label = str(item_text[1])
-        print 'color: ', self._label_configs.get_label_color(label)
         add_dialog = AddLabelDialog(self, (index, label, self._label_configs.get_label_color(label)))
         add_dialog.setWindowTitle("Edit the label")
         add_dialog.exec_()
