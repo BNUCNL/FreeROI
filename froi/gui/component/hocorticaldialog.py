@@ -5,13 +5,13 @@ from PyQt4.QtGui import *
 from froi.io.xml_api import *
 
 
-class HOsubcorticalDialog(QDialog):
+class HOCorticalDialog(QDialog):
     """
-    A dialog for action of Harvard-Oxford SubCortical Atlas.
+    A dialog for action of Harvard-Oxford Cortical Atlas.
 
     """
     def __init__(self, model, main_win, parent=None):
-        super(HOsubcorticalDialog, self).__init__(parent)
+        super(HOCorticalDialog, self).__init__(parent)
         self._model = model
         self._main_win = main_win
         self._init_gui()
@@ -35,12 +35,12 @@ class HOsubcorticalDialog(QDialog):
         y_label = QLabel("y: "+ str(xyz[1]))
         z_label = QLabel("z: "+ str(xyz[2]))
 
-        atlas_label = QLabel("Harvard-Oxford SubCortical Structural Atlas")
+        atlas_label = QLabel("Harvard-Oxford Cortical Structural Atlas")
         atlas_label.setFont(QFont("Roman times", 10, QFont.Bold))
 
         prob_label = QLabel()
-        prob_list = extract_atlasprob('HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
-        label_list = xmlread_labellist('HarvardOxford-Subcortical.xml','label')
+        prob_list = extract_atlasprob('HarvardOxford-cort-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
+        label_list = xmlread_labellist('HarvardOxford-Cortical.xml','label')
         display = sorting(label_list, prob_list)
         prob_label.setText(display)
 

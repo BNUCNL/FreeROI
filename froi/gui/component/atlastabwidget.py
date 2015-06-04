@@ -7,6 +7,7 @@ from PyQt4.QtGui import *
 
 from froi.gui.base.utils import *
 from hosubcorticaldialog import HOsubcorticalDialog
+from hocorticaldialog import HOCorticalDialog
 
 class AtlasTabWidget(QDialog):
     """
@@ -50,6 +51,7 @@ class AtlasTabWidget(QDialog):
         Create actions about the button
         """
         self.HOsubcortical_button.clicked.connect(self._HOsubcortical_clicked)
+        self.HOcortical_button.clicked.connect(self._HOcortical_clicked)
 
 
     def _HOsubcortical_clicked(self):
@@ -60,3 +62,10 @@ class AtlasTabWidget(QDialog):
             new_dialog = HOsubcorticalDialog(self._model, self._main_win)
             new_dialog.exec_()
 
+    def _HOcortical_clicked(self):
+        '''
+        Harvard-Oxford Cortical clicked
+        '''
+        if self.HOcortical_button.isEnabled():
+            new_dialog = HOCorticalDialog(self._model, self._main_win)
+            new_dialog.exec_()

@@ -58,6 +58,9 @@ def sorting(labellist, problist):
         if (problist[i] != 0):
             plist.append(problist[i])
             llist.append(labellist[i])
+    if (len(plist)==0):
+        result = 'No Labels\n'
+        return result
     for i in range(len(plist)):
         for j in range(i+1,len(plist)):
             if (plist[i]<plist[j]):
