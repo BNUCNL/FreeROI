@@ -24,8 +24,7 @@ def xmlread_labellist(xmlname, tagname):
 
     """
     labellist = []
-    path = os.getcwd()
-    parent_path = os.path.dirname(path)
+    parent_path = os.path.dirname(os.getcwd())
     tar_path = parent_path+'/froi/data/atlas/'
     dom=xml.dom.minidom.parse(tar_path + xmlname)
     root = dom.documentElement
@@ -39,8 +38,7 @@ def extract_atlasprob(image, x, y, z):
     extract atlas probability values according to coordinate.
 
     """
-    path = os.getcwd()
-    parent_path = os.path.dirname(path)
+    parent_path = os.path.dirname(os.getcwd())
     tar_path = parent_path+'/froi/data/atlas/'
     atlas = nib.load(tar_path + image)
     atlasdata = atlas.get_data()
@@ -55,7 +53,16 @@ def sorting(labellist, problist):
     if (len(labellist)!=len(problist)):
         raise 'the length of label and value can not match'
     result = ''
+    plist, llist = [], []
     for i in range(len(problist)):
         if (problist[i] != 0):
-            result += (str(problist[i])+' '+labellist[i]+'\n')
+            plist.append(problist[i])
+            llist.append(labellist[i])
+    for i in range(len(plist)):
+        for j in range(i+1,len(plist)):
+            if (plist[i]<plist[j]):
+                plist[i], plist[j] = plist[j], plist[i]
+                llist[i], llist[j] = llist[j], llist[i]
+    for i in range(len(plist)):
+        result += (str(plist[i])+' '+llist[i]+'\n')
     return result
