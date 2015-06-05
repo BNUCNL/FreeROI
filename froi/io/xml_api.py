@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+import operator
 import xml.dom.minidom
 import nibabel as nib
 
@@ -47,19 +48,15 @@ def sorting(labellist, problist):
     if (len(labellist)!=len(problist)):
         raise 'the length of label and value can not match'
     result = ''
-    plist, llist = [], []
+    outputlist = []
     for i in range(len(problist)):
         if (problist[i] != 0):
-            plist.append(problist[i])
-            llist.append(labellist[i])
-    if (len(plist)==0):
+            outputlist.append([problist[i],labellist[i]])
+    if (len(outputlist)==0):
         result = 'No Labels\n'
         return result
-    for i in range(len(plist)):
-        for j in range(i+1,len(plist)):
-            if (plist[i]<plist[j]):
-                plist[i], plist[j] = plist[j], plist[i]
-                llist[i], llist[j] = llist[j], llist[i]
-    for i in range(len(plist)):
-        result += (str(plist[i])+' '+llist[i]+'\n')
+    outputlist = sorted(outputlist, key= operator.itemgetter(0))
+    outputlist.reverse()
+    for i in range(len(outputlist)):
+        result += (str(outputlist[i][0])+' '+outputlist[i][1]+'\n')
     return result
