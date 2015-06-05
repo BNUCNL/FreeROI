@@ -5,42 +5,36 @@ import os
 import xml.dom.minidom
 import nibabel as nib
 
-def xmlread_label(xmlname, tagname, index):
+def xmlread_label(prefix, xmlname, tagname, index):
     """
     read specific label from xml file according to tag and index.
 
     """
-    parent_path = os.path.dirname(os.getcwd())
-    tar_path = parent_path+'/froi/data/atlas/'
-    dom=xml.dom.minidom.parse(tar_path + xmlname)
+    dom=xml.dom.minidom.parse(prefix + xmlname)
     root = dom.documentElement
     tags = root.getElementsByTagName(tagname)
     tag = tags[index]
     return tag.firstChild.data
 
-def xmlread_labellist(xmlname, tagname):
+def xmlread_labellist(prefix, xmlname, tagname):
     """
     read specific label list from xml file according to tag.
 
     """
     labellist = []
-    parent_path = os.path.dirname(os.getcwd())
-    tar_path = parent_path+'/froi/data/atlas/'
-    dom=xml.dom.minidom.parse(tar_path + xmlname)
+    dom=xml.dom.minidom.parse(prefix + xmlname)
     root = dom.documentElement
     tags = root.getElementsByTagName(tagname)
     for i in range(len(tags)):
         labellist.append(tags[i].firstChild.data)
     return labellist
 
-def extract_atlasprob(image, x, y, z):
+def extract_atlasprob(prefix, image, x, y, z):
     """
     extract atlas probability values according to coordinate.
 
     """
-    parent_path = os.path.dirname(os.getcwd())
-    tar_path = parent_path+'/froi/data/atlas/'
-    atlas = nib.load(tar_path + image)
+    atlas = nib.load(prefix + image)
     atlasdata = atlas.get_data()
     problist = atlasdata[x, y, z, :]/100.0
     return problist

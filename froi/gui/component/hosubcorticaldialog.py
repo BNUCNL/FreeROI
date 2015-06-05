@@ -1,6 +1,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
+import os
 from PyQt4.QtGui import *
 from froi.io.xml_api import *
 
@@ -39,8 +40,10 @@ class HOsubcorticalDialog(QDialog):
         atlas_label.setFont(QFont("Roman times", 10, QFont.Bold))
 
         prob_label = QLabel()
-        prob_list = extract_atlasprob('HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
-        label_list = xmlread_labellist('HarvardOxford-Subcortical.xml','label')
+        parent_path = os.path.dirname(os.getcwd())
+        tar_path = parent_path+'/froi/data/atlas/'
+        prob_list = extract_atlasprob(tar_path, 'HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
+        label_list = xmlread_labellist(tar_path, 'HarvardOxford-Subcortical.xml','label')
         display = sorting(label_list, prob_list)
         prob_label.setText(display)
 
