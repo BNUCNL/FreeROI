@@ -42,8 +42,8 @@ class HOsubcorticalDialog(QDialog):
         prob_label = QLabel()
         parent_path = os.path.dirname(os.getcwd())
         tar_path = parent_path+'/froi/data/atlas/'
-        prob_list = extract_atlasprob(tar_path, 'HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
-        label_list = xmlread_labellist(tar_path, 'HarvardOxford-Subcortical.xml','label')
+        prob_list = extract_atlasprob(tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
+        label_list = get_info(tar_path+'HarvardOxford-Subcortical.xml','label')
         display = sorting(label_list, prob_list)
         prob_label.setText(display)
 
