@@ -64,7 +64,7 @@ def sorting(labellist, problist):
     dic = dict(zip(labellist, problist))
     dic = dict(filter(lambda  x:x[1] != 0, dic.items()))
     if (not dic):
-        result = 'No Labels\n'
+        result = 'No label found!\n'
         return result
     dic = OrderedDict(sorted(dic.items(), key=lambda t:t[1], reverse=True))
     for i in range(len(dic)):

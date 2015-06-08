@@ -6,6 +6,37 @@ from PyQt4.QtGui import *
 from froi.io.xml_api import *
 
 
+def atlas_display(self, atlas_name, niftil_path, xml_path):
+    """
+    The layout display for a single atlas information.
+
+    Parameters
+    ----------
+    atlas_name:
+        The atlas name for display with bold font.
+    niftil_path:
+        The path of niftil file which including the niftil file name.
+    xml_path:
+        The path of xml file which including the xml file name.
+
+    """
+    xyz = self._model.get_cross_pos()
+
+    atlas_label = QLabel(atlas_name)
+    atlas_label.setFont(QFont("Roman times", 10, QFont.Bold))
+
+    prob_label = QLabel()
+    prob_list = extract_atlasprob(niftil_path, xyz[0], xyz[1], xyz[2])
+    label_list = get_info(xml_path, 'label')
+    display = sorting(label_list, prob_list)
+    prob_label.setText(display)
+
+    vbox_layout = QVBoxLayout()
+    vbox_layout.addWidget(atlas_label)
+    vbox_layout.addWidget(prob_label)
+    return vbox_layout
+
+
 class HOsubcorticalDialog(QDialog):
     """
     A dialog for action of Harvard-Oxford SubCortical Atlas.
@@ -16,6 +47,7 @@ class HOsubcorticalDialog(QDialog):
         self._model = model
         self._main_win = main_win
         self._init_gui()
+        self._create_actions()
 
 
     def _init_gui(self):
@@ -24,42 +56,55 @@ class HOsubcorticalDialog(QDialog):
 
         """
         # set dialog title
-        self.setWindowTitle("Atlas")
-
-        # initialize widgets
-        xyz = self._model.get_cross_pos()
-        self.source_combo = QComboBox()
-        cord_label = QLabel("Coordinate")
-        cord_label.setFont(QFont("Roman times", 10, QFont.Bold))
-
-        x_label = QLabel("x: "+ str(xyz[0]))
-        y_label = QLabel("y: "+ str(xyz[1]))
-        z_label = QLabel("z: "+ str(xyz[2]))
-
-        atlas_label = QLabel("Harvard-Oxford SubCortical Structural Atlas")
-        atlas_label.setFont(QFont("Roman times", 10, QFont.Bold))
-
-        prob_label = QLabel()
+        self.setWindowTitle("Atlas Information")
         parent_path = os.path.dirname(os.getcwd())
         tar_path = parent_path+'/froi/data/atlas/'
-        prob_list = extract_atlasprob(tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', xyz[0], xyz[1], xyz[2])
-        label_list = get_info(tar_path+'HarvardOxford-Subcortical.xml','label')
-        display = sorting(label_list, prob_list)
-        prob_label.setText(display)
 
+        # initialize widgets
+        self.source_combo = QComboBox()
+        layout1 = atlas_display(self, 'Harvard-Oxford SubCortical Structural Atlas',\
+                                tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', tar_path+'HarvardOxford-Subcortical.xml')
+        layout2 = atlas_display(self, 'Harvard-Oxford Cortical Structural Atlas', \
+                                tar_path+'HarvardOxford-cort-prob-2mm.nii.gz', tar_path+'HarvardOxford-Cortical.xml')
 
-        # layout config
+        self.help_button = QPushButton("Help")
+        self.set_button = QPushButton("Setting")
         grid_layout = QGridLayout()
-        grid_layout.addWidget(x_label, 0, 0)
-        grid_layout.addWidget(y_label, 0, 1)
-        grid_layout.addWidget(z_label, 0, 2)
-
+        grid_layout.addWidget(self.help_button,0,0)
+        grid_layout.addWidget(self.set_button,0,1)
 
         vbox_layout = QVBoxLayout()
-        vbox_layout.addWidget(cord_label)
+        vbox_layout.addLayout(layout1)
+        vbox_layout.addLayout(layout2)
         vbox_layout.addLayout(grid_layout)
-        vbox_layout.addWidget(atlas_label)
-        vbox_layout.addWidget(prob_label)
 
         self.setLayout(vbox_layout)
 
+
+    def _create_actions(self):
+        """
+        Create actions about the button
+        """
+        self.help_button.clicked.connect(self._help_dialog)
+        self.set_button.clicked.connect(self._set_dialog)
+
+
+    def _set_dialog(self):
+        '''
+        Setting clicked
+        '''
+        if self.set_button.isEnabled():
+            self.set_button.setToolTip('You can click setting button to choose which atlas that you want to see.')
+
+
+    def _help_dialog(self):
+        """
+        Help dialog.
+
+        """
+        QMessageBox.about(self, self.tr("Helps"),
+                      self.tr("<p>There exist two atlas:  "
+                              "Harvard-Oxford SubCortical Atlas,  "
+                              "Harvard-Oxford Cortical Atlas</p>"
+                              "<p>You can click the Setting button "
+                              "to choose which atlas to show.</p>"))
