@@ -19,6 +19,10 @@ class AddLabelDialog(QDialog):
         self.label_edit = QLineEdit()
         index_label = QLabel("Index")
         self.index_edit = QLineEdit()
+        regx = QRegExp("[0-9]+$")
+        validator = QRegExpValidator(regx, self.index_edit)
+        self.index_edit.setValidator(validator)
+
         self.index_edit.setEnabled(self._edit_label is None)
         color_label = QLabel("Color")
         self.color_button = ColorButton()

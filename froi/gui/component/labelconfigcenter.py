@@ -6,46 +6,46 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 
-class ConfigLabelModel(QAbstractListModel):
-    """
-    Model for label config list view.
-
-    """
-
-    def __init__(self, label_config, parent=None):
-        super(ConfigLabelModel, self).__init__()
-        self._label_config = label_config
-        self._label_index = label_config.get_label_index_pair()
-
-    def rowCount(self, parent=QModelIndex()):
-        """
-        Return the item numbers in the list.
-        
-        """
-        return len(self._label_index)
-
-    def data(self, index, role):
-        if not index.isValid() or not 0 <= index.row() < self.rowCount():
-            return QString()
-        row = index.row()
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return str(self._label_index[row][1]) + ' ' + self._label_index[row][0]
-        if role == Qt.UserRole:
-            return self._label_index[row][0]
-
-    def insertRow(self, index_row, index, label):
-        self._label_index.append((label, index))
-        self.dataChanged.emit(index_row, index_row)
-
-    def removeRow(self, index):
-        del self._label_index[index.row()]
-        self.dataChanged.emit(index, index)
-
-    def editRow(self, index, label):
-        current_index = self._label_index[index.row()][1]
-        del self._label_index[index.row()]
-        self._label_index.insert(index.row(), (label, current_index))
-        self.dataChanged.emit(index, index)
+# class ConfigLabelModel(QAbstractListModel):
+#     """
+#     Model for label config list view.
+#
+#     """
+#
+#     def __init__(self, label_config, parent=None):
+#         super(ConfigLabelModel, self).__init__()
+#         self._label_config = label_config
+#         self._label_index = label_config.get_label_index_pair()
+#
+#     def rowCount(self, parent=QModelIndex()):
+#         """
+#         Return the item numbers in the list.
+#
+#         """
+#         return len(self._label_index)
+#
+#     def data(self, index, role):
+#         if not index.isValid() or not 0 <= index.row() < self.rowCount():
+#             return QString()
+#         row = index.row()
+#         if role == Qt.DisplayRole or role == Qt.EditRole:
+#             return str(self._label_index[row][1]) + ' ' + self._label_index[row][0]
+#         if role == Qt.UserRole:
+#             return self._label_index[row][0]
+#
+#     def insertRow(self, index_row, index, label):
+#         self._label_index.append((label, index))
+#         self.dataChanged.emit(index_row, index_row)
+#
+#     def removeRow(self, index):
+#         del self._label_index[index.row()]
+#         self.dataChanged.emit(index, index)
+#
+#     def editRow(self, index, label):
+#         current_index = self._label_index[index.row()][1]
+#         del self._label_index[index.row()]
+#         self._label_index.insert(index.row(), (label, current_index))
+#         self.dataChanged.emit(index, index)
 
 class LabelConfigCenter(QGroupBox, DrawSettings):
     """
@@ -55,13 +55,16 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
     single_roi_view_update = pyqtSignal()
     single_roi_view_update_for_model = pyqtSignal()
 
-    def __init__(self, label_configs, is_roi_edit=False, parent=None):
+    def __init__(self, label_configs, list_view_model, label_models, is_roi_edit=False, parent=None):
         super(LabelConfigCenter, self).__init__()
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.label_configs = label_configs
-        self.models = map(ConfigLabelModel, label_configs)
-        self.config_names = [x.get_name() for x in self.label_configs]
-        self.config_names.insert(0, 'None')
+        self._label_models = label_models
+        self._list_view_model = list_view_model
+
+        # self.models = map(ConfigLabelModel, label_configs)
+        # self.config_names = [x.get_name() for x in self.label_configs]
+        # self.config_names.insert(0, 'None')
         self._is_roi_edit = is_roi_edit
 
         self.setWindowModality(Qt.NonModal)
@@ -77,10 +80,9 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         Initialize GUI.
 
         """
-        config_label = 'Configs'
-
         self.config_combobox = QComboBox()
-        self.config_combobox.addItems(self.config_names)
+        self.config_combobox.setModel(self._list_view_model)
+        # self.config_combobox.addItems(self.config_names)
         self.null_model = QStringListModel()
 
         self.label_list_view = QListView()
@@ -101,20 +103,19 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         labcon_layout.addLayout(hboxlayout,2,0)
         self.setLayout(labcon_layout)
 
-    def set_label_config(self, label_config):
-        if label_config in self.config_names:
-            self.config_combobox.setCurrentIndex(self.config_names.index(label_config))
-
     def _update_labels(self):
         idx = self.config_combobox.currentIndex()
-        if idx == 0:
-            self.label_list_view.setModel(self.null_model)
+        if idx >= 0:
+            self.label_list_view.setModel(self._label_models[idx])
         else:
-            self.label_list_view.setModel(self.models[idx-1])
-            self.label_list_view.setCurrentIndex(
-                            self.models[idx-1].createIndex(0,0))
-            self.label_list_view.selectionModel().currentChanged.connect(
-                            self.single_roi_view_update)
+            self.label_list_view.setModel(self.null_model)
+        # else:
+        #     self.label_list_view.setModel(self.models[idx-1])
+        #     self.label_list_view.setCurrentIndex(
+        #                     self.models[idx-1].createIndex(0,0))
+        #     self.label_list_view.selectionModel().currentChanged.connect(
+        #                     self.single_roi_view_update)
+
 
     def _create_actions(self):
         self.config_combobox.currentIndexChanged.connect(self._update_labels)
@@ -137,22 +138,23 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         return self._is_roi_edit
 
     def is_drawing_valid(self):
-        return self.config_combobox.currentIndex() != 0
+        return self.config_combobox.currentIndex() >= 0
 
 
     def get_current_list_view_index(self):
         idx = self.config_combobox.currentIndex()
-        if idx == 0:
+        if idx < 0:
             return None
         return self.label_list_view.currentIndex()
 
     def get_drawing_value(self):
         idx = self.config_combobox.currentIndex()
-        if idx == 0:
+        if idx < 0:
             raise ValueError, 'Label Config Invalid'
-        current_label_config = self.label_configs[idx-1]
+        current_label_config = self.label_configs[idx]
         index = self.label_list_view.currentIndex()
-        label = self.label_list_view.model().data(index, Qt.UserRole)
+        # label = self.label_list_view.model().data(index, Qt.UserRole)
+        label = current_label_config.get_label_list()[index.row()]
         return current_label_config.get_label_index(label)
 
     def get_drawing_size(self):
@@ -162,15 +164,20 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def get_drawing_color(self):
         idx = self.config_combobox.currentIndex()
-        if idx == 0:
+        if idx < 0:
             raise ValueError, 'Label Config Invalid'
-        current_label_config = self.label_configs[idx-1]
+        current_label_config = self.label_configs[idx]
         index = self.label_list_view.currentIndex()
-        label = self.label_list_view.model().data(index, Qt.UserRole)
+        # label = self.label_list_view.model().data(index, Qt.UserRole)
+        label = current_label_config.get_label_list()[index.row()]
+        print "idx: ", idx, "   label: ", label
         return current_label_config.get_label_color(label)
 
     def get_all_labelconfig_names(self):
-        return self.config_names[1:]
+        self.config_names = [x.get_name() for x in self.label_configs]
+        # self.config_names.insert(0, 'None')
+
+        return self.config_names[:]
 
     def get_first_label_config(self):
         if len(self.label_configs) < 1:
@@ -191,7 +198,10 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def get_current_label_config(self):
         if self.is_drawing_valid():
-            return self.label_configs[self.config_combobox.currentIndex() - 1]
+            if self.config_combobox.currentIndex() < 0:
+                return None
+            else:
+                return self.label_configs[self.config_combobox.currentIndex()]
 
     def get_current_index_label(self, value):
         if not self.is_drawing_valid():

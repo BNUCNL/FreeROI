@@ -46,7 +46,7 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
-from component.clusterstatsdialog import ClusterStatsDialog
+from component.no_gui_tools import *
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -958,7 +958,21 @@ class BpMainWindow(QMainWindow):
                                 '*.' + self.label_config_suffix)
         label_configs = glob.glob(lbl_path)
         self.label_configs = map(LabelConfig, label_configs)
-        self._label_config_center = LabelConfigCenter(self.label_configs)
+
+        self._list_view_model = QStandardItemModel()
+        # _list_view_model.appendRow(QStandardItem("None"))
+        for x in self.label_configs:
+            self._list_view_model.appendRow(QStandardItem(x.get_name()))
+
+        self._label_models = []
+        for item in self.label_configs:
+            model = QStandardItemModel()
+            for label in item.get_label_list():
+                text_index_icon_item = QStandardItem(get_icon(item.get_label_color(label)),
+                                                     str(item.get_label_index(label)) + '  ' + label)
+                model.appendRow(text_index_icon_item)
+            self._label_models.append(model)
+        self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 
     def _get_label_config(self, file_path):
         """
@@ -1008,20 +1022,13 @@ class BpMainWindow(QMainWindow):
         new_dialog = VoxelStatsDialog(self.model, self)
         new_dialog.show()
 
-    def _label_edit_enable(self):
-        """
-        Label edit enabled.
-
-        """
-        self._label_config_center.set_is_roi_edit(True)
-        self.painter_status.set_draw_settings(self._label_config_center)
-        self.image_view.set_cursor(Qt.CrossCursor)
-        self.image_view.set_label_mouse_tracking(True)
-
     def _label_manage(self):
-        self.label_manage_dialog = LabelManageDialog(self.model, self.label_configs, self.label_config_dir,
-                                                     self.label_config_suffix, self)
-        self.label_manage_dialog.label_edit_enabled.connect(self._label_edit_enable)
+        self.label_manage_dialog = LabelManageDialog(self.label_configs,
+                                                     self._list_view_model,
+                                                     self._label_models,
+                                                     self.label_config_dir,
+                                                     self.label_config_suffix,
+                                                     self)
         self.label_manage_dialog.exec_()
 
     def _ld_lbl(self):

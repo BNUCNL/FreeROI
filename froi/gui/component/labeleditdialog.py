@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 from addlabeldialog import *
+from no_gui_tools import get_icon
 
 class LabelEditDialog(QDialog, DrawSettings):
     """
@@ -37,14 +38,18 @@ class LabelEditDialog(QDialog, DrawSettings):
         self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.list_view.setModel(self._label_model)
 
-        self.add_label = QPushButton('Add')
-        self.del_label = QPushButton('Delete')
-        self.edit_label = QPushButton('Edit')
+        self.add_btn = QPushButton('Add')
+        self.del_btn = QPushButton('Delete')
+        self.edit_btn = QPushButton('Edit')
+
+        if self._label_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
 
         hbox_layout = QHBoxLayout()
-        hbox_layout.addWidget(self.add_label)
-        hbox_layout.addWidget(self.del_label)
-        hbox_layout.addWidget(self.edit_label)
+        hbox_layout.addWidget(self.add_btn)
+        hbox_layout.addWidget(self.del_btn)
+        hbox_layout.addWidget(self.edit_btn)
         
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.list_view)
@@ -57,16 +62,17 @@ class LabelEditDialog(QDialog, DrawSettings):
         Create some actions.
 
         """
-        self.add_label.clicked.connect(self._add_label)
-        self.del_label.clicked.connect(self._del_label)
-        self.edit_label.clicked.connect(self._edit_label)
+        self.add_btn.clicked.connect(self._add_label)
+        self.del_btn.clicked.connect(self._del_label)
+        self.edit_btn.clicked.connect(self._edit_label)
 
-    def get_icon(self, color):
-        icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
-        icon_image.fill(color.rgb())
-        icon_image = icon_image.rgbSwapped()
-        icon_pixmap = QPixmap.fromImage(icon_image)
-        return QIcon(icon_pixmap)
+    def _update_button_status(self):
+        if self._label_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
+        else:
+            self.del_btn.setEnabled(True)
+            self.edit_btn.setEnabled(True)
 
     def _add_label(self):
         """
@@ -78,11 +84,17 @@ class LabelEditDialog(QDialog, DrawSettings):
         add_dialog.exec_()
         new_label = add_dialog.get_new_label()
         if new_label:
-            text_index_icon_item = QStandardItem(self.get_icon(new_label[2]),
+            if new_label[1] in self._label_configs.get_label_list():
+                QMessageBox.warning(self, "Add label",
+                                    "The label %s has exsited!" % new_label[1],
+                                    QMessageBox.Yes)
+                return
+            text_index_icon_item = QStandardItem(get_icon(new_label[2]),
                                              str(new_label[0]) + '  ' + new_label[1])
             self._label_model.appendRow(text_index_icon_item)
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
             self._label_configs.save()
+            self._update_button_status()
 
     def _del_label(self):
         """
@@ -90,6 +102,8 @@ class LabelEditDialog(QDialog, DrawSettings):
 
         """
         row = self.list_view.currentIndex().row()
+        if row == -1 and self._label_model.rowCount() > 0:
+            row = self._label_model.rowCount() - 1
         label = self._label_configs.get_label_list()[row]
         button = QMessageBox.warning(self, "Delete label",
                 "Are you sure that you want to delete label %s ?" % label,
@@ -99,6 +113,7 @@ class LabelEditDialog(QDialog, DrawSettings):
             self._label_model.removeRow(row)
             self._label_configs.remove_label(label)
             self._label_configs.save()
+            self._update_button_status()
 
     def _edit_label(self):
         row = self.list_view.currentIndex().row()
@@ -111,7 +126,7 @@ class LabelEditDialog(QDialog, DrawSettings):
 
         if edit_label:
             self._label_model.removeRow(row)
-            text_index_icon_item = QStandardItem(self.get_icon(edit_label[2]),
+            text_index_icon_item = QStandardItem(get_icon(edit_label[2]),
                                                  str(edit_label[0]) + '  ' + edit_label[1])
             self._label_model.insertRow(row, text_index_icon_item)
             self._label_configs.edit_label(label, edit_label[1], edit_label[2])

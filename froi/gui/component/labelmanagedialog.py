@@ -7,10 +7,10 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
-from labelconfigcenter import ConfigLabelModel
 from labeleditdialog import LabelEditDialog
 from froi.gui.base.labelconfig import LabelConfig
 from addlabelgroupdialog import AddLabelGroupDialog
+from no_gui_tools import *
 
 class LabelManageDialog(QDialog, DrawSettings):
     """
@@ -19,32 +19,22 @@ class LabelManageDialog(QDialog, DrawSettings):
     """
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
-    def __init__(self, model, label_configs, label_config_dir, label_config_suffix, parent=None):
+    def __init__(self,label_configs, list_view_model, label_models, label_config_dir,
+                 label_config_suffix, parent=None):
         """
         Initialize a dialog widget.
 
         """
         super(LabelManageDialog, self).__init__(parent)
-        self._model = model
         self._label_configs = label_configs
         self._label_config_dir = label_config_dir
         self._label_config_suffix = label_config_suffix
-        self._label_models = []
+        self._label_models = label_models
+        self._list_view_model = list_view_model
 
         self.setWindowModality(Qt.NonModal)
-        self.create_icon_model()
         self._init_gui()
         self._create_actions()
-
-    def create_icon_model(self):
-        self._label_models = []
-        for item in self._label_configs:
-            model = QStandardItemModel()
-            for label in item.get_label_list():
-                text_index_icon_item = QStandardItem(self.get_icon(item.get_label_color(label)),
-                                                str(item.get_label_index(label)) + '  ' + label)
-                model.appendRow(text_index_icon_item)
-            self._label_models.append(model)
 
     def _init_gui(self):
         """
@@ -56,21 +46,20 @@ class LabelManageDialog(QDialog, DrawSettings):
 
         self.list_view = QListView(self)
         self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.list_view.setModel(self._list_view_model)
 
-        self.list_view_model = QStandardItemModel(self.list_view)
-        # list_view_model.appendRow(QStandardItem("None"))
-        for x in self._label_configs:
-            self.list_view_model.appendRow(QStandardItem(x.get_name()))
-        self.list_view.setModel(self.list_view_model)
+        self.add_btn = QPushButton('Add')
+        self.del_btn = QPushButton('Delete')
+        self.edit_btn = QPushButton('Edit')
 
-        self.add_label = QPushButton('Add')
-        self.del_label = QPushButton('Delete')
-        self.edit_label = QPushButton('Edit')
+        if self._list_view_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
 
         hbox_layout = QHBoxLayout()
-        hbox_layout.addWidget(self.add_label)
-        hbox_layout.addWidget(self.del_label)
-        hbox_layout.addWidget(self.edit_label)
+        hbox_layout.addWidget(self.add_btn)
+        hbox_layout.addWidget(self.del_btn)
+        hbox_layout.addWidget(self.edit_btn)
 
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.list_view)
@@ -83,15 +72,24 @@ class LabelManageDialog(QDialog, DrawSettings):
         Create some actions.
 
         """
-        self.add_label.clicked.connect(self._add_label)
-        self.del_label.clicked.connect(self._del_label)
-        self.edit_label.clicked.connect(self._edit_label)
+        self.add_btn.clicked.connect(self._add_label)
+        self.del_btn.clicked.connect(self._del_label)
+        self.edit_btn.clicked.connect(self._edit_label)
 
     def _update_label_color(self, color):
         label = str(self.combobox.currentText())
         if label:
             self._label_config.update_label_color(label, color)
             self.color_changed.emit()
+
+    def _update_button_status(self):
+        if self._list_view_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
+        else:
+            self.del_btn.setEnabled(True)
+            self.edit_btn.setEnabled(True)
+
 
     def _add_label(self):
         """
@@ -104,6 +102,13 @@ class LabelManageDialog(QDialog, DrawSettings):
 
         new_label_group_name = add_label_group_dialog.get_new_label_group_name()
         if new_label_group_name:
+            for label_config in self._label_configs:
+                if new_label_group_name == label_config.get_name():
+                    QMessageBox.warning(self, "Add label",
+                                        "The label %s has exsited!" % new_label_group_name,
+                                        QMessageBox.Yes)
+                    return
+
             new_label_group_name = new_label_group_name.replace(" ", "")
             lbl_path = os.path.join(self._label_config_dir,
                                     new_label_group_name + '.'+ self._label_config_suffix)
@@ -111,17 +116,29 @@ class LabelManageDialog(QDialog, DrawSettings):
             f.close()
             new_label_config = map(LabelConfig, glob.glob(lbl_path))
             self._label_configs.append(new_label_config[0])
-            self.create_icon_model()
-            self.list_view_model.appendRow(QStandardItem(new_label_group_name))
+            self._label_models.append(QStandardItemModel())
+            self._list_view_model.appendRow(QStandardItem(new_label_group_name))
+            self._update_button_status()
 
     def _del_label(self):
         """
         Delete a existing label.
 
         """
-        os.remove(self._label_configs[self.list_view.currentIndex().row()].get_filepath())
-        del self._label_configs[self.list_view.currentIndex().row()]
-        self.list_view_model.removeRow(self.list_view.currentIndex().row())
+        row = self.list_view.currentIndex().row()
+        if row == -1 and self._list_view_model.rowCount() > 0:
+            row = self._list_view_model.rowCount() - 1
+        button = QMessageBox.warning(self, "Delete label",
+                                     "Are you sure that you want to delete label %s ?" %
+                                     self._label_configs[row].get_name(),
+                                     QMessageBox.Yes,
+                                     QMessageBox.No)
+        if button == QMessageBox.Yes:
+            os.remove(self._label_configs[row].get_filepath())
+            del self._label_configs[row]
+            del self._label_models[row]
+            self._list_view_model.removeRow(row)
+            self._update_button_status()
 
     def _edit_label(self):
         index = self.list_view.currentIndex().row()
@@ -129,32 +146,25 @@ class LabelManageDialog(QDialog, DrawSettings):
         label_edit_dialog.setWindowTitle("Edit " + self._label_configs[index].get_name())
         label_edit_dialog.exec_()
 
-    def _save_label(self):
-        self._label_config.current_save()
-        
-    def is_valid_label(self):
-        return self.combobox.currentText()
-
-    def get_current_label(self):
-        if self.is_valid_label():
-            return str(self.combobox.currentText())
-        raise ValueError, "Current label invalid"
-
-    def get_current_index(self):
-        if self.is_valid_label():
-            return self._label_config.get_label_index(self.get_current_label())
-        raise ValueError, "Current label invalid"
-
-    def get_current_color(self):
-        if self.is_valid_label():
-            return self._label_config.get_label_color(self.get_current_label())
-
-    def get_icon(self, color):
-        icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
-        icon_image.fill(color.rgb())
-        icon_image = icon_image.rgbSwapped()
-        icon_pixmap = QPixmap.fromImage(icon_image)
-        return QIcon(icon_pixmap)
+    # def _save_label(self):
+    #     self._label_config.current_save()
+    #
+    # def is_valid_label(self):
+    #     return self.combobox.currentText()
+    #
+    # def get_current_label(self):
+    #     if self.is_valid_label():
+    #         return str(self.combobox.currentText())
+    #     raise ValueError, "Current label invalid"
+    #
+    # def get_current_index(self):
+    #     if self.is_valid_label():
+    #         return self._label_config.get_label_index(self.get_current_label())
+    #     raise ValueError, "Current label invalid"
+    #
+    # def get_current_color(self):
+    #     if self.is_valid_label():
+    #         return self._label_config.get_label_color(self.get_current_label())
 
 
 
