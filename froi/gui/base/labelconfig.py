@@ -46,7 +46,7 @@ class LabelConfig(object):
 
     def dump(self):
         if hasattr(self, 'filepath'):
-            with open(self.filepath, 'r+') as f:
+            with open(self.filepath, 'w') as f:
                 for label in self.label_index:
                     color = self.label_color[label]
                     f.write('%3d\t%-25s\t%3d %3d %3d\n' % (self.label_index[label], label, color.red(), color.green(), color.blue()))

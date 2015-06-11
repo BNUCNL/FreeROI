@@ -9,7 +9,7 @@ class AddLabelGroupDialog(QDialog):
     """
     def __init__(self, parent=None):
         super(AddLabelGroupDialog, self).__init__(parent)
-        self._new_label_group_name = 'Unknown'
+        self._new_label_group_name = None
         self._init_gui()
         self._create_actions()
 

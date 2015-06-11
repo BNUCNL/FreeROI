@@ -14,13 +14,12 @@ class LabelEditDialog(QDialog, DrawSettings):
     """
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
-    def __init__(self, model, label_model, label_configs, parent=None):
+    def __init__(self, label_model, label_configs, parent=None):
         """
         Initialize a dialog widget.
 
         """
         super(LabelEditDialog, self).__init__(parent)
-        self._model = model
         self._label_model = label_model
         self._label_configs = label_configs
         self.setWindowModality(Qt.NonModal)
@@ -35,7 +34,7 @@ class LabelEditDialog(QDialog, DrawSettings):
         self.setWindowModality(Qt.NonModal)
 
         self.list_view = QListView(self)
-        self.list_view.setWindowTitle('Edit Label')
+        self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.list_view.setModel(self._label_model)
 
         self.add_label = QPushButton('Add')
@@ -62,6 +61,13 @@ class LabelEditDialog(QDialog, DrawSettings):
         self.del_label.clicked.connect(self._del_label)
         self.edit_label.clicked.connect(self._edit_label)
 
+    def get_icon(self, color):
+        icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
+        icon_image.fill(color.rgb())
+        icon_image = icon_image.rgbSwapped()
+        icon_pixmap = QPixmap.fromImage(icon_image)
+        return QIcon(icon_pixmap)
+
     def _add_label(self):
         """
         Add a new label.
@@ -72,7 +78,9 @@ class LabelEditDialog(QDialog, DrawSettings):
         add_dialog.exec_()
         new_label = add_dialog.get_new_label()
         if new_label:
-            self._label_model.insertRow(self.list_view.currentIndex(), new_label[0], new_label[1])
+            text_index_icon_item = QStandardItem(self.get_icon(new_label[2]),
+                                             str(new_label[0]) + '  ' + new_label[1])
+            self._label_model.appendRow(text_index_icon_item)
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
             self._label_configs.save()
 
@@ -81,37 +89,32 @@ class LabelEditDialog(QDialog, DrawSettings):
         Delete a existing label.
 
         """
-        item_text = self.list_view.currentIndex().data().toString().split(' ')
-        label = item_text[1]
+        row = self.list_view.currentIndex().row()
+        label = self._label_configs.get_label_list()[row]
         button = QMessageBox.warning(self, "Delete label",
                 "Are you sure that you want to delete label %s ?" % label,
                  QMessageBox.Yes,
-                QMessageBox.No)
+                 QMessageBox.No)
         if button == QMessageBox.Yes:
-            self._label_model.removeRow(self.list_view.currentIndex())
-            self._label_configs.remove_label(str(label))
+            self._label_model.removeRow(row)
+            self._label_configs.remove_label(label)
             self._label_configs.save()
 
     def _edit_label(self):
-        item_text = self.list_view.currentIndex().data().toString().split(' ')
-        index = str(item_text[0])
-        label = str(item_text[1])
-        add_dialog = AddLabelDialog(self, (index, label, self._label_configs.get_label_color(label)))
+        row = self.list_view.currentIndex().row()
+        label = self._label_configs.get_label_list()[row]
+        index = self._label_configs.get_label_index(label)
+        add_dialog = AddLabelDialog(self, (str(index), label, self._label_configs.get_label_color(label)))
         add_dialog.setWindowTitle("Edit the label")
         add_dialog.exec_()
         edit_label = add_dialog.get_new_label()
 
         if edit_label:
-            self._label_model.editRow(self.list_view.currentIndex(), edit_label[1])
+            self._label_model.removeRow(row)
+            text_index_icon_item = QStandardItem(self.get_icon(edit_label[2]),
+                                                 str(edit_label[0]) + '  ' + edit_label[1])
+            self._label_model.insertRow(row, text_index_icon_item)
             self._label_configs.edit_label(label, edit_label[1], edit_label[2])
             self._label_configs.save()
-
-    def _save_label(self):
-        self._label_config.current_save()
-
-
-
-
-
 
 

@@ -73,8 +73,9 @@ class AddLabelDialog(QDialog):
             QMessageBox.critical(self, "Color invalid",
                                  "Please choose a valid color for your label.")
             return
+        label = str(label)
         self._new_label.append(index)
-        self._new_label.append(str(label))
+        self._new_label.append(str(label.replace(" ", "")))
         self._new_label.append(color)
         self.done(0)
 

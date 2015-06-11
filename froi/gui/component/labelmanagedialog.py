@@ -29,10 +29,22 @@ class LabelManageDialog(QDialog, DrawSettings):
         self._label_configs = label_configs
         self._label_config_dir = label_config_dir
         self._label_config_suffix = label_config_suffix
-        self._label_model = map(ConfigLabelModel, label_configs)
+        self._label_models = []
+
         self.setWindowModality(Qt.NonModal)
+        self.create_icon_model()
         self._init_gui()
         self._create_actions()
+
+    def create_icon_model(self):
+        self._label_models = []
+        for item in self._label_configs:
+            model = QStandardItemModel()
+            for label in item.get_label_list():
+                text_index_icon_item = QStandardItem(self.get_icon(item.get_label_color(label)),
+                                                str(item.get_label_index(label)) + '  ' + label)
+                model.appendRow(text_index_icon_item)
+            self._label_models.append(model)
 
     def _init_gui(self):
         """
@@ -43,13 +55,12 @@ class LabelManageDialog(QDialog, DrawSettings):
         self.combobox = QComboBox()
 
         self.list_view = QListView(self)
-        self.list_view.setWindowTitle('Edit Label')
+        self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.list_view_model = QStandardItemModel(self.list_view)
         # list_view_model.appendRow(QStandardItem("None"))
         for x in self._label_configs:
-            self.list_view_model.appendRow(QStandardItem(QIcon(os.path.join( 'G:/github/FreeROI/froi/gui/icon/',
-                                                                             'logo.png')),  x.get_name()))
+            self.list_view_model.appendRow(QStandardItem(x.get_name()))
         self.list_view.setModel(self.list_view_model)
 
         self.add_label = QPushButton('Add')
@@ -93,13 +104,14 @@ class LabelManageDialog(QDialog, DrawSettings):
 
         new_label_group_name = add_label_group_dialog.get_new_label_group_name()
         if new_label_group_name:
+            new_label_group_name = new_label_group_name.replace(" ", "")
             lbl_path = os.path.join(self._label_config_dir,
                                     new_label_group_name + '.'+ self._label_config_suffix)
             f = open(lbl_path, "w")
             f.close()
             new_label_config = map(LabelConfig, glob.glob(lbl_path))
             self._label_configs.append(new_label_config[0])
-            self._label_model = map(ConfigLabelModel, self._label_configs)
+            self.create_icon_model()
             self.list_view_model.appendRow(QStandardItem(new_label_group_name))
 
     def _del_label(self):
@@ -113,8 +125,8 @@ class LabelManageDialog(QDialog, DrawSettings):
 
     def _edit_label(self):
         index = self.list_view.currentIndex().row()
-        label_edit_dialog = LabelEditDialog(self._model, self._label_model[index], self._label_configs[index])
-        label_edit_dialog.setWindowTitle(self._label_configs[index].get_name())
+        label_edit_dialog = LabelEditDialog(self._label_models[index], self._label_configs[index])
+        label_edit_dialog.setWindowTitle("Edit " + self._label_configs[index].get_name())
         label_edit_dialog.exec_()
 
     def _save_label(self):
@@ -136,6 +148,13 @@ class LabelManageDialog(QDialog, DrawSettings):
     def get_current_color(self):
         if self.is_valid_label():
             return self._label_config.get_label_color(self.get_current_label())
+
+    def get_icon(self, color):
+        icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
+        icon_image.fill(color.rgb())
+        icon_image = icon_image.rgbSwapped()
+        icon_pixmap = QPixmap.fromImage(icon_image)
+        return QIcon(icon_pixmap)
 
 
 
