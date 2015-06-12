@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+import sys
 from PyQt4.QtGui import *
 from froi.io.xml_api import *
 
@@ -35,6 +36,40 @@ def atlas_display(self, atlas_name, niftil_path, xml_path):
     vbox_layout.addWidget(atlas_label)
     vbox_layout.addWidget(prob_label)
     return vbox_layout
+
+class SettingDialog(QDialog):
+    """
+    A dialog for setting button.
+
+    """
+    def __init__(self, parent=None):
+        super(SettingDialog, self).__init__(parent)
+        self._init_gui()
+        self._create_actions()
+
+    def _init_gui(self):
+        """
+        Initialize GUI.
+
+        """
+        self.setWindowTitle("Atlas Selection")
+        self.subcor_label = QLabel('Harvard-Oxford SubCortical Atlas')
+        self.cor_label = QLabel('Harvard-Oxford Cortical Atlas')
+        self.subcor_checkbox = QCheckBox()
+        self.subcor_checkbox.setChecked(True)
+        self.cor_checkbox = QCheckBox()
+        self.cor_checkbox.setChecked(False)
+        dialog_layout = QGridLayout()
+        dialog_layout.addWidget(self.subcor_checkbox, 0,0)
+        dialog_layout.addWidget(self.subcor_label,0,1)
+        dialog_layout.addWidget(self.cor_checkbox,1,0)
+        dialog_layout.addWidget(self.cor_label,1,1)
+        self.setLayout(dialog_layout)
+
+    def _create_actions(self):
+        pass
+
+
 
 
 class HOsubcorticalDialog(QDialog):
@@ -94,7 +129,8 @@ class HOsubcorticalDialog(QDialog):
         Setting clicked
         '''
         if self.set_button.isEnabled():
-            self.set_button.setToolTip('You can click setting button to choose which atlas that you want to see.')
+            new_dialog = SettingDialog()
+            new_dialog.exec_()
 
 
     def _help_dialog(self):
@@ -103,8 +139,8 @@ class HOsubcorticalDialog(QDialog):
 
         """
         QMessageBox.about(self, self.tr("Helps"),
-                      self.tr("<p>There exist two atlas:  "
-                              "Harvard-Oxford SubCortical Atlas,  "
+                      self.tr("<p>There exist two atlas: <br/>"
+                              "Harvard-Oxford SubCortical Atlas, <br/>"
                               "Harvard-Oxford Cortical Atlas</p>"
                               "<p>You can click the Setting button "
                               "to choose which atlas to show.</p>"))
