@@ -36,7 +36,7 @@ class LabelConfig(object):
 
     def load(self, filepath):
         tmp_dict = collections.OrderedDict()
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r+') as f:
             for line in f:
                 line = line.split()
                 if line:
@@ -51,17 +51,23 @@ class LabelConfig(object):
                     color = self.label_color[label]
                     f.write('%3d\t%-25s\t%3d %3d %3d\n' % (self.label_index[label], label, color.red(), color.green(), color.blue()))
 
+    def get_filepath(self):
+        return self.filepath
+
     def new_index(self):
         if self.label_index:
             return max(self.label_index.values()) + 1
         else:
             return 1
 
+    def default_color(self):
+        return QColor(255, 0, 0)
+
     def add_label(self, label, index=None, color=None):
         if index is None:
             index = self.new_index()
         if color is None:
-            color = default_color
+            color = self.default_color()
         if self.has_index(index):
             raise ValueError, 'Index already exists, choose another one'
         self.label_index[label] = index
@@ -71,6 +77,13 @@ class LabelConfig(object):
         if self.has_label(label):
             del self.label_index[label]
             del self.label_color[label]
+
+    def edit_label(self, old_label, label, color):
+        if self.has_label(old_label):
+            self.label_index[label] = self.get_label_index(old_label)
+            self.label_color[label] = color
+            if old_label != label:
+                del self.label_index[old_label]
 
     def has_label(self, label):
         return label in self.label_index.keys()

@@ -548,7 +548,7 @@ class VolumeListModel(QAbstractListModel):
         return self._data[row].get_value(xyz)
 
     def get_current_value_label(self, value):
-        return self._label_config_center.get_value_label(value)
+        return self._label_config_center.get_current_index_label(value)
 
     def update_current_rgba(self):
         row = self.currentIndex().row()

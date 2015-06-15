@@ -37,6 +37,7 @@ from component.roi2gwmidialog import Roi2gwmiDialog
 from component.no_gui_tools import edge_detection
 from component.roimergedialog import ROIMergeDialog
 from component.opendialog import OpenDialog
+from component.labelmanagedialog import LabelManageDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog
 from component.binaryerosiondialog import BinaryerosionDialog
@@ -45,7 +46,7 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
-from component.clusterstatsdialog import ClusterStatsDialog
+from component.no_gui_tools import *
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -356,6 +357,14 @@ class BpMainWindow(QMainWindow):
                                                self)
         self._actions['region_grow'].triggered.connect(self._region_grow)
         self._actions['region_grow'].setEnabled(False)
+
+        # Lable Management action
+        self._actions['label_management'] = QAction(QIcon(os.path.join(
+                                        self._icon_dir, 'intersect.png')),
+                                               self.tr("Label Management"),
+                                               self)
+        self._actions['label_management'].triggered.connect(self._label_manage)
+        self._actions['label_management'].setEnabled(False)
 
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
@@ -804,6 +813,7 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
+        self.tool_menu.addAction(self._actions['label_management'])
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -931,6 +941,7 @@ class BpMainWindow(QMainWindow):
         Initialize ROI Dialog
 
         """
+        self._actions['label_management'].setEnabled(False)
         self.roidialog = ROIDialog(self.model, self._label_config_center, self)
         self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
         self.roidialog.roi_edit_enabled.connect(self._roi_edit_enable)
@@ -947,7 +958,21 @@ class BpMainWindow(QMainWindow):
                                 '*.' + self.label_config_suffix)
         label_configs = glob.glob(lbl_path)
         self.label_configs = map(LabelConfig, label_configs)
-        self._label_config_center = LabelConfigCenter(self.label_configs)
+
+        self._list_view_model = QStandardItemModel()
+        # _list_view_model.appendRow(QStandardItem("None"))
+        for x in self.label_configs:
+            self._list_view_model.appendRow(QStandardItem(x.get_name()))
+
+        self._label_models = []
+        for item in self.label_configs:
+            model = QStandardItemModel()
+            for label in item.get_label_list():
+                text_index_icon_item = QStandardItem(get_icon(item.get_label_color(label)),
+                                                     str(item.get_label_index(label)) + '  ' + label)
+                model.appendRow(text_index_icon_item)
+            self._label_models.append(model)
+        self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 
     def _get_label_config(self, file_path):
         """
@@ -996,6 +1021,15 @@ class BpMainWindow(QMainWindow):
     def _voxelstats(self):
         new_dialog = VoxelStatsDialog(self.model, self)
         new_dialog.show()
+
+    def _label_manage(self):
+        self.label_manage_dialog = LabelManageDialog(self.label_configs,
+                                                     self._list_view_model,
+                                                     self._label_models,
+                                                     self.label_config_dir,
+                                                     self.label_config_suffix,
+                                                     self)
+        self.label_manage_dialog.exec_()
 
     def _ld_lbl(self):
         file_name = QFileDialog.getOpenFileName(self,
@@ -1157,6 +1191,7 @@ class BpMainWindow(QMainWindow):
         self._actions['greydilation'].setEnabled(status)
         self._actions['greyerosion'].setEnabled(status)
         self._actions['regular_roi'].setEnabled(status)
+        self._actions['label_management'].setEnabled(status)
         self._actions['r2i'].setEnabled(status)
         self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
