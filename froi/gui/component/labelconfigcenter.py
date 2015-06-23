@@ -181,7 +181,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def get_first_label_config(self):
         if len(self.label_configs) < 1:
-            raise ValueError, "Not Enough Label Config files"
+            return None
         return self.label_configs[0]
 
     def get_label_config(self, offset):

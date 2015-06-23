@@ -79,7 +79,7 @@ class AddLabelDialog(QDialog):
             return
         label = str(label)
         self._new_label.append(index)
-        self._new_label.append(str(label.replace(" ", "")))
+        self._new_label.append(str(label.replace(" ", "_")))
         self._new_label.append(color)
         self.done(0)
 
