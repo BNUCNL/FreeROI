@@ -32,7 +32,6 @@ class LabelManageDialog(QDialog, DrawSettings):
         self._label_models = label_models
         self._list_view_model = list_view_model
 
-        self.setWindowModality(Qt.NonModal)
         self._init_gui()
         self._create_actions()
 
@@ -109,7 +108,7 @@ class LabelManageDialog(QDialog, DrawSettings):
                                         QMessageBox.Yes)
                     return
 
-            new_label_group_name = new_label_group_name.replace(" ", "")
+            new_label_group_name = new_label_group_name.replace(" ", "_")
             lbl_path = os.path.join(self._label_config_dir,
                                     new_label_group_name + '.'+ self._label_config_suffix)
             f = open(lbl_path, "w")

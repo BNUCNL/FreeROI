@@ -23,7 +23,6 @@ class LabelEditDialog(QDialog, DrawSettings):
         super(LabelEditDialog, self).__init__(parent)
         self._label_model = label_model
         self._label_configs = label_configs
-        self.setWindowModality(Qt.NonModal)
         self._init_gui()
         self._create_actions()
 
