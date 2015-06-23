@@ -138,8 +138,8 @@ class LayerView(QWidget):
         self._coord_value = QLineEdit()
         self._coord_value.setReadOnly(True)
         coord_label_label = QLabel('label:')
-        self._coord_label = QLineEdit()
-        self._coord_label.setReadOnly(True)
+        # self._coord_label = QLineEdit()
+        # self._coord_label.setReadOnly(True)
         vl_hlayout = QHBoxLayout()
         vl_hlayout.addWidget(time_point_label)
         vl_hlayout.addWidget(self._volume_index_spinbox)
@@ -406,7 +406,7 @@ class LayerView(QWidget):
         self._coord_z.setValue(int(xyz[2]))
         value = self._model.get_current_value([xyz[0], xyz[1], xyz[2]])
         self._coord_value.setText(str(value))
-        self._coord_label.setText(self._model.get_current_value_label(value))
+        # self._coord_label.setText(self._model.get_current_value_label(value))
 
         # resume signal connection
         self._coord_x.valueChanged.connect(self.set_cross_pos)

@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
@@ -41,3 +42,11 @@ def edge_detection(model):
                   None, None, 255, 'green')
     return
 
+
+def get_icon(color):
+    icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
+    icon_image.fill(color.rgb())
+    icon_image = icon_image.rgbSwapped()
+    icon_pixmap = QPixmap.fromImage(icon_image)
+
+    return QIcon(icon_pixmap)

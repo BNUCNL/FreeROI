@@ -184,6 +184,9 @@ class ROIDialog(QDialog, DrawSettings):
         return True
 
     def _run(self):
+        if self._label_config_center.get_first_label_config() == None:
+            QMessageBox.warning(self, "Invalid label", "Please add some labels first!")
+            return
         if self.target_box.isEnabled() and \
            str(self.target_box.currentText()) == 'New Volume':
             self._model.new_image(None, None, 'rainbow')

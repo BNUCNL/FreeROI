@@ -1,0 +1,134 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
+from drawsettings import DrawSettings
+from addlabeldialog import *
+from no_gui_tools import get_icon
+
+class LabelEditDialog(QDialog, DrawSettings):
+    """
+    A dialog window for label selection.
+
+    """
+    color_changed = pyqtSignal()
+    label_edit_enabled = pyqtSignal()
+    def __init__(self, label_model, label_configs, parent=None):
+        """
+        Initialize a dialog widget.
+
+        """
+        super(LabelEditDialog, self).__init__(parent)
+        self._label_model = label_model
+        self._label_configs = label_configs
+        self._init_gui()
+        self._create_actions()
+
+    def _init_gui(self):
+        """
+        Initialize GUI.
+
+        """
+        self.setWindowModality(Qt.NonModal)
+
+        self.list_view = QListView(self)
+        self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.list_view.setModel(self._label_model)
+
+        self.add_btn = QPushButton('Add')
+        self.del_btn = QPushButton('Delete')
+        self.edit_btn = QPushButton('Edit')
+
+        if self._label_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
+
+        hbox_layout = QHBoxLayout()
+        hbox_layout.addWidget(self.add_btn)
+        hbox_layout.addWidget(self.del_btn)
+        hbox_layout.addWidget(self.edit_btn)
+        
+        vbox_layout = QVBoxLayout()
+        vbox_layout.addWidget(self.list_view)
+        vbox_layout.addLayout(hbox_layout)
+
+        self.setLayout(vbox_layout)
+
+    def _create_actions(self):
+        """
+        Create some actions.
+
+        """
+        self.add_btn.clicked.connect(self._add_label)
+        self.del_btn.clicked.connect(self._del_label)
+        self.edit_btn.clicked.connect(self._edit_label)
+
+    def _update_button_status(self):
+        if self._label_model.rowCount() == 0:
+            self.del_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
+        else:
+            self.del_btn.setEnabled(True)
+            self.edit_btn.setEnabled(True)
+
+    def _add_label(self):
+        """
+        Add a new label.
+
+        """
+        add_dialog = AddLabelDialog(self)
+        add_dialog.setWindowTitle("Add a new label")
+        add_dialog.exec_()
+        new_label = add_dialog.get_new_label()
+        if new_label:
+            if new_label[1] in self._label_configs.get_label_list():
+                QMessageBox.warning(self, "Add label",
+                                    "The label %s has exsited!" % new_label[1],
+                                    QMessageBox.Yes)
+                return
+            text_index_icon_item = QStandardItem(get_icon(new_label[2]),
+                                             str(new_label[0]) + '  ' + new_label[1])
+            self._label_model.appendRow(text_index_icon_item)
+            self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
+            self._label_configs.save()
+            self._update_button_status()
+
+    def _del_label(self):
+        """
+        Delete a existing label.
+
+        """
+        row = self.list_view.currentIndex().row()
+        if row == -1 and self._label_model.rowCount() > 0:
+            row = self._label_model.rowCount() - 1
+        label = self._label_configs.get_label_list()[row]
+        button = QMessageBox.warning(self, "Delete label",
+                "Are you sure that you want to delete label %s ?" % label,
+                 QMessageBox.Yes,
+                 QMessageBox.No)
+        if button == QMessageBox.Yes:
+            self._label_model.removeRow(row)
+            self._label_configs.remove_label(label)
+            self._label_configs.save()
+            self._update_button_status()
+
+    def _edit_label(self):
+        row = self.list_view.currentIndex().row()
+        label = self._label_configs.get_label_list()[row]
+        index = self._label_configs.get_label_index(label)
+        add_dialog = AddLabelDialog(self, (str(index), label, self._label_configs.get_label_color(label)))
+        add_dialog.setWindowTitle("Edit the label")
+        add_dialog.exec_()
+        edit_label = add_dialog.get_new_label()
+
+        if edit_label:
+            self._label_model.removeRow(row)
+            text_index_icon_item = QStandardItem(get_icon(edit_label[2]),
+                                                 str(edit_label[0]) + '  ' + edit_label[1])
+            self._label_model.insertRow(row, text_index_icon_item)
+            self._label_configs.edit_label(label, edit_label[1], edit_label[2])
+            self._label_configs.save()
+
+
