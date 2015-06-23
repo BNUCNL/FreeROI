@@ -1,0 +1,16 @@
+  0  Unknown            0   0   0    0   
+  1  region1          255   0   0    0
+  2  region2            0 255   0    0
+  3  region3            0   0 255    0
+  4  region4           23 220  60    0   
+  5  region5          141  60  20    0   
+  6  region6           63 100  60    0   
+  7  region7          220 180 140    0   
+  8  region8           13 140 250    0   
+  9  region9           26  60   0    0   
+ 10  region10          26  60  75    0   
+ 11  region11          63 180 180    0   
+ 12  region12          25  60 250    0   
+ 13  region13          60  25  25    0   
+ 14  region14         180  20  20    0   
+ 15  region15         220  20 100    0   
