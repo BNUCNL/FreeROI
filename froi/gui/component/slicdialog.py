@@ -4,7 +4,6 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import segment
 from skimage.segmentation import slic
 
 class SLICDialog(QDialog):
