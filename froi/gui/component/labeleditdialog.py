@@ -88,10 +88,18 @@ class LabelEditDialog(QDialog, DrawSettings):
                                     "The label %s has exsited!" % new_label[1],
                                     QMessageBox.Yes)
                 return
+
+            if new_label[0] in self._label_configs.get_index_list():
+                QMessageBox.warning(self, "Add label",
+                                    "The index %s has exsited!" % new_label[0],
+                                    QMessageBox.Yes)
+                return
+
             text_index_icon_item = QStandardItem(get_icon(new_label[2]),
                                              str(new_label[0]) + '  ' + new_label[1])
-            self._label_model.appendRow(text_index_icon_item)
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
+            order_index = self._label_configs.get_index_list().index(new_label[0])
+            self._label_model.insertRow(order_index, text_index_icon_item)
             self._label_configs.save()
             self._update_button_status()
 
@@ -103,7 +111,8 @@ class LabelEditDialog(QDialog, DrawSettings):
         row = self.list_view.currentIndex().row()
         if row == -1 and self._label_model.rowCount() > 0:
             row = self._label_model.rowCount() - 1
-        label = self._label_configs.get_label_list()[row]
+        index = self._label_configs.get_index_list()[row]
+        label = self._label_configs.get_index_label(index)
         button = QMessageBox.warning(self, "Delete label",
                 "Are you sure that you want to delete label %s ?" % label,
                  QMessageBox.Yes,
@@ -116,8 +125,8 @@ class LabelEditDialog(QDialog, DrawSettings):
 
     def _edit_label(self):
         row = self.list_view.currentIndex().row()
-        label = self._label_configs.get_label_list()[row]
-        index = self._label_configs.get_label_index(label)
+        index = self._label_configs.get_index_list()[row]
+        label = self._label_configs.get_index_label(index)
         add_dialog = AddLabelDialog(self, (str(index), label, self._label_configs.get_label_color(label)))
         add_dialog.setWindowTitle("Edit the label")
         add_dialog.exec_()
