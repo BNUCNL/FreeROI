@@ -35,14 +35,12 @@ class LabelConfig(object):
         self._is_global = is_global
 
     def load(self, filepath):
-        tmp_dict = collections.OrderedDict()
         with open(filepath, 'r+') as f:
             for line in f:
                 line = line.split()
                 if line:
                     self.label_index[line[1]] = int(line[0])
                     self.label_color[line[1]] = QColor(int(line[2]), int(line[3]), int(line[4]))
-        return tmp_dict
 
     def dump(self):
         if hasattr(self, 'filepath'):
@@ -93,6 +91,9 @@ class LabelConfig(object):
 
     def get_label_list(self):
         return self.label_index.keys()
+
+    def get_index_list(self):
+        return sorted(self.label_index.values())
 
     def get_label_index(self, label):
         if label:
