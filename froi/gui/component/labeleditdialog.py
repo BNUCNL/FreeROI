@@ -3,10 +3,10 @@
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from no_gui_tools import gen_label_color
 
 from drawsettings import DrawSettings
 from addlabeldialog import *
-from no_gui_tools import get_icon
 
 class LabelEditDialog(QDialog, DrawSettings):
     """
@@ -95,7 +95,7 @@ class LabelEditDialog(QDialog, DrawSettings):
                                     QMessageBox.Yes)
                 return
 
-            text_index_icon_item = QStandardItem(get_icon(new_label[2]),
+            text_index_icon_item = QStandardItem(gen_label_color(new_label[2]),
                                              str(new_label[0]) + '  ' + new_label[1])
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
             order_index = self._label_configs.get_index_list().index(new_label[0])

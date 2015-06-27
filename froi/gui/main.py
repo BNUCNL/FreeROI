@@ -26,7 +26,7 @@ from component.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from component.binarizationdialog import BinarizationDialog
 from component.intersectdialog import IntersectDialog
 from component.localmaxdialog import LocalMaxDialog
-from component.no_gui_tools import inverse_image
+from component.no_gui_tools import inverse_image, gen_label_color
 from component.smoothingdialog import SmoothingDialog
 from component.growdialog import GrowDialog
 from component.watersheddialog import WatershedDialog
@@ -46,7 +46,6 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
-from component.no_gui_tools import *
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -968,7 +967,7 @@ class BpMainWindow(QMainWindow):
             model = QStandardItemModel()
             indexs = sorted(item.get_index_list())
             for index in indexs:
-                text_index_icon_item = QStandardItem(get_icon(item.get_label_color(item.get_index_label(index))),
+                text_index_icon_item = QStandardItem(gen_label_color(item.get_label_color(item.get_index_label(index))),
                                                      str(index) + '  ' + item.get_index_label(index))
                 model.appendRow(text_index_icon_item)
 
