@@ -26,7 +26,7 @@ from component.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from component.binarizationdialog import BinarizationDialog
 from component.intersectdialog import IntersectDialog
 from component.localmaxdialog import LocalMaxDialog
-from component.no_gui_tools import inverse_image
+from component.no_gui_tools import inverse_image, gen_label_color
 from component.smoothingdialog import SmoothingDialog
 from component.growdialog import GrowDialog
 from component.watersheddialog import WatershedDialog
@@ -46,7 +46,6 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
-from component.no_gui_tools import *
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -359,9 +358,7 @@ class BpMainWindow(QMainWindow):
         self._actions['region_grow'].setEnabled(False)
 
         # Lable Management action
-        self._actions['label_management'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'intersect.png')),
-                                               self.tr("Label Management"),
+        self._actions['label_management'] = QAction(self.tr("Label Management"),
                                                self)
         self._actions['label_management'].triggered.connect(self._label_manage)
         self._actions['label_management'].setEnabled(False)
@@ -813,7 +810,6 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
-        self.tool_menu.addAction(self._actions['label_management'])
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -839,6 +835,8 @@ class BpMainWindow(QMainWindow):
         morphological_tools.addAction(self._actions['binaryerosion'])
         morphological_tools.addAction(self._actions['greydilation'])
         morphological_tools.addAction(self._actions['greyerosion'])
+
+        self.tool_menu.addAction(self._actions['label_management'])
 
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self._actions['about_pybp'])
@@ -967,10 +965,12 @@ class BpMainWindow(QMainWindow):
         self._label_models = []
         for item in self.label_configs:
             model = QStandardItemModel()
-            for label in item.get_label_list():
-                text_index_icon_item = QStandardItem(get_icon(item.get_label_color(label)),
-                                                     str(item.get_label_index(label)) + '  ' + label)
+            indexs = sorted(item.get_index_list())
+            for index in indexs:
+                text_index_icon_item = QStandardItem(gen_label_color(item.get_label_color(item.get_index_label(index))),
+                                                     str(index) + '  ' + item.get_index_label(index))
                 model.appendRow(text_index_icon_item)
+
             self._label_models.append(model)
         self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 

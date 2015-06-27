@@ -43,7 +43,7 @@ def edge_detection(model):
     return
 
 
-def get_icon(color):
+def gen_label_color(color):
     icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
     icon_image.fill(color.rgb())
     icon_image = icon_image.rgbSwapped()
