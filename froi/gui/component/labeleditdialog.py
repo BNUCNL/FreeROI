@@ -133,6 +133,11 @@ class LabelEditDialog(QDialog, DrawSettings):
         edit_label = add_dialog.get_new_label()
 
         if edit_label:
+            if edit_label[1] in self._label_configs.get_label_list():
+                QMessageBox.warning(self, "Edit label",
+                                    "The label %s has exsited!" % edit_label[1],
+                                    QMessageBox.Yes)
+                return
             self._label_model.removeRow(row)
             text_index_icon_item = QStandardItem(get_icon(edit_label[2]),
                                                  str(edit_label[0]) + '  ' + edit_label[1])
