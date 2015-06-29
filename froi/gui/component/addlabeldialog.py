@@ -14,6 +14,7 @@ class AddLabelDialog(QDialog):
         self._edit_label = edit_label
         self._new_label = []
         self._label_configs = label_configs
+        self._is_valid_label = False
         self._init_gui()
         self._create_actions()
 
@@ -87,11 +88,11 @@ class AddLabelDialog(QDialog):
         self._new_label.append(color)
 
         if self._new_label[1] in self._label_configs.get_label_list():
-            QMessageBox.warning(self, "Add label",
-                                "The label %s has exsited!" % self._new_label[1],
-                                QMessageBox.Yes)
-            return
-
+            if self._edit_label is None or self._edit_label[1] != self._new_label[1]:
+                QMessageBox.warning(self, "Add label",
+                                    "The label %s has exsited!" % self._new_label[1],
+                                    QMessageBox.Yes)
+                return
         if not self._edit_label:
             if self._new_label[0] in self._label_configs.get_index_list():
                 QMessageBox.warning(self, "Add label",
@@ -99,11 +100,14 @@ class AddLabelDialog(QDialog):
                                     QMessageBox.Yes)
                 return
 
+        self._is_valid_label = True
         self.done(0)
 
     def get_new_label(self):
-        if self._new_label:
+        if self._is_valid_label:
             return self._new_label
+        else:
+            return None
 
 class ColorButton(QPushButton):
     """
