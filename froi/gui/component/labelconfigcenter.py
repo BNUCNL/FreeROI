@@ -154,8 +154,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         current_label_config = self.label_configs[idx]
         index = self.label_list_view.currentIndex()
         # label = self.label_list_view.model().data(index, Qt.UserRole)
-        label = current_label_config.get_label_list()[index.row()]
-        return current_label_config.get_label_index(label)
+        return current_label_config.get_index_list()[index.row()]
 
     def get_drawing_size(self):
         if not self.is_drawing_valid():
@@ -169,9 +168,9 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         current_label_config = self.label_configs[idx]
         index = self.label_list_view.currentIndex()
         # label = self.label_list_view.model().data(index, Qt.UserRole)
-        label = current_label_config.get_label_list()[index.row()]
-        print "idx: ", idx, "   label: ", label
-        return current_label_config.get_label_color(label)
+        index = current_label_config.get_index_list()[index.row()]
+
+        return current_label_config.get_label_color(current_label_config.get_index_label(index))
 
     def get_all_labelconfig_names(self):
         self.config_names = [x.get_name() for x in self.label_configs]

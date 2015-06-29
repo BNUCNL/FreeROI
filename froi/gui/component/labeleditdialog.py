@@ -1,8 +1,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
 from no_gui_tools import gen_label_color
 
 from drawsettings import DrawSettings
@@ -78,23 +76,11 @@ class LabelEditDialog(QDialog, DrawSettings):
         Add a new label.
 
         """
-        add_dialog = AddLabelDialog(self)
+        add_dialog = AddLabelDialog(self._label_configs)
         add_dialog.setWindowTitle("Add a new label")
         add_dialog.exec_()
         new_label = add_dialog.get_new_label()
         if new_label:
-            if new_label[1] in self._label_configs.get_label_list():
-                QMessageBox.warning(self, "Add label",
-                                    "The label %s has exsited!" % new_label[1],
-                                    QMessageBox.Yes)
-                return
-
-            if new_label[0] in self._label_configs.get_index_list():
-                QMessageBox.warning(self, "Add label",
-                                    "The index %s has exsited!" % new_label[0],
-                                    QMessageBox.Yes)
-                return
-
             text_index_icon_item = QStandardItem(gen_label_color(new_label[2]),
                                              str(new_label[0]) + '  ' + new_label[1])
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
@@ -127,19 +113,14 @@ class LabelEditDialog(QDialog, DrawSettings):
         row = self.list_view.currentIndex().row()
         index = self._label_configs.get_index_list()[row]
         label = self._label_configs.get_index_label(index)
-        add_dialog = AddLabelDialog(self, (str(index), label, self._label_configs.get_label_color(label)))
+        add_dialog = AddLabelDialog(self._label_configs, (str(index), label, self._label_configs.get_label_color(label)))
         add_dialog.setWindowTitle("Edit the label")
         add_dialog.exec_()
         edit_label = add_dialog.get_new_label()
 
         if edit_label:
-            if edit_label[1] in self._label_configs.get_label_list():
-                QMessageBox.warning(self, "Edit label",
-                                    "The label %s has exsited!" % edit_label[1],
-                                    QMessageBox.Yes)
-                return
             self._label_model.removeRow(row)
-            text_index_icon_item = QStandardItem(get_icon(edit_label[2]),
+            text_index_icon_item = QStandardItem(gen_label_color(edit_label[2]),
                                                  str(edit_label[0]) + '  ' + edit_label[1])
             self._label_model.insertRow(row, text_index_icon_item)
             self._label_configs.edit_label(label, edit_label[1], edit_label[2])
