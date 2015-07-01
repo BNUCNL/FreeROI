@@ -779,7 +779,7 @@ class BpMainWindow(QMainWindow):
                                   "</p>"
                                   "<p><b>FreeROI</b> is under Revised BSD "
                                   "License.</p>"
-                                  "<p>Copyright(c) 2012-2014 "
+                                  "<p>Copyright(c) 2012-2015 "
                                   "Neuroinformatic Team in LiuLab "
                                   "from Beijing Normal University</p>"
                                   "<p></p>"
