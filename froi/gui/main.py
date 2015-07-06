@@ -196,9 +196,9 @@ class BpMainWindow(QMainWindow):
 
         # Open template action
         self._actions['add_template'] = QAction(QIcon(os.path.join(
-                                                      self._icon_dir, 'open.png')),
-                                                self.tr("&Open standard volume"),
-                                                self)
+                                            self._icon_dir, 'open.png')),
+                                            self.tr("&Open standard template"),
+                                            self)
         self._actions['add_template'].setShortcut(self.tr("Ctrl+O"))
         self._actions['add_template'].triggered.connect(self._add_template)
         self._actions['add_template'].setEnabled(True)
@@ -206,7 +206,7 @@ class BpMainWindow(QMainWindow):
         # Add a new image action
         self._actions['add_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
-                                             self.tr("&Add volume"),
+                                             self.tr("&Add file ... "),
                                              self)
         self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
         self._actions['add_image'].triggered.connect(self._add_image)
@@ -214,8 +214,8 @@ class BpMainWindow(QMainWindow):
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
-                                                      self._icon_dir, 'remove.png')),
-                                                self.tr("&Remove volume"),
+                                                self._icon_dir, 'remove.png')),
+                                                self.tr("&Remove image"),
                                                 self)
         self._actions['remove_image'].setShortcut(self.tr("Ctrl+R"))
         self._actions['remove_image'].triggered.connect(self._remove_image)
@@ -223,18 +223,18 @@ class BpMainWindow(QMainWindow):
 
         # New image
         self._actions['new_image'] = QAction(QIcon(os.path.join(
-                                                   self._icon_dir, 'create.png')),
-                                             self.tr("&New volume"),
-                                             self)
+                                            self._icon_dir, 'create.png')),
+                                            self.tr("&New image"),
+                                            self)
         self._actions['new_image'].setShortcut(self.tr("Ctrl+N"))
         self._actions['new_image'].triggered.connect(self.__new_image)
         self._actions['new_image'].setEnabled(False)
 
         # Save image
         self._actions['save_image'] = QAction(QIcon(os.path.join(
-                                                    self._icon_dir, 'save.png')),
-                                              self.tr("&Save volume as..."),
-                                              self)
+                                            self._icon_dir, 'save.png')),
+                                            self.tr("&Save image as..."),
+                                            self)
         self._actions['save_image'].setShortcut(self.tr("Ctrl+S"))
         self._actions['save_image'].triggered.connect(self._save_image)
         self._actions['save_image'].setEnabled(False)
@@ -791,17 +791,21 @@ class BpMainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu(self.tr("File"))
         self.file_menu.addAction(self._actions['add_image'])
         self.file_menu.addAction(self._actions['add_template'])
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self._actions['new_image'])
+        self.file_menu.addAction(self._actions['remove_image'])
+        # TODO: add duplicate image function
+        #self.file_menu.addAction(self._actions['duplicate_image'])
         self.file_menu.addAction(self._actions['save_image'])
-        #self.file_menu.addSeparator()
         #self.file_menu.addAction(self._actions['ld_lbl'])
         #self.file_menu.addAction(self._actions['ld_glbl'])
         self.file_menu.addSeparator()
         self.file_menu.addAction(self._actions['close'])
         self.file_menu.addAction(self._actions['quit'])
 
-        self.volume_menu = self.menuBar().addMenu(self.tr("Volume"))
-        self.volume_menu.addAction(self._actions['new_image'])
-        self.volume_menu.addAction(self._actions['remove_image'])
+        #self.volume_menu = self.menuBar().addMenu(self.tr("Volume"))
+        #self.volume_menu.addAction(self._actions['new_image'])
+        #self.volume_menu.addAction(self._actions['remove_image'])
 
         self.view_menu = self.menuBar().addMenu(self.tr("View"))
         self.view_menu.addAction(self._actions['grid_view'])
@@ -810,6 +814,7 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
+        # Basic tools
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -818,16 +823,19 @@ class BpMainWindow(QMainWindow):
         basic_tools.addAction(self._actions['smoothing'])
         basic_tools.addAction(self._actions['meants'])
         basic_tools.addAction(self._actions['voxelstats'])
+        # Segment tools
         segment_tools = self.tool_menu.addMenu(self.tr("Segmentation"))
         segment_tools.addAction(self._actions['region_grow'])
         segment_tools.addAction(self._actions['watershed'])
         segment_tools.addAction(self._actions['slic'])
         segment_tools.addAction(self._actions['cluster'])
+        # ROI tools
         roi_tools = self.tool_menu.addMenu(self.tr("ROI Tools"))
         roi_tools.addAction(self._actions['edge_dete'])
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['r2i'])
+        # Morphological tools
         morphological_tools = self.tool_menu.addMenu(
                                     self.tr("Morphological Processing"))
         morphological_tools.addAction(self._actions['opening'])
@@ -835,7 +843,7 @@ class BpMainWindow(QMainWindow):
         morphological_tools.addAction(self._actions['binaryerosion'])
         morphological_tools.addAction(self._actions['greydilation'])
         morphological_tools.addAction(self._actions['greyerosion'])
-
+        # label management
         self.tool_menu.addAction(self._actions['label_management'])
 
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
