@@ -230,6 +230,11 @@ class BpMainWindow(QMainWindow):
         self._actions['new_image'].triggered.connect(self.__new_image)
         self._actions['new_image'].setEnabled(False)
 
+        # Duplicate image
+        self._actions['duplicate_image'].QAction(self.tr("Duplicate"), self)
+        self._actions['duplicate_image'].triggered.connect(self._duplicate_image)
+        self._actions['duplicate_image'].setEnabled(False)
+
         # Save image
         self._actions['save_image'] = QAction(QIcon(os.path.join(
                                             self._icon_dir, 'save.png')),
@@ -586,6 +591,19 @@ class BpMainWindow(QMainWindow):
                 file_path = str(file_name)
             self._add_img(file_path)
 
+    def _duplicate_image(self):
+        """
+        Duplicate image.
+
+        """
+        index = self.model.currentIndex()
+        dup_img = self.model._data[index.row()].duplicate()
+        self.model.insertRow(0, dup_img)
+        self.list_view.setCurrentIndex(self.model.index(0))
+
+        # change button status
+        self._actions['remove_image'].setEnabled(True)
+        
     def _add_img(self, source, name=None, header=None, view_min=None,
                  view_max=None, alpha=255, colormap='gray'):
         """
@@ -795,7 +813,7 @@ class BpMainWindow(QMainWindow):
         self.file_menu.addAction(self._actions['new_image'])
         self.file_menu.addAction(self._actions['remove_image'])
         # TODO: add duplicate image function
-        #self.file_menu.addAction(self._actions['duplicate_image'])
+        self.file_menu.addAction(self._actions['duplicate_image'])
         self.file_menu.addAction(self._actions['save_image'])
         #self.file_menu.addAction(self._actions['ld_lbl'])
         #self.file_menu.addAction(self._actions['ld_glbl'])

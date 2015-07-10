@@ -8,6 +8,7 @@ import re
 import os
 import nibabel as nib
 import numpy as np
+import copy
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -520,4 +521,20 @@ class VolumeDataset(object):
         else:
             #return self._data[y, x, z]
             return self._data[self._y_shift - y, x, z]
+
+    def duplicate(self):
+        """
+        Return a duplicated image.
+
+        """
+        #pass
+        dup_img = VolumeDataset(source=self.get_raw_data(),
+                                label_config_center=self.get_label_config(),
+                                name=self.get_name()+'_duplicate',
+                                header=self.get_header(),
+                                view_min=self.get_view_min(),
+                                view_max=self.get_view_max(),
+                                alpha=self.get_alpha(),
+                                colormap=self.get_colormap())
+        return dup_img
 
