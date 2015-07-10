@@ -13,12 +13,12 @@ of interest (ROI) for ROI analysis.
 
 Currently, FreeROI could run on multiple platforms, including:
 
-* ubuntu/debian
-* centos/redhat/fedora
-* mac osx
-* windows
+* Ubuntu/Debian
+* CentOS/Redhat/Fedora
+* Mac OSX
+* Windows
 
-For windows users, an exectable version is
+For Windows users, an exectable version is
 `available <http://sourceforge.net/projects/freeroi/files/?source=navbar>`_.
 Unzip the package, double click *freeroi.exe* to run the program.
 
@@ -45,8 +45,8 @@ Developers
 
 * `Lijie Huang <mailto:huanglijie.seal@gmail.com>`_
 * `Zetian Yang <mailto:zetian.yang@gmail.com>`_
-* Guangfu Zhou
-* Zhaoguo Liu
+* `Guangfu Zhou <mailto:zhougf0908@gmail.com>`_
+* `Zhaoguo Liu <mailto:liuzg309@gmail.com>`_
 * Xiaobin Dang
 
 We also thank the following for their contributing to this software:
