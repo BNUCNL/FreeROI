@@ -40,6 +40,7 @@ from component.opendialog import OpenDialog
 from component.labelmanagedialog import LabelManageDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog
+from component.atlasdialog import AtlasDialog
 from component.binaryerosiondialog import BinaryerosionDialog
 from component.binarydilationdialog import BinarydilationDialog
 from component.greydilationdialog import GreydilationDialog
@@ -455,6 +456,15 @@ class BpMainWindow(QMainWindow):
         self._actions['edit'].setCheckable(True)
         self._actions['edit'].setChecked(False)
 
+        # Atlas information
+        self._actions['atlas'] = QAction(QIcon(os.path.join(
+                                              self._icon_dir, 'H-O cortical.png')),
+                                        self.tr("Atlas Information"),
+                                        self)
+        self._actions['atlas'].triggered.connect(self._atlas_dialog)
+        self._actions['atlas'].setCheckable(True)
+        self._actions['atlas'].setChecked(False)
+
         # Undo
         self._actions['undo'] = QAction(QIcon(os.path.join(
                                               self._icon_dir, 'undo.png')),
@@ -534,6 +544,7 @@ class BpMainWindow(QMainWindow):
         self._toolbar.addAction(self._actions['hand'])
         self._toolbar.addAction(self._actions['cursor'])
         self._toolbar.addAction(self._actions['edit'])
+        self._toolbar.addAction(self._actions['atlas'])
         # Add undo redo
         self._toolbar.addSeparator()
         self._toolbar.addAction(self._actions['undo'])
@@ -893,6 +904,19 @@ class BpMainWindow(QMainWindow):
         else:
             self._actions['edit'].setChecked(True)
 
+    def _atlas_dialog(self):
+        """
+        Atlas information
+        """
+        self._actions['cursor'].setChecked(True)
+        self._actions['hand'].setChecked(False)
+        self.atlasdialog = AtlasDialog(self.model, self)
+        self.atlasdialog.show()
+
+    def _atlasdialog_disable(self):
+        self.atlasdialog.hide()
+        self._actions['atlas'].setChecked(False)
+
     def _roi_batch_enable(self):
         self.image_view.set_label_mouse_tracking(False)
         self._label_config_center.set_is_roi_edit(False)
@@ -913,6 +937,8 @@ class BpMainWindow(QMainWindow):
  
             if hasattr(self, 'roidialog'):
                 self._roidialog_disable()
+            if hasattr(self, 'atlasdialog'):
+                self._atlasdialog_disable()
 
             self.painter_status.set_draw_settings(MoveSettings())
             self.image_view.set_cursor(Qt.OpenHandCursor)

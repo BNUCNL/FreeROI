@@ -3,16 +3,17 @@
 
 import os
 from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 from froi.io.xml_api import *
 
 
-class HOCorticalDialog(QDialog):
+class AtlasDialog(QDialog):
     """
     A dialog for action of Harvard-Oxford Cortical Atlas.
 
     """
     def __init__(self, model, main_win, parent=None):
-        super(HOCorticalDialog, self).__init__(parent)
+        super(AtlasDialog, self).__init__(parent)
         self._model = model
         self._main_win = main_win
         self._init_gui()
@@ -87,18 +88,19 @@ class HOCorticalDialog(QDialog):
             new_dialog.exec_()
             #print 'close dialog...'
             self.status = new_dialog._get_checkbox_status()
-            if self.status[0]:
-                self.title_label1.setVisible(True)
-                self.prob_label1.setVisible(True)
-            else:
-                self.title_label1.setVisible(False)
-                self.prob_label1.setVisible(False)
-            if self.status[1]:
-                self.title_label2.setVisible(True)
-                self.prob_label2.setVisible(True)
-            else:
-                self.title_label2.setVisible(False)
-                self.prob_label2.setVisible(False)
+            if self.status != []:
+                if self.status[0]:
+                    self.title_label1.setVisible(True)
+                    self.prob_label1.setVisible(True)
+                else:
+                    self.title_label1.setVisible(False)
+                    self.prob_label1.setVisible(False)
+                if self.status[1]:
+                    self.title_label2.setVisible(True)
+                    self.prob_label2.setVisible(True)
+                else:
+                    self.title_label2.setVisible(False)
+                    self.prob_label2.setVisible(False)
 
 
     def _get_set_status(self):
@@ -134,11 +136,12 @@ class SettingDialog(QDialog):
         self.ret = []
 
     def _save(self):
-        if not (self.subcor_checkbox.isChecked() or self.cor_checkbox.isChecked()):
-            QMessageBox.about(self, self.tr("Errors"),
-                              self.tr("<p>you should choose at least one atlas!</p>"))
-        else:
-            self.ret = [self.subcor_checkbox.isChecked(), self.cor_checkbox.isChecked()]
+        self.ret = [self.subcor_checkbox.isChecked(), self.cor_checkbox.isChecked()]
+        if not self.subcor_checkbox.isChecked():
+            self.subcor_checkbox.setEnabled(True)
+        if not self.cor_checkbox.isChecked():
+            self.cor_checkbox.setEnabled(False)
+        self.close()
 
     def _get_checkbox_status(self):
         return self.ret
@@ -154,8 +157,8 @@ class SettingDialog(QDialog):
         self.subcor_checkbox = QCheckBox()
         self.subcor_checkbox.setChecked(True)
         self.cor_checkbox = QCheckBox()
-        self.cor_checkbox.setChecked(False)
-        self.save_button = QPushButton("save")
+        self.cor_checkbox.setChecked(True)
+        self.save_button = QPushButton("OK")
         grid_layout = QGridLayout()
         grid_layout.addWidget(self.subcor_checkbox, 0,0)
         grid_layout.addWidget(self.subcor_label,0,1)
