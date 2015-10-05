@@ -140,7 +140,7 @@ class SettingDialog(QDialog):
         if not self.subcor_checkbox.isChecked():
             self.subcor_checkbox.setEnabled(True)
         if not self.cor_checkbox.isChecked():
-            self.cor_checkbox.setEnabled(False)
+            self.cor_checkbox.setEnabled(True)
         self.close()
 
     def _get_checkbox_status(self):
