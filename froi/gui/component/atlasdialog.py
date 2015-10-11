@@ -9,23 +9,24 @@ from froi.io.xml_api import *
 
 class AtlasDialog(QDialog):
     """
-    A dialog for action of Harvard-Oxford Cortical Atlas.
+    A dialog for action of Atlas.
 
     """
-    def __init__(self, model, main_win, parent=None):
+    parent_path = os.path.dirname(os.getcwd())
+    tar_path = parent_path+'/froi/data/atlas/'
+
+    def __init__(self, model, parent=None):
         super(AtlasDialog, self).__init__(parent)
         self._model = model
-        self._main_win = main_win
         self._init_gui()
         self._create_actions()
 
     def atlas_display(self, niftil_path, xml_path):
         """
-        The layout of a single atlas information.
+        The layout of a single atlas prob information.
 
         """
         xyz = self._model.get_cross_pos()
-
         prob_list = extract_atlasprob(niftil_path, xyz[0], xyz[1], xyz[2])
         label_list = get_info(xml_path, 'label')
         display = sorting(label_list, prob_list)
@@ -39,21 +40,21 @@ class AtlasDialog(QDialog):
         """
         # set dialog title
         self.setWindowTitle("Probability Information")
-        parent_path = os.path.dirname(os.getcwd())
-        tar_path = parent_path+'/froi/data/atlas/'
 
         # initialize widgets
         self.source_combo = QComboBox()
         self.title_label1 = QLabel('Harvard-Oxford SubCortical Structural Atlas')
         self.title_label1.setFont(QFont("Roman times", 10, QFont.Bold))
         self.prob_label1 = QLabel()
-        layout1 = self.atlas_display(tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', tar_path+'HarvardOxford-Subcortical.xml')
+        layout1 = self.atlas_display(self.tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', \
+                                     self.tar_path+'HarvardOxford-Subcortical.xml')
         self.prob_label1.setText(layout1)
 
         self.title_label2 = QLabel('Harvard-Oxford Cortical Structural Atlas')
         self.title_label2.setFont(QFont("Roman times", 10, QFont.Bold))
         self.prob_label2 = QLabel()
-        layout2 = self.atlas_display(tar_path+'HarvardOxford-cort-prob-2mm.nii.gz', tar_path+'HarvardOxford-Cortical.xml')
+        layout2 = self.atlas_display(self.tar_path+'HarvardOxford-cort-prob-2mm.nii.gz', \
+                                     self.tar_path+'HarvardOxford-Cortical.xml')
         self.prob_label2.setText(layout2)
 
         self.help_button = QPushButton("Help")
@@ -73,20 +74,32 @@ class AtlasDialog(QDialog):
 
     def _create_actions(self):
         """
-        Create actions about the button
+        Create actions for button and cross_changed
         """
         self.help_button.clicked.connect(self._help_dialog)
         self.set_button.clicked.connect(self._set_dialog)
+        self._model.cross_pos_changed.connect(self._update_prob)
+
+
+    def _update_prob(self):
+        """
+        Update atlas probability values
+        """
+        layout1 = self.atlas_display(self.tar_path+'HarvardOxford-sub-prob-2mm.nii.gz', \
+                                     self.tar_path+'HarvardOxford-Subcortical.xml')
+        self.prob_label1.setText(layout1)
+        layout2 = self.atlas_display(self.tar_path+'HarvardOxford-cort-prob-2mm.nii.gz', \
+                                     self.tar_path+'HarvardOxford-Cortical.xml')
+        self.prob_label2.setText(layout2)
 
 
     def _set_dialog(self):
-        '''
+        """
         Setting clicked
-        '''
+        """
         if self.set_button.isEnabled():
             new_dialog = SettingDialog(self)
             new_dialog.exec_()
-            #print 'close dialog...'
             self.status = new_dialog._get_checkbox_status()
             if self.status != []:
                 if self.status[0]:
@@ -103,7 +116,11 @@ class AtlasDialog(QDialog):
                     self.prob_label2.setVisible(False)
 
 
-    def _get_set_status(self):
+    def _get_setting_status(self):
+        """
+        Get setting status.
+
+        """
         return self.status
 
 
@@ -129,13 +146,15 @@ class SettingDialog(QDialog):
 
     def __init__(self, parent=None):
         super(SettingDialog, self).__init__(parent)
-        #self._model = model
-        #self._main_win = main_win
         self._init_gui()
         self._create_actions()
         self.ret = []
 
     def _save(self):
+        """
+        Actions for save button.
+
+        """
         self.ret = [self.subcor_checkbox.isChecked(), self.cor_checkbox.isChecked()]
         if not self.subcor_checkbox.isChecked():
             self.subcor_checkbox.setEnabled(True)
@@ -144,6 +163,10 @@ class SettingDialog(QDialog):
         self.close()
 
     def _get_checkbox_status(self):
+        """
+        Get checkbox status.
+
+        """
         return self.ret
 
     def _init_gui(self):
@@ -171,6 +194,10 @@ class SettingDialog(QDialog):
         self.setLayout(ver_layout)
 
     def _create_actions(self):
+        """
+        Create actions for the button
+
+        """
         self.save_button.clicked.connect(self._save)
 
 
