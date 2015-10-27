@@ -49,20 +49,14 @@ class RegisterVolumeDialog(QDialog):
         self.register_button.adjustSize()
 
         self.fsl_radio = QRadioButton('FSL',self)
-        self.freesurfer_radio = QRadioButton('FreeSurfer',self)
-        self.afni_radio = QRadioButton('AFNI',self)
         self.spm_radio = QRadioButton('SPM',self)
         radio_group = QButtonGroup()
         radio_group.addButton(self.fsl_radio)
-        radio_group.addButton(self.freesurfer_radio)
-        radio_group.addButton(self.afni_radio)
         radio_group.addButton(self.spm_radio)
         self.fsl_radio.setChecked(True)
 
         radio_group_hlayout = QHBoxLayout()
         radio_group_hlayout.addWidget(self.fsl_radio)
-        radio_group_hlayout.addWidget(self.freesurfer_radio)
-        radio_group_hlayout.addWidget(self.afni_radio)
         radio_group_hlayout.addWidget(self.spm_radio)
 
         hbox_layout = QHBoxLayout()
@@ -153,40 +147,32 @@ class RegisterVolumeDialog(QDialog):
                         str(self.output_dir.text()))
 
         print 'self.output_dir: ', str(self.output_dir.text())
-        self.done()
+
+        self.close()
 
 
 class RegisterMethod(object):
     def __init__(self, parent=None):
         pass
 
-    def afni_register(self, input_volume_filename, output_volume_filename):
-        '''AFNI Registration'''
-
-        from nipype.interfaces import afni as afni
-        # volreg = afni.Volreg()
-        # volreg.inputs.in_file = input_volume_filename
-        # volreg.inputs.args = '-Fourier -twopass'
-        # volreg.inputs.zpad = 4
-        # volreg.inputs.outputtype = "NIFTI"
-        # # volreg.cmdline  '3dvolreg -Fourier -twopass -1Dfile functional.1D -1Dmatrix_save functional.aff12.1D -prefix functional_volreg.nii -zpad 4 -maxdisp1D functional_md.1D functional.nii'
-        # res = volreg.run()
-
-        from nipype.interfaces import afni as afni
-        allineate = afni.Allineate()
-        allineate.inputs.in_file = input_volume_filename
-        allineate.inputs.out_file= output_volume_filename
-        allineate.inputs.in_matrix= 'cmatrix.mat'
-        res = allineate.run()
-
-        print 'res: ', res
-
-        return res
 
 
     def fsl_register(self, input_volume_filename, reference_volume_filename, output_volume_filename):
         '''FSL Registration'''
+        # Reference link
+        # http://nipy.org/nipype/interfaces/generated/nipype.interfaces.fsl.preprocess.html
         # Use FSL FLIRT for coregistration.
+
+
+        #Only resample
+        # > From 2 to 4 mm:
+        # > flirt -in brain_2mm.nii.gz -ref brain_2mm.nii.gz -out brain_4mm.nii.gz
+        # > -nosearch -applyisoxfm 4
+        # >
+        # > And back to 2 mm:
+        # > flirt -in brain_4mm.nii.gz -ref brain_2mm.nii.gz -out brain_2mm_new.nii.gz
+        # > -nosearch -applyisoxfm 2
+
 
         from nipype.interfaces import fsl
         from nipype.testing import example_data
@@ -196,36 +182,27 @@ class RegisterMethod(object):
         flt.inputs.output_type = "NIFTI_GZ"
         flt.out_matrix_file = './result/fsl_matrix.mat'
         flt.out_file = output_volume_filename
+
+
         print flt.cmdline
         # flt.cmdline
         # 'flirt -in structural.nii -ref mni.nii -out structural_flirt.nii.gz -omat structural_flirt.mat -bins 640 -searchcost mutualinfo'
 
         res = flt.run()
-        print res
+        print res.outputs
         print 'Register end!'
 
         return res
 
 
-    def freesurfer_register(self, input_volume, output_volume_filename):
-        '''FreeSurfer Registration'''
-        # http://www.mit.edu/~satra/nipype-nightly/interfaces/generated/nipype.interfaces.freesurfer.preprocess.html
-
-        from nipype.interfaces.freesurfer import RobustRegister
-        reg = RobustRegister()
-        reg.inputs.source_file = input_volume
-        reg.inputs.target_file = output_volume_filename
-        reg.inputs.auto_sens = True
-        reg.inputs.init_orient = True
-        # reg.cmdline
-        # 'mri_robust_register --satit --initorient --lta structural_robustreg.lta --mov structural.nii --dst T1.nii'
-        reg.run()
-
-        return reg
 
     def spm_register(self, input_volume_filename, output_volume_filename):
         '''SPM Registration'''
+        # Reference link
         # http://www.mit.edu/~satra/nipype-nightly/interfaces/generated/nipype.interfaces.spm.preprocess.html
+        # http://nipy.org/nipype/users/examples/fmri_spm_dartel.html
+
+        #Registeration and Normalize
 
         import nipype.interfaces.matlab as mlab      # how to run matlab
 
@@ -258,6 +235,64 @@ class RegisterMethod(object):
         coreg.run()
 
 
+if __name__ == '__main__':
+    pass
+
+
+    output_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/test_output.nii'
+    input_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/T1_brain.nii'
+    reference_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/std.nii'
+
+    normalize_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/spm_r_T1_brain.nii'
+    normalizeresult__volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/wspm_r_T1_brain.nii'
+
+    import nibabel as nib
+    # input_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/T1_brain.nii'
+    print nib.load(input_volume_filename).get_data().shape
+    print nib.load(reference_volume_filename).get_data().shape
+    print nib.load(normalize_volume_filename).get_data().shape
+    print nib.load(normalizeresult__volume_filename).get_data().shape
+
+    import nipype.interfaces.matlab as mlab      # how to run matlab
+
+    # Set the way matlab should be called
+    mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
+    # If SPM is not in your MATLAB path you should add it here
+    mlab.MatlabCommand.set_default_paths('/nfs/j3/userhome/zhouguangfu/spm8')
+
+    # res = mlab.MatlabCommand(script='which(spm)',
+    #             paths=['/nfs/j3/userhome/zhouguangfu/spm8'],
+    #             mfile=False).run()
+    # print res.runtime.stdout
+
+    import nipype.interfaces.spm as spm
+    coreg = spm.Coregister()
+
+     #reference file
+    coreg.inputs.target = reference_volume_filename
+    #a list of items which are an existing file name file to register to target
+    coreg.inputs.source = input_volume_filename
+
+    coreg.inputs.cost_function = 'nmi'
+    coreg.inputs.separation = [4, 2]
+    coreg.inputs.tolerance = [0.02, 0.02, 0.02, 0.001, 0.001, 0.001,
+                          0.01, 0.01, 0.01, 0.001, 0.001, 0.001]
+    coreg.inputs.fwhm = [7, 7]
+    coreg.inputs.write_mask = False
+    coreg.inputs.out_prefix = 'spm_r_'
+    coreg.inputs.write_wrap = [0, 0, 0]
+    coreg.inputs.write_interp = 1
+    ret = coreg.run()
+    print 'Registeration end!'
+
+    import nipype.interfaces.spm as spm
+    norm = spm.Normalize()
+    norm.inputs.template = reference_volume_filename
+    norm.inputs.source = normalize_volume_filename
+    norm.run()
+
+
+    print 'Program end!'
 
 
 
