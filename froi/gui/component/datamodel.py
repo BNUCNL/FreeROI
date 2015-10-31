@@ -4,6 +4,7 @@
 
 """
 
+from nibabel.affines import apply_affine
 import numpy as np
 from PyQt4.QtCore import *
 
@@ -32,13 +33,14 @@ class VolumeListModel(QAbstractListModel):
         """
         super(VolumeListModel, self).__init__(parent)
         self._data = data_list
+        self._affine = None
+        self._ras_space = None
+        self._ras_unit = None
         self._current_index = None
         self._selected_indexes = []
         self._grid_scale_factor = 1.0
         self._orth_scale_factor = 1.0
-        # FIXME current position should be initialized when the first
-        # volume added.
-        # The current position is a 3D data.
+        # The current position is an index of 3D space.
         self._cross_pos = [0, 0, 0]
         self._display_cross = True
         self._connect_undo_redo()
@@ -52,6 +54,13 @@ class VolumeListModel(QAbstractListModel):
 
         """
         return self._cross_pos
+
+    def get_sapce_pos(self):
+        """
+        Get current cursor position in RAS space.
+
+        """
+        return apply_affine(self._affine, self._cross_pos)
 
     def set_cross_pos(self, new_coord):
         """
@@ -290,6 +299,7 @@ class VolumeListModel(QAbstractListModel):
                                  self._cross_pos[2]])
             ok = self.insertRow(0, vol)
             if ok:
+                self._get_sapce_info(vol)
                 self.repaint_slices.emit(-1)
                 return True
             else:
@@ -632,4 +642,26 @@ class VolumeListModel(QAbstractListModel):
 
     def get_label_config_center(self):
         return self._label_config_center
+
+    def _get_sapce_info(self, vol):
+        """
+        Get affine and corresponding RAS sapce from the first volume.
+
+        """
+        header = vol.get_header()
+        self._ras_unit = header.get_xyzt_units()[0]
+        space_list = ['unknown', 'Scanner', 'Aligned', 'Talairach', 'MNI']
+        if header['sform_code']:
+            self._ras_space = space_list[header['sform_code'].item()]
+            self._affine = header.get_sform()
+        elif header['qform_code']:
+            self._ras_space = space_list[header['qform_code'].item()]
+            self._affine = header.get_qform()
+
+    def get_space_name(self):
+        """
+        Get RAS space name.
+
+        """
+        return self._ras_space
 

@@ -71,7 +71,7 @@ class BpMainWindow(QMainWindow):
         """
         # Inherited from QMainWindow
         if sys.platform == 'darwin':
-            # Workaround for Qt issue on OS X that causes QMainWindow to
+            # Workaround for Qt issue on OSX that causes QMainWindow to
             # hide when adding QToolBar, see
             # https://bugreports.qt-project.org/browse/QTBUG-4300
             super(BpMainWindow, self).__init__(parent,
@@ -104,8 +104,7 @@ class BpMainWindow(QMainWindow):
         #self.resize(1280, 1000)
         self.center()
         # set window icon
-        self.setWindowIcon(QIcon(os.path.join(self._icon_dir,
-                                              'logo.png')))
+        self.setWindowIcon(QIcon(os.path.join(self._icon_dir, 'logo.png')))
 
         self._init_configuration()
 
@@ -130,7 +129,7 @@ class BpMainWindow(QMainWindow):
         Load configuration for GUI.
 
         """
-        config_file = os.path.expanduser('~/.pybp.conf')
+        config_file = os.path.expanduser('~/.froi.conf')
         if os.path.exists(config_file):
             config = ConfigParser.RawConfigParser()
             config.read(config_file)
@@ -155,7 +154,7 @@ class BpMainWindow(QMainWindow):
         Save GUI configuration to a file.
 
         """
-        config_file = os.path.expanduser('~/.pybp.conf')
+        config_file = os.path.expanduser('~/.freeroi.conf')
 
         config = ConfigParser.RawConfigParser()
         config.add_section('width')
@@ -429,8 +428,8 @@ class BpMainWindow(QMainWindow):
         self._actions['greydilation'].setEnabled(False)
 
         # About software
-        self._actions['about_pybp'] = QAction(self.tr("About FreeROI"), self)
-        self._actions['about_pybp'].triggered.connect(self._about_pybp)
+        self._actions['about_freeroi'] = QAction(self.tr("About FreeROI"), self)
+        self._actions['about_freeroi'].triggered.connect(self._about_freeroi)
 
         # About Qt
         self._actions['about_qt'] = QAction(QIcon(os.path.join(
@@ -789,7 +788,7 @@ class BpMainWindow(QMainWindow):
         self._actions['original_view'].setEnabled(False)
         self._functional_module_set_enabled(False)
 
-    def _about_pybp(self):
+    def _about_freeroi(self):
         """
         About software.
 
@@ -878,7 +877,7 @@ class BpMainWindow(QMainWindow):
         self.tool_menu.addAction(self._actions['label_management'])
 
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
-        self.help_menu.addAction(self._actions['about_pybp'])
+        self.help_menu.addAction(self._actions['about_freeroi'])
         self.help_menu.addAction(self._actions['about_qt'])
 
     def _cursor_enable(self):
