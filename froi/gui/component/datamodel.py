@@ -3,7 +3,7 @@
 """Implementation of model part in Qt Model-View architecture.
 
 """
-
+import numpy.linalg as npl
 from nibabel.affines import apply_affine
 import numpy as np
 from PyQt4.QtCore import *
@@ -55,7 +55,7 @@ class VolumeListModel(QAbstractListModel):
         """
         return self._cross_pos
 
-    def get_sapce_pos(self):
+    def get_space_pos(self):
         """
         Get current cursor position in RAS space.
 
@@ -70,6 +70,30 @@ class VolumeListModel(QAbstractListModel):
         self._cross_pos = new_coord
         self.update_orth_rgba()
         self.cross_pos_changed.emit()
+
+    def set_space_pos(self, new_space_coord):
+        """
+        Set current cursor position based on RAS coordinates.
+
+        """
+        new_coord = apply_affine(npl.inv(self._affine), new_space_coord)
+        new_coord = np.floor(new_coord)
+        new_coord = [int(item) for item in new_coord]
+        if self.is_valid_coord(new_coord):
+            self.set_cross_pos(new_coord)
+
+    def is_valid_coord(self, coord):
+        """
+        Filter valid coordinate.
+
+        """
+        data_shape = self._data[0].get_data_shape()
+        if coord[0]>=0 and coord[0]<data_shape[0]:
+            if coord[1]>=0 and coord[1]<data_shape[1]:
+                if coord[2]>=0 and coord[2]<data_shape[2]:
+                    return True
+        else:
+            False
 
     def update_orth_rgba(self):
         """
