@@ -456,15 +456,6 @@ class BpMainWindow(QMainWindow):
         self._actions['edit'].setCheckable(True)
         self._actions['edit'].setChecked(False)
 
-        # Atlas information
-        self._actions['atlas'] = QAction(QIcon(os.path.join(
-                                              self._icon_dir, 'H-O cortical.png')),
-                                        self.tr("Atlas Information"),
-                                        self)
-        self._actions['atlas'].triggered.connect(self._atlas_dialog)
-        self._actions['atlas'].setCheckable(True)
-        self._actions['atlas'].setChecked(False)
-
         # Undo
         self._actions['undo'] = QAction(QIcon(os.path.join(
                                               self._icon_dir, 'undo.png')),
@@ -502,6 +493,14 @@ class BpMainWindow(QMainWindow):
                                              self)
         self._actions['edge_dete'].triggered.connect(self._edge_detection)
         self._actions['edge_dete'].setEnabled(False)
+
+        # Atlas information
+        self._actions['atlas'] = QAction(QIcon(os.path.join(
+                                                self._icon_dir, 'atlas.png')),
+                                         self.tr("Atlas Information"),
+                                         self)
+        self._actions['atlas'].triggered.connect(self._atlas_dialog)
+        self._actions['atlas'].setEnabled(False)
 
         # ROI Merging
         self._actions['roi_merge'] = QAction(QIcon(os.path.join(
@@ -544,7 +543,6 @@ class BpMainWindow(QMainWindow):
         self._toolbar.addAction(self._actions['hand'])
         self._toolbar.addAction(self._actions['cursor'])
         self._toolbar.addAction(self._actions['edit'])
-        self._toolbar.addAction(self._actions['atlas'])
         # Add undo redo
         self._toolbar.addSeparator()
         self._toolbar.addAction(self._actions['undo'])
@@ -843,6 +841,7 @@ class BpMainWindow(QMainWindow):
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['r2i'])
+        roi_tools.addAction(self._actions['atlas'])
         morphological_tools = self.tool_menu.addMenu(
                                     self.tr("Morphological Processing"))
         morphological_tools.addAction(self._actions['opening'])
@@ -931,8 +930,6 @@ class BpMainWindow(QMainWindow):
  
             if hasattr(self, 'roidialog'):
                 self._roidialog_disable()
-            if hasattr(self, 'atlasdialog'):
-                self._atlasdialog_disable()
 
             self.painter_status.set_draw_settings(MoveSettings())
             self.image_view.set_cursor(Qt.OpenHandCursor)
