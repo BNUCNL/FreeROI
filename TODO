@@ -14,6 +14,8 @@ TO DO LIST
 3. Add image registration tools (affine transformation)
 4. Add `Atlas reference` tools (ref: fslview)
 5. Update automatic methods for image segment
+6. Image orientation detection & display
+7. Voxel/real world coordinate display
 -------------------------------------------------------------------------
 
 ** Version: 0.2.2

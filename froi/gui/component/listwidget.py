@@ -6,6 +6,8 @@ and parameters alternating.
 """
 
 import os
+from numpy import array_equal
+from numpy import around
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -109,48 +111,53 @@ class LayerView(QWidget):
         list_view_layout.addLayout(grid_layout)
 
         # initialize cursor coord&value widgets
-        xyzt_layout = QHBoxLayout()
-        # FIXME should match data shape
-        coord_x_label = QLabel('x: ')
+        coord_x_label = QLabel('X:')
         self._coord_x = QSpinBox()
         self._coord_x.setRange(0, self._model.getY()-1)
-        coord_y_label = QLabel('y: ')
+        self._space_x = QLineEdit()
+        #self._space_x.setReadOnly(True)
+        coord_y_label = QLabel('Y:')
         self._coord_y = QSpinBox()
         self._coord_y.setRange(0, self._model.getX()-1)
-        coord_z_label = QLabel('z: ')
+        self._space_y = QLineEdit()
+        #self._space_y.setReadOnly(True)
+        coord_z_label = QLabel('Z:')
         self._coord_z = QSpinBox()
         self._coord_z.setRange(0, self._model.getZ()-1)
+        self._space_z = QLineEdit()
+        #self._space_z.setReadOnly(True)
         # Set time point
-        time_point_label = QLabel('t: ')
+        time_point_label = QLabel('Volume:')
         self._volume_index_spinbox = QSpinBox()
         self._volume_index_spinbox.setValue(0)
-        xyzt_layout.addWidget(coord_x_label)
-        xyzt_layout.addWidget(self._coord_x)
-        xyzt_layout.addWidget(coord_y_label)
-        xyzt_layout.addWidget(self._coord_y)
-        xyzt_layout.addWidget(coord_z_label)
-        xyzt_layout.addWidget(self._coord_z)
-        #xyzt_layout.addWidget(time_point_label)
-        #xyzt_layout.addWidget(self._volume_index_spinbox)
-        
-        coord_value_label = QLabel('value: ')
+        # voxel value
+        coord_value_label = QLabel('Value:')
         self._coord_value = QLineEdit()
         self._coord_value.setReadOnly(True)
-        coord_label_label = QLabel('label:')
-        # self._coord_label = QLineEdit()
-        # self._coord_label.setReadOnly(True)
-        vl_hlayout = QHBoxLayout()
-        vl_hlayout.addWidget(time_point_label)
-        vl_hlayout.addWidget(self._volume_index_spinbox)
-        vl_hlayout.addWidget(coord_value_label)
-        vl_hlayout.addWidget(self._coord_value)
-        #vl_hlayout.addWidget(coord_label_label)
-        #vl_hlayout.addWidget(self._coord_label)
-
-
+        # RAS sapce name
+        space_label = QLabel('Coordinate space: ')
+        space_name = QLabel(self._model.get_space_name())
+        # layout
+        tv_layout = QHBoxLayout()
+        tv_layout.addWidget(time_point_label)
+        tv_layout.addWidget(self._volume_index_spinbox)
+        tv_layout.addWidget(coord_value_label)
+        tv_layout.addWidget(self._coord_value)
+        space_layout = QHBoxLayout()
+        space_layout.addWidget(space_label)
+        space_layout.addWidget(space_name)
         glayout = QGridLayout()
-        glayout.addLayout(xyzt_layout, 0, 0, 1, 6)
-        glayout.addLayout(vl_hlayout, 1, 0, 1, 6)
+        glayout.addWidget(coord_x_label, 0, 0)
+        glayout.addWidget(self._coord_x, 0, 1)
+        glayout.addWidget(self._space_x, 0, 2)
+        glayout.addWidget(coord_y_label, 1, 0)
+        glayout.addWidget(self._coord_y, 1, 1)
+        glayout.addWidget(self._space_y, 1, 2)
+        glayout.addWidget(coord_z_label, 2, 0)
+        glayout.addWidget(self._coord_z, 2, 1)
+        glayout.addWidget(self._space_z, 2, 2)
+        glayout.addLayout(tv_layout, 3, 0, 1, 4)
+        glayout.addLayout(space_layout, 4, 0, 1, 4)
        
         self._cursor_info_panel = QGroupBox('Cursor')
         self._cursor_info_panel.setLayout(glayout)
@@ -226,10 +233,14 @@ class LayerView(QWidget):
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
         self._volume_index_spinbox.valueChanged.connect(self._set_time_point)
-
+        # set voxel ijk position
         self._coord_x.valueChanged.connect(self.set_cross_pos)
         self._coord_y.valueChanged.connect(self.set_cross_pos)
         self._coord_z.valueChanged.connect(self.set_cross_pos)
+        # set RAS position
+        self._space_x.editingFinished.connect(self.set_space_pos)
+        self._space_y.editingFinished.connect(self.set_space_pos)
+        self._space_z.editingFinished.connect(self.set_space_pos)
 
     def _set_time_point(self):
         """
@@ -403,6 +414,10 @@ class LayerView(QWidget):
         self._coord_z.setValue(int(xyz[2]))
         value = self._model.get_current_value([xyz[0], xyz[1], xyz[2]])
         self._coord_value.setText(str(value))
+        space_xyz = self._model.get_space_pos()
+        self._space_x.setText(str(around(space_xyz[0], decimals=2)))
+        self._space_y.setText(str(around(space_xyz[1], decimals=2)))
+        self._space_z.setText(str(around(space_xyz[2], decimals=2)))
         # self._coord_label.setText(self._model.get_current_value_label(value))
 
         # resume signal connection
@@ -419,4 +434,30 @@ class LayerView(QWidget):
                      int(self._coord_y.value()),
                      int(self._coord_z.value())]
         self._model.set_cross_pos(new_coord)
+
+    def set_space_pos(self):
+        """
+        Set RAS position.
+
+        """
+        space_xyz = self._model.get_space_pos()
+        try:
+            space_x = float(self._space_x.text())
+        except:
+            space_x = space_xyz[0]
+            self._space_x.setText(str(space_xyz[0]))
+        try:
+            space_y = float(self._space_y.text())
+        except:
+            space_y = space_xyz[1]
+            self._space_y.setText(str(space_xyz[1]))
+        try:
+            space_z = float(self._space_z.text())
+        except:
+            space_z = space_xyz[2]
+            self._space_z.setText(str(space_xyz[2]))
+
+        new_coord = [space_x, space_y, space_z]
+        if not array_equal(new_coord, space_xyz):
+            self._model.set_space_pos(new_coord)
 
