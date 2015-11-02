@@ -7,6 +7,7 @@ and parameters alternating.
 
 import os
 from numpy import array_equal
+from numpy import around
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -414,9 +415,9 @@ class LayerView(QWidget):
         value = self._model.get_current_value([xyz[0], xyz[1], xyz[2]])
         self._coord_value.setText(str(value))
         space_xyz = self._model.get_space_pos()
-        self._space_x.setText(str(space_xyz[0]))
-        self._space_y.setText(str(space_xyz[1]))
-        self._space_z.setText(str(space_xyz[2]))
+        self._space_x.setText(str(around(space_xyz[0], decimals=2)))
+        self._space_y.setText(str(around(space_xyz[1], decimals=2)))
+        self._space_z.setText(str(around(space_xyz[2], decimals=2)))
         # self._coord_label.setText(self._model.get_current_value_label(value))
 
         # resume signal connection

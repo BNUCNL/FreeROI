@@ -236,7 +236,12 @@ class ImageLabel3d(QLabel):
         palette = self.palette()
         palette.setColor(self.backgroundRole(), Qt.black)
         self.setPalette(palette)
-        
+       
+        # set margin of imagelabel
+        self.margin_size = 30
+        self.axcodes = None
+        self.str_font_size = 10
+
         # private attributes
         self.set_model(model)
         self.painter_status = painter_status
@@ -266,6 +271,29 @@ class ImageLabel3d(QLabel):
         """
         self.model = model
         self.model.repaint_slices.connect(self.update_image)
+        self.get_axcodes()
+
+    def get_axcodes(self):
+        """
+        Get axis codes from model.
+
+        """
+        tmp = self.model.get_axcodes()
+        self.axcodes = []
+        for item in tmp:
+            if item == 'R':
+                self.axcodes.append(('R', 'L'))
+            elif item == 'L':
+                self.axcodes.append(('L', 'R'))
+            elif item == 'A':
+                self.axcodes.append(('A', 'P'))
+            elif item == 'P':
+                self.axcodes.append(('P', 'A'))
+            elif item == 'S':
+                self.axcodes.append(('S', 'I'))
+            elif item == 'I':
+                self.axcodes.append(('I', 'S'))
+        return self.axcodes
 
     def sizeHint(self):
         """
@@ -289,6 +317,24 @@ class ImageLabel3d(QLabel):
         background = np.zeros((self.size().height(), self.size().width(), 3),
                               dtype=np.uint8)
         return qrgba2qimage(background)
+
+    def get_ver_margin(self):
+        """
+        Get black vertical margin for the image.
+
+        """
+        margin = np.zeros((self.size().height(), self.margin_size, 3),
+                          dtype=np.uint8)
+        return qrgba2qimage(margin)
+
+    def get_hor_margin(self):
+        """
+        Get horizontal margin for the image.
+
+        """
+        margin = np.zeros((self.margin_size, self.size().width(), 3),
+                          dtype=np.uint8)
+        return qrgba2qimage(margin)
 
     def center_src_point(self):
         """
@@ -442,6 +488,33 @@ class SagittalImageLabel(ImageLabel3d):
                                          vertical_targ[0],
                                          vertical_targ[1])
             
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[1][0])
+        #l_str.resize(self.str_font_size)
+        r_str = QString(self.axcodes[1][1])
+        t_str = QString(self.axcodes[2][0])
+        b_str = QString(self.axcodes[2][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
         self.voxels_painter.end()
         self.is_painting = False
 
@@ -654,6 +727,33 @@ class AxialImageLabel(ImageLabel3d):
                                          vertical_src[1],
                                          vertical_targ[0],
                                          vertical_targ[1])
+        
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[0][1])
+        r_str = QString(self.axcodes[0][0])
+        t_str = QString(self.axcodes[1][0])
+        b_str = QString(self.axcodes[1][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
         self.voxels_painter.end()
         self.is_painting = False
     
@@ -862,6 +962,33 @@ class CoronalImageLabel(ImageLabel3d):
                                          vertical_src[1],
                                          vertical_targ[0],
                                          vertical_targ[1])
+        
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[0][1])
+        r_str = QString(self.axcodes[0][0])
+        t_str = QString(self.axcodes[2][0])
+        b_str = QString(self.axcodes[2][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
         self.voxels_painter.end()
         self.is_painting = False
     

@@ -5,6 +5,7 @@
 """
 import numpy.linalg as npl
 from nibabel.affines import apply_affine
+from nibabel import aff2axcodes
 import numpy as np
 from PyQt4.QtCore import *
 
@@ -36,6 +37,7 @@ class VolumeListModel(QAbstractListModel):
         self._affine = None
         self._ras_space = None
         self._ras_unit = None
+        self._axcodes = None
         self._current_index = None
         self._selected_indexes = []
         self._grid_scale_factor = 1.0
@@ -94,6 +96,17 @@ class VolumeListModel(QAbstractListModel):
                     return True
         else:
             False
+
+    def get_axcodes(self):
+        """
+        Get codes for voxel axis derived from affine.
+        i.e., ('R', 'A', 'S')
+
+        """
+        if isinstance(self._affine, np.ndarray):
+            return aff2axcodes(self._affine)
+        else:
+            return None
 
     def update_orth_rgba(self):
         """
@@ -615,45 +628,6 @@ class VolumeListModel(QAbstractListModel):
         """
         return [self._data[idx.row()].get_coronal_rgba() for
                 idx in self.selectedIndexes()]
-
-    #def sagital_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(np.rot90(self._data[index]._data[:, slice, :, 
-    #                                        self._data[index]._time_point]))
-    #        else:
-    #            temp = f(np.rot90(self._data[index]._data[:, slice, :]))
-    #        rgba_list.append(temp)
-    #    return rgba_list
-
-    #def axial_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(self._data[index]._data[:, :, slice,
-    #                        self._data[index]._time_point])
-    #        else:
-    #            temp = f(self._data[index]._data[:, :, slice])
-    #        rgba_list.append(temp)
-    #    return rgba_list 
-
-    #def coronal_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(np.rot90(self._data[index]._data[slice, :, :, 
-    #                        self._data[index]._time_point]))
-    #        else:
-    #            temp = f(np.rot90(self._data[index]._data[slice, :, :]))
-    #        rgba_list.append(temp)
-    #    return rgba_list
 
     def set_cur_label(self, label_config):
         row = self.currentIndex().row()
