@@ -904,32 +904,12 @@ class BpMainWindow(QMainWindow):
         else:
             self._actions['edit'].setChecked(True)
 
-    # def _init_atlas_dialog(self):
-    #     """
-    #     Initialize Atlas Dialog
-    #     """
-    #     self.atlasdialog = AtlasDialog(self.model, self)
-    #     self.atlasdialog.atlas_enabled.connect(self._atlas_dialog())
-
     def _atlas_dialog(self):
         """
         Atlas information
         """
-        # if self._actions['atlas'].isChecked():
-        #     self._actions['atlas'].setEnabled(False)
-        # else:
-        #     self._actions['atlas'].setEnabled(True)
         self.atlasdialog = AtlasDialog(self.model, self)
         self.atlasdialog.show()
-
-    # def _atlasdialog_enable(self):
-    #     self._init_atlas_dialog()
-    #     self._actions['atlas'].setChecked(False)
-    #     self.atlasdialog.show()
-
-    def _atlasdialog_disable(self):
-        self.atlasdialog.hide()
-        self._actions['atlas'].setChecked(False)
 
     def _roi_batch_enable(self):
         self.image_view.set_label_mouse_tracking(False)

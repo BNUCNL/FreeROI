@@ -5,12 +5,11 @@
     <shortname>HOCPA</shortname>
     <type>Probabalistic</type>
     <images>
-      <imagefile>/HarvardOxford/HarvardOxford-cort-prob-2mm</imagefile>
-      <summaryimagefile>/HarvardOxford/HarvardOxford-cort-maxprob-thr25-2mm</summaryimagefile>
+      <imagefile>HarvardOxford-cort-prob-2mm</imagefile>
+      <summaryimagefile>HarvardOxford-cort-maxprob-thr25-2mm</summaryimagefile>
     </images>
     <images>
-      <imagefile>/HarvardOxford/HarvardOxford-cort-prob-1mm</imagefile>
-      <summaryimagefile>/HarvardOxford/HarvardOxford-cort-maxprob-thr25-1mm</summaryimagefile>
+      <summaryimagefile>HarvardOxford-cort-maxprob-thr25-1mm</summaryimagefile>
     </images>
   </header>
   <data>

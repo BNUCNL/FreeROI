@@ -5,12 +5,11 @@
     <shortname>HOSPA</shortname>
     <type>Probabalistic</type>
     <images>
-      <imagefile>/HarvardOxford/HarvardOxford-sub-prob-2mm</imagefile>
-      <summaryimagefile>/HarvardOxford/HarvardOxford-sub-maxprob-thr25-2mm</summaryimagefile>
+      <imagefile>HarvardOxford-sub-prob-2mm</imagefile>
+      <summaryimagefile>HarvardOxford-sub-maxprob-thr25-2mm</summaryimagefile>
     </images>
     <images>
-      <imagefile>/HarvardOxford/HarvardOxford-sub-prob-1mm</imagefile>
-      <summaryimagefile>/HarvardOxford/HarvardOxford-sub-maxprob-thr25-1mm</summaryimagefile>
+      <summaryimagefile>HarvardOxford-sub-maxprob-thr25-1mm</summaryimagefile>
     </images>
   </header>
   <data>

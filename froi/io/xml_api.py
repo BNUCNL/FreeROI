@@ -1,72 +1,47 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-from collections import OrderedDict
+import os
 import xml.dom.minidom
-import nibabel as nib
 
+def get_file_name(path, postfix):
+    """
+    get file name with certain postfix automatically
 
-def get_info(filepath, tagname):
+    Parameters
+    ----------
+    path:
+        The path.
+    postfix:
+        postfix of file, such as ".xml"
+    """
+    f_list = os.listdir(path)
+    for i in f_list:
+        if os.path.splitext(i)[1]!=postfix:
+            f_list.remove(i)
+    return f_list
+
+def get_info(path, f_list, tagname):
     """
     get specific information from xml file according to the name of tag.
     return the information list.
 
     Parameters
     ----------
-    filepath:
-        The path of xml file which including the xml file name.
+    path:
+        The path of xml file.
+    f_list:
+        The xml file name list
     tagname:
         The name of target tag.
-
     """
-    infolist = []
-    dom=xml.dom.minidom.parse(filepath)
-    root = dom.documentElement
-    tags = root.getElementsByTagName(tagname)
-    for i in range(len(tags)):
-        infolist.append(tags[i].firstChild.data)
+    infolist = list()
+    for i in f_list:
+        dom=xml.dom.minidom.parse(path+i)
+        root = dom.documentElement
+        tags = root.getElementsByTagName(tagname)
+        subinfo = list()
+        for j in range(len(tags)):
+            subinfo.append(tags[j].firstChild.data)
+        infolist.append(subinfo)
     return infolist
-
-def extract_atlasprob(filepath, x, y, z):
-    """
-    extract atlas probability values according to coordinate.
-    return a probability list.
-
-    Parameters
-    ----------
-    filepath:
-        The path of atlas file which including the niftil file name.
-    x,y,z:
-        The coordinate value of target voxel.
-
-    """
-    atlas = nib.load(filepath)
-    atlasdata = atlas.get_data()
-    problist = atlasdata[x, y, z, :]/100.0
-    return problist
-
-def sorting(labellist, problist):
-    """
-    sort the label according to probability value.
-    return a string which including the sorted nonzero probability and the corresponding label.
-
-    Parameters
-    ----------
-    labellist:
-        The label names list.
-    problist:
-        The probability values list.
-
-    """
-    if (len(labellist)!=len(problist)):
-        raise 'the length of label and probability can not match'
-    result = ''
-    dic = dict(zip(labellist, problist))
-    dic = dict(filter(lambda  x:x[1] != 0, dic.items()))
-    if (not dic):
-        result = 'No label found!\n'
-        return result
-    dic = OrderedDict(sorted(dic.items(), key=lambda t:t[1], reverse=True))
-    for i in range(len(dic)):
-        result += (str(dic.values()[i])+' '+dic.keys()[i]+'\n')
-    return result
