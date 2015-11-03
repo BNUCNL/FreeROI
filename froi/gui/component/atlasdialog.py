@@ -6,15 +6,43 @@ from PyQt4.QtGui import *
 from froi.io.xml_api import *
 from froi.io.atlas_api import *
 
-parent_path = os.path.dirname(os.getcwd())
-tar_path = parent_path+'/froi/data/atlas/'
-xml_names = get_file_name(tar_path,'.xml')                 #get the xml file name automatically
-nii_names = get_info(tar_path,xml_names,'imagefile')       #get nii file names
-nii_data = get_nii_data(tar_path, nii_names)               #get nii data
-label_list = get_info(tar_path, xml_names, 'label')        #get label list
+class AtlasDatamodel():
+    """
+    Atlas Data Model.
+    """
+    parent_path = os.path.dirname(os.getcwd())
+    tar_path = parent_path+'/froi/data/atlas/'
+
+    def __init__(self):
+        super(AtlasDatamodel, self).__init__()
+
+    def get_atlas_name(self):
+        """
+        Get atlas name which is equal to xml names.
+
+        """
+        xml_names = get_file_name(self.tar_path,'.xml')
+        return xml_names
+
+    def get_atlas_data(self):
+        """
+        Get atlas nii data.
+
+        """
+        nii_names = get_info(self.tar_path,self.xml_names,'imagefile')
+        nii_data = get_nii_data(self.tar_path, nii_names)
+        return nii_data
+
+    def get_label_info(self):
+        """
+        Get atlas label information.
+
+        """
+        label_list = get_info(self.tar_path, self.xml_names, 'label')
+        return label_list
 
 
-class AtlasDialog(QDialog):
+class AtlasDialog(QDialog, AtlasDatamodel):
     """
     A dialog for action of Atlas.
 
@@ -22,6 +50,9 @@ class AtlasDialog(QDialog):
     def __init__(self, model, parent=None):
         super(AtlasDialog, self).__init__(parent)
         self._model = model
+        self.xml_names = self.get_atlas_name()
+        self.nii_data = self.get_atlas_data()
+        self.label_list = self.get_label_info()
         self._init_gui()
         self._create_actions()
 
@@ -41,23 +72,27 @@ class AtlasDialog(QDialog):
 
         """
         # set dialog title
-        self.setWindowTitle("Probability Information")
+        self.setWindowTitle("Atlas Information")
 
         # initialize widgets
         self.source_combo = QComboBox()
         vbox_layout = QVBoxLayout()
         self.label,self.prob = list(),list()
-        for i in range(len(xml_names)):
+        for i in range(len(self.xml_names)):
             self.label.append(QLabel())
             self.prob.append(QLabel())
 
-        for i in range(len(xml_names)):
-            self.label[i].setText(xml_names[i].split('.')[0])
+        for i in range(len(self.xml_names)):
+            self.label[i].setText(self.xml_names[i].split('.')[0])
             self.label[i].setFont(QFont("Roman times", 10, QFont.Bold))
-            layout = self.atlas_display(nii_data[i], label_list[i])
+            layout = self.atlas_display(self.nii_data[i], self.label_list[i])
             self.prob[i].setText(layout)
             vbox_layout.addWidget(self.label[i])
             vbox_layout.addWidget(self.prob[i])
+            if (self.xml_names[i]!='HarvardOxford-Cortical.xml') and \
+                    (self.xml_names[i]!='HarvardOxford-Subcortical.xml'):
+                self.label[i].setVisible(False)
+                self.prob[i].setVisible(False)
 
         self.space = QLabel(" ")
         self.set_button = QPushButton("Setting")
@@ -78,8 +113,8 @@ class AtlasDialog(QDialog):
         """
         Update atlas probability values
         """
-        for i in range(len(xml_names)):
-            layout = self.atlas_display(nii_data[i], label_list[i])
+        for i in range(len(self.xml_names)):
+            layout = self.atlas_display(self.nii_data[i], self.label_list[i])
             self.prob[i].setText(layout)
 
     def _set_dialog(self):
@@ -87,14 +122,14 @@ class AtlasDialog(QDialog):
         Setting clicked
         """
         self.stat=list()
-        for i in range(len(xml_names)):
+        for i in range(len(self.xml_names)):
             self.stat.append(self.prob[i].isVisible())
         if self.set_button.isEnabled():
             new_dialog = SettingDialog(self.stat)
             new_dialog.exec_()
             self.status = new_dialog._get_checkbox_status()
             if self.status != []:
-                for i in range(len(xml_names)):
+                for i in range(len(self.xml_names)):
                     if self.status[i]:
                         self.label[i].setVisible(True)
                         self.prob[i].setVisible(True)
@@ -119,7 +154,7 @@ class signal():
         self.signal = signal
 
 
-class SettingDialog(QDialog, signal):
+class SettingDialog(QDialog, signal, AtlasDatamodel):
     """
     A dialog for setting button.
 
@@ -127,6 +162,7 @@ class SettingDialog(QDialog, signal):
     def __init__(self, stat, parent=None):
         super(SettingDialog, self).__init__(parent)
         self.stat= stat
+        self.xml_names = self.get_atlas_name()
         self._init_gui()
         self._create_actions()
 
@@ -136,15 +172,15 @@ class SettingDialog(QDialog, signal):
 
         """
         self.label,self.check=list(),list()
-        for i in range(len(xml_names)):
+        for i in range(len(self.xml_names)):
             self.label.append(QLabel())
             self.check.append(QCheckBox())
 
         self.setWindowTitle("Atlas Selection")
         grid_layout = QGridLayout()
 
-        for i in range(len(xml_names)):
-            self.label[i].setText(xml_names[i].split('.')[0])
+        for i in range(len(self.xml_names)):
+            self.label[i].setText(self.xml_names[i].split('.')[0])
             if self.stat[i]:
                 self.check[i].setChecked(True)
             else:
@@ -171,7 +207,7 @@ class SettingDialog(QDialog, signal):
 
         """
         self.stat=[]
-        for i in range(len(xml_names)):
+        for i in range(len(self.xml_names)):
             self.stat.append(self.check[i].isChecked())
         self.close()
 

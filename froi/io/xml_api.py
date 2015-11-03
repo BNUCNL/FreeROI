@@ -15,11 +15,11 @@ def get_file_name(path, postfix):
     postfix:
         postfix of file, such as ".xml"
     """
-    f_list = os.listdir(path)
-    for i in f_list:
-        if os.path.splitext(i)[1]!=postfix:
-            f_list.remove(i)
-    return f_list
+    tar = list()
+    for i in os.listdir(path):
+        if os.path.splitext(i)[1]==postfix:
+            tar.append(i)
+    return tar
 
 def get_info(path, f_list, tagname):
     """
