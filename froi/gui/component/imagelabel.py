@@ -518,6 +518,98 @@ class SagittalImageLabel(ImageLabel3d):
         self.voxels_painter.end()
         self.is_painting = False
 
+    def save_image(self):
+        """
+        Save image as file.
+
+        """
+        file_name = self.__class__.__name__ + '.png'
+        pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
+        self.voxels_painter = QPainter()
+        self.voxels_painter.begin(pic)
+        
+        self._expanding_factor = self.holder.get_expanding_factor()
+
+        # composite volume picture
+        if not self.image or not self.drawing:
+            back_temp = np.zeros((self.model.getZ(), self.model.getX(), 3), 
+                                 dtype=np.uint8)
+            blend = reduce(composition, 
+                           self.model.get_sagital_rgba_list(),
+                           back_temp)
+            image = qrgba2qimage(blend)
+            self.image = image
+        
+        # draw black background
+        self.background = self.make_background()
+        pm = QPixmap.fromImage(self.background)
+        self.voxels_painter.drawPixmap(0, 0, pm)
+        
+        # draw volume picture
+        pm = QPixmap.fromImage(self.image)
+        self.pm = pm.scaled(pm.size() * self.model.get_scale_factor('orth') * \
+                            self._expanding_factor)
+        if not self.pic_src_point:
+            self.pic_src_point = self.center_src_point()
+        self.voxels_painter.drawPixmap(self.pic_src_point[0],
+                                       self.pic_src_point[1], 
+                                       self.pm)
+
+        # draw cross line on picture
+        if self.model.display_cross():
+            scale = self.model.get_scale_factor('orth') * self._expanding_factor
+            current_pos = self.model.get_cross_pos()
+            horizon_src = (0, (self.model.getZ() - 0.5 - current_pos[2]) * \
+                               scale + self.pic_src_point[1])
+            horizon_targ = (self.size().width(),
+                            (self.model.getZ() - 0.5 - current_pos[2]) * \
+                             scale + self.pic_src_point[1])
+            self.voxels_painter.setPen(QColor(0, 255, 0, 255))
+            self.voxels_painter.drawLine(horizon_src[0],
+                                         horizon_src[1],
+                                         horizon_targ[0],
+                                         horizon_targ[1])
+            vertical_src = ((self.model.getX() - current_pos[1] - 0.5) * \
+                            scale + self.pic_src_point[0],
+                            0)
+            vertical_targ = ((self.model.getX() - current_pos[1] - 0.5) * \
+                             scale + self.pic_src_point[0],
+                             self.size().height())
+            self.voxels_painter.drawLine(vertical_src[0],
+                                         vertical_src[1],
+                                         vertical_targ[0],
+                                         vertical_targ[1])
+            
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[1][0])
+        r_str = QString(self.axcodes[1][1])
+        t_str = QString(self.axcodes[2][0])
+        b_str = QString(self.axcodes[2][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
+        self.voxels_painter.end()
+        self.is_painting = False
+        pic.save(file_name)
+
     def draw_voxels(self, voxels):
         """
         Draw selected voxels.
@@ -757,6 +849,99 @@ class AxialImageLabel(ImageLabel3d):
         self.voxels_painter.end()
         self.is_painting = False
     
+    def save_image(self):
+        """
+        Save image as file.
+
+        """
+        file_name = self.__class__.__name__ + '.png'
+        pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
+        self.is_painting = True
+        self.voxels_painter = QPainter()
+        self.voxels_painter.begin(pic)
+
+        self._expanding_factor = self.holder.get_expanding_factor()
+
+        # composite volume picture
+        if not self.image or not self.drawing:
+            back_temp = np.zeros((self.model.getX(), self.model.getY(), 3), 
+                                 dtype=np.uint8)
+            blend = reduce(composition, 
+                           self.model.get_axial_rgba_list(),
+                           back_temp)
+            image = qrgba2qimage(blend)
+            self.image = image
+
+        # draw black backgroud
+        self.background = self.make_background()
+        pm = QPixmap.fromImage(self.background)
+        self.voxels_painter.drawPixmap(0, 0, pm)
+
+        # draw volume picture
+        pm = QPixmap.fromImage(self.image)
+        self.pm = pm.scaled(pm.size() * self.model.get_scale_factor('orth') * 
+                            self._expanding_factor)
+        if not self.pic_src_point:
+            self.pic_src_point = self.center_src_point()
+        self.voxels_painter.drawPixmap(self.pic_src_point[0],
+                                       self.pic_src_point[1],
+                                       self.pm)
+
+        # draw cross line on picture
+        if self.model.display_cross():
+            scale = self.model.get_scale_factor('orth') * self._expanding_factor
+            current_pos = self.model.get_cross_pos()
+            horizon_src = (0, (self.model.getX() - current_pos[1] - 0.5) * \
+                              scale + self.pic_src_point[1])
+            horizon_targ = (self.size().width(), 
+                            (self.model.getX() - current_pos[1] - 0.5) * \
+                            scale + self.pic_src_point[1])
+            self.voxels_painter.setPen(QColor(0, 255, 0, 255))
+            self.voxels_painter.drawLine(horizon_src[0],
+                                         horizon_src[1],
+                                         horizon_targ[0],
+                                         horizon_targ[1])
+            vertical_src = ((current_pos[0] + 0.5) * scale + \
+                            self.pic_src_point[0],
+                            0)
+            vertical_targ = ((current_pos[0] + 0.5) * scale + \
+                             self.pic_src_point[0],
+                             self.size().height())
+            self.voxels_painter.drawLine(vertical_src[0],
+                                         vertical_src[1],
+                                         vertical_targ[0],
+                                         vertical_targ[1])
+        
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[0][1])
+        r_str = QString(self.axcodes[0][0])
+        t_str = QString(self.axcodes[1][0])
+        b_str = QString(self.axcodes[1][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
+        self.voxels_painter.end()
+        self.is_painting = False
+        pic.save(file_name)
+    
     def draw_voxels(self, voxels):
         """
         Draw selected voxels.
@@ -991,6 +1176,95 @@ class CoronalImageLabel(ImageLabel3d):
         
         self.voxels_painter.end()
         self.is_painting = False
+    
+    def save_image(self):
+        """
+        Save image as file.
+
+        """
+        file_name = self.__class__.__name__ + '.png'
+        pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
+        self.voxels_painter = QPainter()
+        self.voxels_painter.begin(pic)
+        self._expanding_factor = self.holder.get_expanding_factor()
+        if not self.image or not self.drawing:
+            back_temp = np.zeros((self.model.getZ(), self.model.getY(), 3), 
+                                 dtype=np.uint8)
+            blend = reduce(composition, 
+                           self.model.get_coronal_rgba_list(),
+                           back_temp)
+            image = qrgba2qimage(blend)
+            self.image = image
+
+        # draw black background
+        self.background = self.make_background()
+        pm = QPixmap.fromImage(self.background)
+        self.voxels_painter.drawPixmap(0, 0, pm)
+
+        # draw volume picture
+        pm = QPixmap.fromImage(self.image)
+        self.pm = pm.scaled(pm.size() * self.model.get_scale_factor('orth') *
+                            self._expanding_factor)
+        if not self.pic_src_point:
+            self.pic_src_point = self.center_src_point()
+        self.voxels_painter.drawPixmap(self.pic_src_point[0],
+                                       self.pic_src_point[1],
+                                       self.pm)
+
+        # draw cross line on picture
+        if self.model.display_cross():
+            scale = self.model.get_scale_factor('orth') * self._expanding_factor
+            current_pos = self.model.get_cross_pos()
+            horizon_src = (0, (self.model.getZ() - 0.5 - current_pos[2]) * \
+                              scale + self.pic_src_point[1])
+            horizon_targ = (self.size().width(),
+                            (self.model.getZ() - 0.5 - current_pos[2]) * \
+                             scale + self.pic_src_point[1])
+            self.voxels_painter.setPen(QColor(0, 255, 0, 255))
+            self.voxels_painter.drawLine(horizon_src[0],
+                                         horizon_src[1],
+                                         horizon_targ[0],
+                                         horizon_targ[1])
+            vertical_src = ((current_pos[0] + 0.5) * scale + \
+                            self.pic_src_point[0],
+                            0)
+            vertical_targ = ((current_pos[0] + 0.5) * scale + \
+                             self.pic_src_point[0],
+                             self.size().height())
+            self.voxels_painter.drawLine(vertical_src[0],
+                                         vertical_src[1],
+                                         vertical_targ[0],
+                                         vertical_targ[1])
+        
+        # draw margin
+        l_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(0, 0, l_margin)
+        r_margin = QPixmap.fromImage(self.get_ver_margin())
+        self.voxels_painter.drawPixmap(self.size().width()-self.margin_size,
+                                       0, r_margin)
+        t_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0, 0, t_margin)
+        b_margin = QPixmap.fromImage(self.get_hor_margin())
+        self.voxels_painter.drawPixmap(0,
+                                       self.size().height()-self.margin_size,
+                                       b_margin)
+        # draw orientation label
+        l_str = QString(self.axcodes[0][1])
+        r_str = QString(self.axcodes[0][0])
+        t_str = QString(self.axcodes[2][0])
+        b_str = QString(self.axcodes[2][1])
+        self.voxels_painter.setPen(QColor(255, 255, 255, 255))
+        self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
+        self.voxels_painter.drawText(self.size().width()-12,
+                                     self.size().height()/2+5, r_str)
+        self.voxels_painter.drawText(self.size().width()/2-5,
+                                     15, t_str)
+        self.voxels_painter.drawText(self.size().width()/2-1,
+                                     self.size().height()-12, b_str)
+        
+        self.voxels_painter.end()
+        self.is_painting = False
+        pic.save(file_name)
     
     def draw_voxels(self, voxels):
         """

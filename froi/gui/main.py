@@ -378,6 +378,11 @@ class BpMainWindow(QMainWindow):
         self._actions['label_management'].triggered.connect(self._label_manage)
         self._actions['label_management'].setEnabled(False)
 
+        # Snapshot
+        self._actions['snapshot'] = QAction(self.tr("Snapshot"), self)
+        self._actions['snapshot'].triggered.connect(self._snapshot)
+        self._actions['snapshot'].setEnabled(False)
+
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'watershed.png')),
@@ -786,6 +791,7 @@ class BpMainWindow(QMainWindow):
         self._actions['orth_view'].setEnabled(False)
         self._actions['cross_hover_view'].setEnabled(False)
         self._actions['original_view'].setEnabled(False)
+        self._actions['snapshot'].setEnabled(False)
         self._functional_module_set_enabled(False)
 
     def _about_freeroi(self):
@@ -875,6 +881,7 @@ class BpMainWindow(QMainWindow):
         morphological_tools.addAction(self._actions['greyerosion'])
         # label management
         self.tool_menu.addAction(self._actions['label_management'])
+        self.tool_menu.addAction(self._actions['snapshot'])
 
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self._actions['about_freeroi'])
@@ -1100,6 +1107,7 @@ class BpMainWindow(QMainWindow):
         self._actions['grid_view'].setEnabled(False)
         self._actions['orth_view'].setEnabled(True)
         self._actions['hand'].setEnabled(False)
+        self._actions['snapshot'].setEnabled(False)
         self._actions['cursor'].trigger()
 
         self.centralWidget().layout().removeWidget(self.image_view)
@@ -1121,6 +1129,7 @@ class BpMainWindow(QMainWindow):
 
         self._actions['orth_view'].setEnabled(False)
         self._actions['grid_view'].setEnabled(True)
+        self._actions['snapshot'].setEnabled(True)
         self._actions['hand'].setEnabled(True)
         self._actions['cursor'].trigger()
 
@@ -1238,4 +1247,11 @@ class BpMainWindow(QMainWindow):
         self._actions['r2i'].setEnabled(status)
         self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
+
+    def _snapshot(self):
+        """
+        Capture images from OrthView.
+
+        """
+        self.image_view.save_image()
 

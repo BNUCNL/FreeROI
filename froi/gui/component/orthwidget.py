@@ -56,6 +56,7 @@ class OrthView(QWidget):
 
         self.set_label_mouse_tracking(True)
 
+
     def set_expanding_factor(self):
         self._expanding_factor = np.min([self._corlabel.get_expanding_size(),
                                          self._saglabel.get_expanding_size(),
@@ -128,3 +129,13 @@ class OrthView(QWidget):
         """
         self.set_expanding_factor()
         self.repaint()
+
+    def save_image(self):
+        """
+        Save images from 3 different orientations.
+
+        """
+        self._saglabel.save_image()
+        self._axilabel.save_image()
+        self._corlabel.save_image()
+
