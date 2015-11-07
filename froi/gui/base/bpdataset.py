@@ -97,12 +97,13 @@ class VolumeDataset(object):
             else:
                 raise ValueError("Data dimension does not match.")
         else:
-            img = nib.load(source)
+            self._img = nib.load(source)
+            self._header = img.get_header()
             basename = os.path.basename(source.strip('/'))
             self._name = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
-            data = img.get_data()
-            self._data = np.rot90(data)
-            self._header = img.get_header()
+            #data = img.get_data()
+            #self._data = np.rot90(data)
+            self.save_mem_load()
 
         # For convenience, define a shift variable
         self._y_shift = self.get_data_shape()[1] - 1
@@ -143,6 +144,28 @@ class VolumeDataset(object):
         self.update_rgba()
         if self._cross_pos:
             self.update_orth_rgba()
+
+    def save_mem_load(self):
+        """
+        Load data around current time-point.
+        For 4D dataset, +/- volume_offset volumes are loaded.
+
+        """
+        if self.is_4d():
+            volume_offset = 4
+            min_time_point = self._time_point - volume_offset
+            if min_time_point < 0:
+                min_time_point = 0
+            max_time_point = self._time_point + volume_offset
+            if max_time_point > self.get_data_shape()[3]:
+                max_time_point = self.get_data_shape()[3]
+            # FIXME complete this line ...
+            data = self._img.get_data()
+            self._data = np.rot90(data)
+        else:
+            if not  isinstance(self._data, np.ndarray):
+                data = self._img.get_data()
+                self._data = np.rot90(data)
 
     def get_data_shape(self):
         """
