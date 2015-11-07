@@ -77,6 +77,10 @@ class AtlasDialog(QDialog, AtlasDatamodel):
         # initialize widgets
         self.source_combo = QComboBox()
         vbox_layout = QVBoxLayout()
+        self.scrollContents = QWidget()
+        self.Layout_2 = QHBoxLayout(self.scrollContents)
+        self.Layout_2.addLayout(vbox_layout)
+
         self.label,self.prob = list(),list()
         for i in range(len(self.xml_names)):
             self.label.append(QLabel())
@@ -94,13 +98,20 @@ class AtlasDialog(QDialog, AtlasDatamodel):
                 self.label[i].setVisible(False)
                 self.prob[i].setVisible(False)
 
+        self.Layout1=QVBoxLayout(self)
+        self.scrollArea=QScrollArea(self)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setWidget(self.scrollContents)
+        self.Layout1.addWidget(self.scrollArea)
+        self.setGeometry(300,260,300,260)
+
         self.space = QLabel(" ")
         self.set_button = QPushButton("Setting")
         grid_layout = QGridLayout()
         grid_layout.addWidget(self.space,0,0)
         grid_layout.addWidget(self.set_button,0,1)
-        vbox_layout.addLayout(grid_layout)
-        self.setLayout(vbox_layout)
+        self.Layout1.addLayout(grid_layout)
+        self.setLayout(self.Layout1)
 
     def _create_actions(self):
         """
@@ -177,7 +188,11 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
             self.check.append(QCheckBox())
 
         self.setWindowTitle("Atlas Selection")
+
+        self.scrollContents = QWidget()
+        self.Layout_2 = QHBoxLayout(self.scrollContents)
         grid_layout = QGridLayout()
+        self.Layout_2.addLayout(grid_layout)
 
         for i in range(len(self.xml_names)):
             self.label[i].setText(self.xml_names[i].split('.')[0])
@@ -188,11 +203,16 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
             grid_layout.addWidget(self.check[i], i,0)
             grid_layout.addWidget(self.label[i],i,1)
 
-        ver_layout = QVBoxLayout()
-        ver_layout.addLayout(grid_layout)
+        self.Layout1=QVBoxLayout(self)
+        self.scrollArea=QScrollArea(self)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setWidget(self.scrollContents)
+        self.Layout1.addWidget(self.scrollArea)
+        self.setGeometry(300,260,250,280)
+
         self.save_button = QPushButton("OK")
-        ver_layout.addWidget(self.save_button)
-        self.setLayout(ver_layout)
+        self.Layout1.addWidget(self.save_button)
+        self.setLayout(self.Layout1)
 
     def _create_actions(self):
         """
