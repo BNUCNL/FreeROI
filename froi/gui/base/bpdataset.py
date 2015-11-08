@@ -8,7 +8,6 @@ import re
 import os
 import nibabel as nib
 import numpy as np
-from sets import Set
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
