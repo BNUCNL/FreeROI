@@ -8,6 +8,7 @@ import re
 import os
 import nibabel as nib
 import numpy as np
+from sets import Set
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -491,7 +492,11 @@ class VolumeDataset(object):
            else:
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
         else:
-            if self.is_4d():
+            if self.is_4d() and self._img:
+               data = self.get_raw_data()
+               data = np.rot90(data)
+               return data[self._y_shift - xyz[1], xyz[0], xyz[2], :]
+            elif self.is_4d():
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2], :]
             else:
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
@@ -512,7 +517,14 @@ class VolumeDataset(object):
         return np.rot90(temp, 3)
 
     def get_raw_data(self):
-        temp = self._data.copy()
+        if self._img and self.is_4d():
+            temp = self._img.get_data(caching='unchanged')
+            temp = np.rot90(temp)
+            for tp in self._loaded_time_list:
+                temp[..., tp] = self._data[..., tp]
+        else:
+            temp = self._data.copy()
+
         return np.rot90(temp, 3)
 
     def get_value_label(self, value):
@@ -546,11 +558,7 @@ class VolumeDataset(object):
         Return a duplicated image.
 
         """
-        if self._img and self.is_4d():
-            raw_data = self._img.get_data(caching='unchanged')
-        else:
-            raw_data = self.get_raw_data()
-        dup_img = VolumeDataset(source=raw_data,
+        dup_img = VolumeDataset(source=self.get_raw_data(),
                                 label_config_center=self.get_label_config(),
                                 name=self.get_name()+'_duplicate',
                                 header=self.get_header(),
