@@ -5,17 +5,14 @@ import nibabel as nib
 from collections import OrderedDict
 
 
-def get_nii_data(path, nii_names):
+def get_nii_data(path, nii_name):
     """
     get nii data
     """
-    data_list = list()
-    for i in nii_names:
-        img_name = i[0] + ".nii.gz"
-        img = nib.load(path+img_name)
-        img_data = img.get_data()
-        data_list.append(img_data)
-    return data_list
+    img_name = nii_name + ".nii.gz"
+    img = nib.load(path+img_name)
+    img_data = img.get_data()
+    return img_data
 
 def get_atlasprob(data, x, y, z):
     """
