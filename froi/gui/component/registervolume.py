@@ -19,34 +19,52 @@ class RegisterVolumeDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        input_volume = QLabel('Input Volume:')
-        self.input_dir = QLineEdit('')
-        self.input_dir.setReadOnly(True)
-        self.input_button = QPushButton('Browse')
+        template_image = QLabel('Template Image:')
+        self.template_image_dir = QLineEdit('')
+        self.template_image_dir.setReadOnly(True)
+        self.template_image_button = QPushButton('Browse')
 
-        reference_volume = QLabel('Reference Volume:')
-        self.reference_dir = QLineEdit('')
-        self.reference_dir.setReadOnly(True)
-        self.reference_button = QPushButton('Browse')
+        anatomy_image = QLabel('Anatomy Image:')
+        self.anatomy_image_dir = QLineEdit('')
+        self.anatomy_image_dir.setReadOnly(True)
+        self.anatomy_image_button = QPushButton('Browse')
 
-        output_volume = QLabel('Output Volume:')
-        self.output_dir = QLineEdit('')
-        self.output_dir.setReadOnly(True)
-        self.output_button = QPushButton('Browse')
+        function_image = QLabel('Function Image:')
+        self.function_image_dir = QLineEdit('')
+        self.function_image_dir.setReadOnly(True)
+        self.function_image_button = QPushButton('Browse')
+
+        output_image = QLabel('Output Image:')
+        self.output_image_dir = QLineEdit('')
+        self.output_image_dir.setReadOnly(False)
 
         grid_layout = QGridLayout()
-        grid_layout.addWidget(input_volume, 0, 0)
-        grid_layout.addWidget(self.input_dir, 0, 1)
-        grid_layout.addWidget(self.input_button, 0, 2)
-        grid_layout.addWidget(reference_volume, 1, 0)
-        grid_layout.addWidget(self.reference_dir, 1, 1)
-        grid_layout.addWidget(self.reference_button, 1, 2)
-        grid_layout.addWidget(output_volume, 2, 0)
-        grid_layout.addWidget(self.output_dir, 2, 1)
-        grid_layout.addWidget(self.output_button, 2, 2)
+        grid_layout.addWidget(template_image, 0, 0, 1, 1)
+        grid_layout.addWidget(self.template_image_dir, 0, 1, 1, 1)
+        grid_layout.addWidget(self.template_image_button, 0, 2, 1, 1)
+        grid_layout.addWidget(anatomy_image, 1, 0, 1, 1)
+        grid_layout.addWidget(self.anatomy_image_dir, 1, 1, 1, 1)
+        grid_layout.addWidget(self.anatomy_image_button, 1, 2, 1, 1)
+        grid_layout.addWidget(function_image, 2, 0, 1, 1)
+        grid_layout.addWidget(self.function_image_dir, 2, 1, 1, 1)
+        grid_layout.addWidget(self.function_image_button, 2, 2, 1, 1)
 
-        self.register_button = QPushButton("Register")
-        self.register_button.adjustSize()
+        input_data_group = QGroupBox("Input Data: ")
+        input_data_group.setLayout(grid_layout)
+
+        self.native_space_radio = QRadioButton('Native Space',self)
+        self.template_space_radio = QRadioButton('Template Space',self)
+        space_group = QButtonGroup()
+        space_group.addButton(self.native_space_radio)
+        space_group.addButton(self.native_space_radio)
+        self.template_space_radio.setChecked(True)
+
+        space_group_vlayout = QVBoxLayout()
+        space_group_vlayout.addWidget(self.template_space_radio)
+        space_group_vlayout.addWidget(self.native_space_radio)
+
+        space_group = QGroupBox("Space: ")
+        space_group.setLayout(space_group_vlayout)
 
         self.fsl_radio = QRadioButton('FSL',self)
         self.spm_radio = QRadioButton('SPM',self)
@@ -55,25 +73,40 @@ class RegisterVolumeDialog(QDialog):
         radio_group.addButton(self.spm_radio)
         self.fsl_radio.setChecked(True)
 
-        radio_group_hlayout = QHBoxLayout()
-        radio_group_hlayout.addWidget(self.fsl_radio)
-        radio_group_hlayout.addWidget(self.spm_radio)
+        radio_group_vlayout = QVBoxLayout()
+        radio_group_vlayout.addWidget(self.fsl_radio)
+        radio_group_vlayout.addWidget(self.spm_radio)
+
+        tools_group = QGroupBox("Tools: ")
+        tools_group.setLayout(radio_group_vlayout)
+
+        self.register_button = QPushButton("Register")
+        self.register_button.setFixedWidth(100)
+        self.register_button.adjustSize()
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setFixedWidth(100)
+        self.cancel_button.adjustSize()
 
         hbox_layout = QHBoxLayout()
         hbox_layout.addWidget(self.register_button)
+        hbox_layout.addWidget(self.cancel_button)
 
         vbox_layout = QVBoxLayout()
-        vbox_layout.addLayout(grid_layout)
-        vbox_layout.addLayout(radio_group_hlayout)
+        vbox_layout.addWidget(input_data_group)
+        vbox_layout.addWidget(space_group)
+        vbox_layout.addWidget(tools_group)
         vbox_layout.addLayout(hbox_layout)
 
         self.setLayout(vbox_layout)
+        self.setMinimumSize(600, 300)
 
     def _create_actions(self):
-        self.input_button.clicked.connect(self._input_browse)
-        self.reference_button.clicked.connect(self._reference_browse)
-        self.output_button.clicked.connect(self._output_browse)
+        self.template_image_button.clicked.connect(self._input_browse)
+        self.anatomy_image_button.clicked.connect(self._reference_browse)
+        self.function_image_button.clicked.connect(self._output_browse)
         self.register_button.clicked.connect(self._register)
+        self.cancel_button.clicked.connect(self.done)
 
     def _input_browse(self):
         if self._temp_dir == None:
@@ -90,7 +123,7 @@ class RegisterVolumeDialog(QDialog):
                 file_path = unicode(file_name).encode('gb2312')
             else:
                 file_path = str(file_name)
-        self.input_dir.setText(file_path)
+        self.template_image_dir.setText(file_path)
         self._temp_dir = file_path
 
     def _reference_browse(self):
@@ -108,8 +141,32 @@ class RegisterVolumeDialog(QDialog):
                 file_path = unicode(file_name).encode('gb2312')
             else:
                 file_path = str(file_name)
-        self.reference_dir.setText(file_path)
+        self.anatomy_image_dir.setText(file_path)
         self._temp_dir = file_path
+
+    def _output_browse(self):
+        if self._temp_dir == None:
+            temp_dir = QDir.currentPath()
+        else:
+            temp_dir = self._temp_dir
+        file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii)"
+        path,filter = QFileDialog.getSaveFileNameAndFilter(
+            self,
+            'Save image as...',
+            temp_dir,
+            file_types,)
+        if not path.isEmpty():
+            self.output_dir.setText(path)
+        import sys
+        import os
+        if not path.isEmpty():
+            if sys.platform == 'win32':
+                path = unicode(path).encode('gb2312')
+                self._temp_dir = os.path.dirname(unicode(path, 'gb2312'))
+            else:
+                path = str(path)
+        self._temp_dir = path
+        print 'Save output file path: ', path
 
     def _output_browse(self):
         if self._temp_dir == None:
@@ -235,64 +292,6 @@ class RegisterMethod(object):
         coreg.run()
 
 
-if __name__ == '__main__':
-    pass
-
-
-    output_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/test_output.nii'
-    input_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/T1_brain.nii'
-    reference_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/std.nii'
-
-    normalize_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/spm_r_T1_brain.nii'
-    normalizeresult__volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/wspm_r_T1_brain.nii'
-
-    import nibabel as nib
-    # input_volume_filename = '/nfs/j3/userhome/zhouguangfu/Desktop/PycharmProjects/FreeROI/bin/brain/T1_brain.nii'
-    print nib.load(input_volume_filename).get_data().shape
-    print nib.load(reference_volume_filename).get_data().shape
-    print nib.load(normalize_volume_filename).get_data().shape
-    print nib.load(normalizeresult__volume_filename).get_data().shape
-
-    import nipype.interfaces.matlab as mlab      # how to run matlab
-
-    # Set the way matlab should be called
-    mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
-    # If SPM is not in your MATLAB path you should add it here
-    mlab.MatlabCommand.set_default_paths('/nfs/j3/userhome/zhouguangfu/spm8')
-
-    # res = mlab.MatlabCommand(script='which(spm)',
-    #             paths=['/nfs/j3/userhome/zhouguangfu/spm8'],
-    #             mfile=False).run()
-    # print res.runtime.stdout
-
-    import nipype.interfaces.spm as spm
-    coreg = spm.Coregister()
-
-     #reference file
-    coreg.inputs.target = reference_volume_filename
-    #a list of items which are an existing file name file to register to target
-    coreg.inputs.source = input_volume_filename
-
-    coreg.inputs.cost_function = 'nmi'
-    coreg.inputs.separation = [4, 2]
-    coreg.inputs.tolerance = [0.02, 0.02, 0.02, 0.001, 0.001, 0.001,
-                          0.01, 0.01, 0.01, 0.001, 0.001, 0.001]
-    coreg.inputs.fwhm = [7, 7]
-    coreg.inputs.write_mask = False
-    coreg.inputs.out_prefix = 'spm_r_'
-    coreg.inputs.write_wrap = [0, 0, 0]
-    coreg.inputs.write_interp = 1
-    ret = coreg.run()
-    print 'Registeration end!'
-
-    import nipype.interfaces.spm as spm
-    norm = spm.Normalize()
-    norm.inputs.template = reference_volume_filename
-    norm.inputs.source = normalize_volume_filename
-    norm.run()
-
-
-    print 'Program end!'
 
 
 
