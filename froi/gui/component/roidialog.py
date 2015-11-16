@@ -33,6 +33,7 @@ class ROIDialog(QDialog, DrawSettings):
     def _init_gui(self):
         self.setWindowModality(Qt.NonModal)
         self.setWindowTitle("Edit")
+        self.setFixedSize(400, 600)
 
         self.voxel_btn = QPushButton("Voxel")
         self.ROI_btn = QPushButton("ROI")
