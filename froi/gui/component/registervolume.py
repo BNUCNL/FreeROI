@@ -238,6 +238,20 @@ class RegisterMethod(object):
         flirt.inputs.reference = target_image
         flirt.inputs.output_type = "NIFTI"
 
+        output_basename = os.path.basename(source_image.strip('/'))
+        output_filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', output_basename)
+        output_filename_path = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.nii')
+        out_matrix_filename_path = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.mat')
+
+        if sys.platform == 'win32':
+            output_filename_path = unicode(output_filename_path).encode('gb2312')
+            out_matrix_filename_path = unicode(out_matrix_filename_path).encode('gb2312')
+        else:
+            output_filename_path = str(output_filename_path)
+            out_matrix_filename_path = str(out_matrix_filename_path)
+        flirt.inputs.out_file = output_filename_path
+        flirt.inputs.out_matrix_file = out_matrix_filename_path
+
         if omat is not None:
             flirt.inputs.in_matrix_file = omat
             flirt.inputs.apply_xfm = True
@@ -246,8 +260,8 @@ class RegisterMethod(object):
         except:
             QMessageBox.warning(self._error_window,
                                 'Warning',
-                                'Cannot find the fsl! Make sure the fsl path is in the environment variable ' + \
-                                'and the paramter is correct.',
+                                'FSL error occured! Make sure the fsl path is in the environment variable ' + \
+                                'or the paramter is correct.',
                                 QMessageBox.Yes)
             return 
 
@@ -317,7 +331,7 @@ class RegisterMethod(object):
             QMessageBox.warning(self,
                                 'Warining',
                                 'Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'and the paramter is correct.',
+                                'or the paramter is correct.',
                                 QMessageBox.Ok)
             return 
 
