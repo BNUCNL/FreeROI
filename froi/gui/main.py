@@ -687,11 +687,14 @@ class BpMainWindow(QMainWindow):
                 self.list_view.setCurrentIndex(self.model.index(0))
             self.is_save_configure = True
         else:
-            QMessageBox.information(self,'FreeROI', 'Cannot load ' + \
-                                    file_path + ': due to mismatch data size. \nNeed registration!')
-            register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
-            register_volume_dialog.exec_()
-
+            ret = QMessageBox.question(self,
+                                     'FreeROI',
+                                     'Cannot load ' + file_path + ': due to mismatch data size.\nNeed registration?',
+                                     QMessageBox.Cancel,
+                                     QMessageBox.Yes)
+            if ret == QMessageBox.Yes:
+                register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
+                register_volume_dialog.exec_()
 
     def __new_image(self):
         self._new_image()
