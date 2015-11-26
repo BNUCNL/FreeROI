@@ -9,7 +9,7 @@ from no_gui_tools import edge_detection
 from roimergedialog import ROIMergeDialog
 from roi2gwmidialog import Roi2gwmiDialog
 from regularroidialog import RegularROIDialog
-from atlasdialog import AtlasDialog
+# from atlasdialog import AtlasDialog
 from froi.gui.base.utils import *
 
 class ToolsTabWidget(QDialog):
@@ -58,29 +58,29 @@ class ToolsTabWidget(QDialog):
         self.regularroi_button.setEnabled(True)
         self.regularroi_button.setToolTip("Regular ROI")
 
-        self.atlas_button = QPushButton()
-        self.atlas_button.setFocusPolicy(Qt.NoFocus)
-        self.atlas_button.setIcon(QIcon(os.path.join(self._icon_dir,
-                                                          'atlas.png')))
-        self.atlas_button.setEnabled(True)
-        self.atlas_button.setToolTip("Atlas Probability")
+        # self.atlas_button = QPushButton()
+        # self.atlas_button.setFocusPolicy(Qt.NoFocus)
+        # self.atlas_button.setIcon(QIcon(os.path.join(self._icon_dir,
+        #                                                   'atlas.png')))
+        # self.atlas_button.setEnabled(True)
+        # self.atlas_button.setToolTip("Atlas Probability")
 
         gridlayout = QGridLayout(self)
         gridlayout.addWidget(self.detection_button, 0, 0)
         gridlayout.addWidget(self.roimerge_button, 0, 1)
         gridlayout.addWidget(self.roi2interface_button, 0, 2)
         gridlayout.addWidget(self.regularroi_button, 1, 0)
-        gridlayout.addWidget(self.atlas_button,1,1)
+        # gridlayout.addWidget(self.atlas_button,1,1)
 
     def _create_actions(self):
         """
-        Create actions about the toobar
+        Create actions about the toolbar
         """
         self.detection_button.clicked.connect(self._edge_detection_clicked)
         self.roimerge_button.clicked.connect(self._roimerge_clicked)
         self.roi2interface_button.clicked.connect(self._r2i_clicked)
         self.regularroi_button.clicked.connect(self._regular_roi_clicked)
-        self.atlas_button.clicked.connect(self._atlas_clicked)
+        # self.atlas_button.clicked.connect(self._atlas_clicked)
 
     def _edge_detection_clicked(self):
         '''
@@ -113,7 +113,11 @@ class ToolsTabWidget(QDialog):
             new_dialog = RegularROIDialog(self._model)
             new_dialog.exec_()
 
-    def _atlas_clicked(self):
-        if self.atlas_button.isEnabled():
-            self.atlasdialog = AtlasDialog(self._model,self)
-            self.atlasdialog.show()
+    # def _atlas_clicked(self):
+    #     if not self.atlas_button.isChecked():
+    #         self.atlas_button.setChecked(False)
+    #         self.atlas_button.setChecked(True)
+    #         self.atlasdialog = AtlasDialog(self._model,self)
+    #         self.atlasdialog.show()
+    #     else:
+    #         self.atlas_button.setChecked(True)

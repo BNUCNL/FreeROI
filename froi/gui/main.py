@@ -497,7 +497,7 @@ class BpMainWindow(QMainWindow):
         # Atlas information
         self._actions['atlas'] = QAction(QIcon(os.path.join(
                                                 self._icon_dir, 'atlas.png')),
-                                         self.tr("Atlas Information"),
+                                         self.tr("Candidate Label"),
                                          self)
         self._actions['atlas'].triggered.connect(self._atlas_dialog)
         self._actions['atlas'].setEnabled(False)
@@ -823,6 +823,7 @@ class BpMainWindow(QMainWindow):
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
         self.tool_menu.addAction(self._actions['label_management'])
+        self.tool_menu.addAction(self._actions['atlas'])
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -841,7 +842,7 @@ class BpMainWindow(QMainWindow):
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['r2i'])
-        roi_tools.addAction(self._actions['atlas'])
+        # roi_tools.addAction(self._actions['atlas'])
         morphological_tools = self.tool_menu.addMenu(
                                     self.tr("Morphological Processing"))
         morphological_tools.addAction(self._actions['opening'])
@@ -1198,6 +1199,7 @@ class BpMainWindow(QMainWindow):
         self._actions['localmax'].setEnabled(status)
         self._actions['inverse'].setEnabled(status)
         self._actions['smoothing'].setEnabled(status)
+        self._actions['atlas'].setEnabled(status)
         self._actions['region_grow'].setEnabled(status)
         self._actions['watershed'].setEnabled(status)
         self._actions['slic'].setEnabled(status)

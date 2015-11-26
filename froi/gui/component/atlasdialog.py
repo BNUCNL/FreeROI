@@ -48,8 +48,8 @@ class AtlasDialog(QDialog, AtlasDatamodel):
     A dialog for action of Atlas.
 
     """
-    default_atlas = ['HarvardOxford-Cortical.xml', \
-                     'HarvardOxford-Subcortical.xml']
+    default_atlas = ['Harvard-Oxford_Cortical_Structural_Atlas.xml', \
+                     'Harvard-Oxford_Subcortical_Structural_Atlas.xml']
     def __init__(self, model, parent=None):
         super(AtlasDialog, self).__init__(parent)
         self._model = model
@@ -74,10 +74,10 @@ class AtlasDialog(QDialog, AtlasDatamodel):
 
         """
         # set dialog title
-        self.setWindowTitle("Atlas Information")
+        self.setWindowTitle("Candidate Label")
 
         # initialize widgets
-        self.source_combo = QComboBox()
+        # self.source_combo = QComboBox()
         vbox_layout = QVBoxLayout()
         self.scrollContents = QWidget()
         self.Layout_2 = QHBoxLayout(self.scrollContents)
@@ -113,7 +113,7 @@ class AtlasDialog(QDialog, AtlasDatamodel):
         self.setGeometry(300,260,300,260)
 
         self.space = QLabel(" ")
-        self.set_button = QPushButton("Setting")
+        self.set_button = QPushButton("Select Atlas")
         grid_layout = QGridLayout()
         grid_layout.addWidget(self.space,0,0)
         grid_layout.addWidget(self.set_button,0,1)
