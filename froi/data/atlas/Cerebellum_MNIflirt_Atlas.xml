@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
   <header>
-    <name>Cerebellar Atlas in MNI152 space after normalization with FLIRT</name>
-    <shortname>Cerebellum_MNI_flirt</shortname>
     <type>Probabalistic</type>
     <images>
       <imagefile>Cerebellum-MNIflirt-prob-2mm</imagefile>

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
   <header>
-    <name>Face Activation Atlas</name>
     <type>Probabalistic</type>
     <images>
       <imagefile>face-prob-2mm</imagefile>

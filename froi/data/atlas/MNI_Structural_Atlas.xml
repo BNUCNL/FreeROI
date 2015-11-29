@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
   <header>
-    <name>MNI Structural Atlas</name>
     <type>Probabalistic</type>
     <images>
       <imagefile>MNI-prob-2mm</imagefile>

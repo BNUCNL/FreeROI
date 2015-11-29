@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
   <header>
-    <name>Harvard-Oxford Subcortical Structural Atlas</name>
-    <shortname>HOSPA</shortname>
     <type>Probabalistic</type>
     <images>
       <imagefile>HarvardOxford-sub-prob-2mm</imagefile>

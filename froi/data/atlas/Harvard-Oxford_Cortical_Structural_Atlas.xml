@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
   <header>
-    <name>Harvard-Oxford Cortical Structural Atlas</name>
-    <shortname>HOCPA</shortname>
     <type>Probabalistic</type>
     <images>
       <imagefile>HarvardOxford-cort-prob-2mm</imagefile>
