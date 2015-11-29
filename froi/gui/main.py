@@ -510,6 +510,7 @@ class BpMainWindow(QMainWindow):
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
 
+
     def _add_toolbar(self):
         """
         Add toolbar.
@@ -908,8 +909,11 @@ class BpMainWindow(QMainWindow):
         """
         Atlas information
         """
-        self.atlasdialog = AtlasDialog(self.model, self)
-        self.atlasdialog.show()
+        if 'atlasdialog' in self.__dict__:
+            self.atlasdialog.show()
+        else:
+            self.atlasdialog = AtlasDialog(self.model, self)
+            self.atlasdialog.show()
 
     def _roi_batch_enable(self):
         self.image_view.set_label_mouse_tracking(False)
