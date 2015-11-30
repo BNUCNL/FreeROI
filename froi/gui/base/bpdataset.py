@@ -94,15 +94,15 @@ class VolumeDataset(object):
                 raise ValueError("Parameter header must be specified!")
             elif header.get_data_shape() == source.shape:
                 self._header = header
+                self._img = None
             else:
                 raise ValueError("Data dimension does not match.")
         else:
-            img = nib.load(source)
+            self._img = nib.load(source)
+            self._header = self._img.get_header()
             basename = os.path.basename(source.strip('/'))
             self._name = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
-            data = img.get_data()
-            self._data = np.rot90(data)
-            self._header = img.get_header()
+            self.save_mem_load()
 
         # For convenience, define a shift variable
         self._y_shift = self.get_data_shape()[1] - 1
@@ -143,6 +143,21 @@ class VolumeDataset(object):
         self.update_rgba()
         if self._cross_pos:
             self.update_orth_rgba()
+
+    def save_mem_load(self):
+        """
+        Load data around current time-point.
+
+        """
+        if len(self.get_data_shape())==4 and self._img:
+            data = np.zeros(self.get_data_shape())
+            self._data = np.rot90(data)
+            self._loaded_time_list = [0]
+            self._data[..., 0] = np.rot90(self._img.dataobj[..., 0])
+        else:
+            self._loaded_time_list = [0]
+            data = self._img.get_data(caching='unchanged')
+            self._data = np.rot90(data)
 
     def get_data_shape(self):
         """
@@ -273,6 +288,11 @@ class VolumeDataset(object):
         if self.is_4d():
             if isinstance(tpoint, int):
                 if tpoint >= 0 and tpoint < self.get_data_shape()[3]:
+                    if self._img:
+                        if not tpoint in self._loaded_time_list:
+                            self._data[..., tpoint] = \
+                                    np.rot90(self._img.dataobj[..., tpoint])
+                            self._loaded_time_list.append(tpoint)
                     self._time_point = tpoint
                     self.undo_stack.clear()
                     self.redo_stack.clear()
@@ -471,7 +491,11 @@ class VolumeDataset(object):
            else:
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
         else:
-            if self.is_4d():
+            if self.is_4d() and self._img:
+               data = self.get_raw_data()
+               data = np.rot90(data)
+               return data[self._y_shift - xyz[1], xyz[0], xyz[2], :]
+            elif self.is_4d():
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2], :]
             else:
                return self._data[self._y_shift - xyz[1], xyz[0], xyz[2]]
@@ -492,7 +516,14 @@ class VolumeDataset(object):
         return np.rot90(temp, 3)
 
     def get_raw_data(self):
-        temp = self._data.copy()
+        if self._img and self.is_4d():
+            temp = self._img.get_data(caching='unchanged')
+            temp = np.rot90(temp)
+            for tp in self._loaded_time_list:
+                temp[..., tp] = self._data[..., tp]
+        else:
+            temp = self._data.copy()
+
         return np.rot90(temp, 3)
 
     def get_value_label(self, value):
@@ -520,4 +551,19 @@ class VolumeDataset(object):
         else:
             #return self._data[y, x, z]
             return self._data[self._y_shift - y, x, z]
+
+    def duplicate(self):
+        """
+        Return a duplicated image.
+
+        """
+        dup_img = VolumeDataset(source=self.get_raw_data(),
+                                label_config_center=self.get_label_config(),
+                                name=self.get_name()+'_duplicate',
+                                header=self.get_header(),
+                                view_min=self.get_view_min(),
+                                view_max=self.get_view_max(),
+                                alpha=self.get_alpha(),
+                                colormap=self.get_colormap())
+        return dup_img
 

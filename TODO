@@ -1,8 +1,6 @@
 Aims for long term evolution
 -----------------------------
-1. image orientation detection.
-2. color scheme editor. 
-4. New segmentation methods: N-cut, K-means.
+1. New segmentation methods: N-cut, K-means.
 
 TO DO LIST
 ----------
@@ -14,6 +12,9 @@ TO DO LIST
 3. Add image registration tools (affine transformation)
 4. Add `Atlas reference` tools (ref: fslview)
 5. Update automatic methods for image segment
+6. Image orientation detection & display
+7. Voxel/real world coordinate display
+8. Add snapshot for OrthView.
 -------------------------------------------------------------------------
 
 ** Version: 0.2.2

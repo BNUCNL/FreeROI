@@ -26,7 +26,7 @@ from component.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from component.binarizationdialog import BinarizationDialog
 from component.intersectdialog import IntersectDialog
 from component.localmaxdialog import LocalMaxDialog
-from component.no_gui_tools import inverse_image
+from component.no_gui_tools import inverse_image, gen_label_color
 from component.smoothingdialog import SmoothingDialog
 from component.growdialog import GrowDialog
 from component.watersheddialog import WatershedDialog
@@ -47,7 +47,7 @@ from component.greydilationdialog import GreydilationDialog
 from component.greyerosiondialog import GreyerosionDialog
 from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
-from component.no_gui_tools import *
+from component.registervolume import RegisterVolumeDialog
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -72,7 +72,7 @@ class BpMainWindow(QMainWindow):
         """
         # Inherited from QMainWindow
         if sys.platform == 'darwin':
-            # Workaround for Qt issue on OS X that causes QMainWindow to
+            # Workaround for Qt issue on OSX that causes QMainWindow to
             # hide when adding QToolBar, see
             # https://bugreports.qt-project.org/browse/QTBUG-4300
             super(BpMainWindow, self).__init__(parent,
@@ -105,8 +105,7 @@ class BpMainWindow(QMainWindow):
         #self.resize(1280, 1000)
         self.center()
         # set window icon
-        self.setWindowIcon(QIcon(os.path.join(self._icon_dir,
-                                              'logo.png')))
+        self.setWindowIcon(QIcon(os.path.join(self._icon_dir, 'logo.png')))
 
         self._init_configuration()
 
@@ -131,7 +130,7 @@ class BpMainWindow(QMainWindow):
         Load configuration for GUI.
 
         """
-        config_file = os.path.expanduser('~/.pybp.conf')
+        config_file = os.path.expanduser('~/.froi.conf')
         if os.path.exists(config_file):
             config = ConfigParser.RawConfigParser()
             config.read(config_file)
@@ -156,7 +155,7 @@ class BpMainWindow(QMainWindow):
         Save GUI configuration to a file.
 
         """
-        config_file = os.path.expanduser('~/.pybp.conf')
+        config_file = os.path.expanduser('~/.freeroi.conf')
 
         config = ConfigParser.RawConfigParser()
         config.add_section('width')
@@ -198,17 +197,26 @@ class BpMainWindow(QMainWindow):
 
         # Open template action
         self._actions['add_template'] = QAction(QIcon(os.path.join(
-                                                      self._icon_dir, 'open.png')),
-                                                self.tr("&Open standard volume"),
-                                                self)
+                                            self._icon_dir, 'open.png')),
+                                            self.tr("&Open standard template"),
+                                            self)
         self._actions['add_template'].setShortcut(self.tr("Ctrl+O"))
         self._actions['add_template'].triggered.connect(self._add_template)
         self._actions['add_template'].setEnabled(True)
 
+        # Open register action
+        self._actions['register_volume'] = QAction(QIcon(os.path.join(
+                                            self._icon_dir, 'open.png')),
+                                            self.tr("&Register Volume"),
+                                            self)
+        self._actions['register_volume'].setShortcut(self.tr("Ctrl+r"))
+        self._actions['register_volume'].triggered.connect(self._register_volume)
+        self._actions['register_volume'].setEnabled(True)
+
         # Add a new image action
         self._actions['add_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
-                                             self.tr("&Add volume"),
+                                             self.tr("&Add file ... "),
                                              self)
         self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
         self._actions['add_image'].triggered.connect(self._add_image)
@@ -216,8 +224,8 @@ class BpMainWindow(QMainWindow):
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
-                                                      self._icon_dir, 'remove.png')),
-                                                self.tr("&Remove volume"),
+                                                self._icon_dir, 'remove.png')),
+                                                self.tr("&Remove image"),
                                                 self)
         self._actions['remove_image'].setShortcut(self.tr("Ctrl+R"))
         self._actions['remove_image'].triggered.connect(self._remove_image)
@@ -225,18 +233,24 @@ class BpMainWindow(QMainWindow):
 
         # New image
         self._actions['new_image'] = QAction(QIcon(os.path.join(
-                                                   self._icon_dir, 'create.png')),
-                                             self.tr("&New volume"),
-                                             self)
+                                            self._icon_dir, 'create.png')),
+                                            self.tr("&New image"),
+                                            self)
         self._actions['new_image'].setShortcut(self.tr("Ctrl+N"))
         self._actions['new_image'].triggered.connect(self.__new_image)
         self._actions['new_image'].setEnabled(False)
 
+        # Duplicate image
+        self._actions['duplicate_image'] = QAction(self.tr("Duplicate"), self)
+        self._actions['duplicate_image'].triggered.connect(
+                                        self._duplicate_image)
+        self._actions['duplicate_image'].setEnabled(False)
+
         # Save image
         self._actions['save_image'] = QAction(QIcon(os.path.join(
-                                                    self._icon_dir, 'save.png')),
-                                              self.tr("&Save volume as..."),
-                                              self)
+                                            self._icon_dir, 'save.png')),
+                                            self.tr("&Save image as..."),
+                                            self)
         self._actions['save_image'].setShortcut(self.tr("Ctrl+S"))
         self._actions['save_image'].triggered.connect(self._save_image)
         self._actions['save_image'].setEnabled(False)
@@ -360,12 +374,15 @@ class BpMainWindow(QMainWindow):
         self._actions['region_grow'].setEnabled(False)
 
         # Lable Management action
-        self._actions['label_management'] = QAction(QIcon(os.path.join(
-                                        self._icon_dir, 'intersect.png')),
-                                               self.tr("Label Management"),
+        self._actions['label_management'] = QAction(self.tr("Label Management"),
                                                self)
         self._actions['label_management'].triggered.connect(self._label_manage)
         self._actions['label_management'].setEnabled(False)
+
+        # Snapshot
+        self._actions['snapshot'] = QAction(self.tr("Snapshot"), self)
+        self._actions['snapshot'].triggered.connect(self._snapshot)
+        self._actions['snapshot'].setEnabled(False)
 
         # Watershed action
         self._actions['watershed'] = QAction(QIcon(os.path.join(
@@ -417,8 +434,8 @@ class BpMainWindow(QMainWindow):
         self._actions['greydilation'].setEnabled(False)
 
         # About software
-        self._actions['about_pybp'] = QAction(self.tr("About FreeROI"), self)
-        self._actions['about_pybp'].triggered.connect(self._about_pybp)
+        self._actions['about_freeroi'] = QAction(self.tr("About FreeROI"), self)
+        self._actions['about_freeroi'].triggered.connect(self._about_freeroi)
 
         # About Qt
         self._actions['about_qt'] = QAction(QIcon(os.path.join(
@@ -599,6 +616,19 @@ class BpMainWindow(QMainWindow):
                 file_path = str(file_name)
             self._add_img(file_path)
 
+    def _duplicate_image(self):
+        """
+        Duplicate image.
+
+        """
+        index = self.model.currentIndex()
+        dup_img = self.model._data[index.row()].duplicate()
+        self.model.insertRow(0, dup_img)
+        self.list_view.setCurrentIndex(self.model.index(0))
+
+        # change button status
+        self._actions['remove_image'].setEnabled(True)
+        
     def _add_img(self, source, name=None, header=None, view_min=None,
                  view_max=None, alpha=255, colormap='gray'):
         """
@@ -648,6 +678,7 @@ class BpMainWindow(QMainWindow):
                 #self.setUnifiedTitleAndToolBarOnMac(True)
                 # change button status
                 self._actions['save_image'].setEnabled(True)
+                self._actions['duplicate_image'].setEnabled(True)
                 #self._actions['ld_lbl'].setEnabled(True)
                 #self._actions['ld_glbl'].setEnabled(True)
                 self._actions['new_image'].setEnabled(True)
@@ -762,6 +793,7 @@ class BpMainWindow(QMainWindow):
         self._actions['remove_image'].setEnabled(False)
         self._actions['new_image'].setEnabled(False)
         self._actions['save_image'].setEnabled(False)
+        self._actions['duplicate_image'].setEnabled(False)
         #self._actions['ld_glbl'].setEnabled(False)
         #self._actions['ld_lbl'].setEnabled(False)
         self._actions['close'].setEnabled(False)
@@ -769,9 +801,10 @@ class BpMainWindow(QMainWindow):
         self._actions['orth_view'].setEnabled(False)
         self._actions['cross_hover_view'].setEnabled(False)
         self._actions['original_view'].setEnabled(False)
+        self._actions['snapshot'].setEnabled(False)
         self._functional_module_set_enabled(False)
 
-    def _about_pybp(self):
+    def _about_freeroi(self):
         """
         About software.
 
@@ -792,7 +825,7 @@ class BpMainWindow(QMainWindow):
                                   "</p>"
                                   "<p><b>FreeROI</b> is under Revised BSD "
                                   "License.</p>"
-                                  "<p>Copyright(c) 2012-2014 "
+                                  "<p>Copyright(c) 2012-2015 "
                                   "Neuroinformatic Team in LiuLab "
                                   "from Beijing Normal University</p>"
                                   "<p></p>"
@@ -804,17 +837,21 @@ class BpMainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu(self.tr("File"))
         self.file_menu.addAction(self._actions['add_image'])
         self.file_menu.addAction(self._actions['add_template'])
+        self.file_menu.addAction(self._actions['register_volume'])
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self._actions['new_image'])
+        self.file_menu.addAction(self._actions['remove_image'])
+        self.file_menu.addAction(self._actions['duplicate_image'])
         self.file_menu.addAction(self._actions['save_image'])
-        #self.file_menu.addSeparator()
         #self.file_menu.addAction(self._actions['ld_lbl'])
         #self.file_menu.addAction(self._actions['ld_glbl'])
         self.file_menu.addSeparator()
         self.file_menu.addAction(self._actions['close'])
         self.file_menu.addAction(self._actions['quit'])
 
-        self.volume_menu = self.menuBar().addMenu(self.tr("Volume"))
-        self.volume_menu.addAction(self._actions['new_image'])
-        self.volume_menu.addAction(self._actions['remove_image'])
+        #self.volume_menu = self.menuBar().addMenu(self.tr("Volume"))
+        #self.volume_menu.addAction(self._actions['new_image'])
+        #self.volume_menu.addAction(self._actions['remove_image'])
 
         self.view_menu = self.menuBar().addMenu(self.tr("View"))
         self.view_menu.addAction(self._actions['grid_view'])
@@ -823,8 +860,8 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
-        self.tool_menu.addAction(self._actions['label_management'])
-        self.tool_menu.addAction(self._actions['atlas'])
+
+        # Basic tools
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
         basic_tools.addAction(self._actions['intersect'])
@@ -833,17 +870,20 @@ class BpMainWindow(QMainWindow):
         basic_tools.addAction(self._actions['smoothing'])
         basic_tools.addAction(self._actions['meants'])
         basic_tools.addAction(self._actions['voxelstats'])
+        # Segment tools
         segment_tools = self.tool_menu.addMenu(self.tr("Segmentation"))
         segment_tools.addAction(self._actions['region_grow'])
         segment_tools.addAction(self._actions['watershed'])
         segment_tools.addAction(self._actions['slic'])
         segment_tools.addAction(self._actions['cluster'])
+        # ROI tools
         roi_tools = self.tool_menu.addMenu(self.tr("ROI Tools"))
         roi_tools.addAction(self._actions['edge_dete'])
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['r2i'])
-        # roi_tools.addAction(self._actions['atlas'])
+
+        # Morphological tools
         morphological_tools = self.tool_menu.addMenu(
                                     self.tr("Morphological Processing"))
         morphological_tools.addAction(self._actions['opening'])
@@ -851,9 +891,13 @@ class BpMainWindow(QMainWindow):
         morphological_tools.addAction(self._actions['binaryerosion'])
         morphological_tools.addAction(self._actions['greydilation'])
         morphological_tools.addAction(self._actions['greyerosion'])
+        # label management
+        self.tool_menu.addAction(self._actions['atlas'])
+        self.tool_menu.addAction(self._actions['label_management'])
+        self.tool_menu.addAction(self._actions['snapshot'])
 
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
-        self.help_menu.addAction(self._actions['about_pybp'])
+        self.help_menu.addAction(self._actions['about_freeroi'])
         self.help_menu.addAction(self._actions['about_qt'])
 
     def _cursor_enable(self):
@@ -989,10 +1033,12 @@ class BpMainWindow(QMainWindow):
         self._label_models = []
         for item in self.label_configs:
             model = QStandardItemModel()
-            for label in item.get_label_list():
-                text_index_icon_item = QStandardItem(get_icon(item.get_label_color(label)),
-                                                     str(item.get_label_index(label)) + '  ' + label)
+            indexs = sorted(item.get_index_list())
+            for index in indexs:
+                text_index_icon_item = QStandardItem(gen_label_color(item.get_label_color(item.get_index_label(index))),
+                                                     str(index) + '  ' + item.get_index_label(index))
                 model.appendRow(text_index_icon_item)
+
             self._label_models.append(model)
         self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 
@@ -1040,6 +1086,11 @@ class BpMainWindow(QMainWindow):
         new_dialog = OpenDialog(self.model)
         new_dialog.exec_()
 
+    def _register_volume(self):
+        print 'Register dialog!'
+        register_volume_dialog = RegisterVolumeDialog(self.model)
+        register_volume_dialog.exec_()
+
     def _voxelstats(self):
         new_dialog = VoxelStatsDialog(self.model, self)
         new_dialog.show()
@@ -1079,6 +1130,7 @@ class BpMainWindow(QMainWindow):
         self._actions['grid_view'].setEnabled(False)
         self._actions['orth_view'].setEnabled(True)
         self._actions['hand'].setEnabled(False)
+        self._actions['snapshot'].setEnabled(False)
         self._actions['cursor'].trigger()
 
         self.centralWidget().layout().removeWidget(self.image_view)
@@ -1100,6 +1152,7 @@ class BpMainWindow(QMainWindow):
 
         self._actions['orth_view'].setEnabled(False)
         self._actions['grid_view'].setEnabled(True)
+        self._actions['snapshot'].setEnabled(True)
         self._actions['hand'].setEnabled(True)
         self._actions['cursor'].trigger()
 
@@ -1218,4 +1271,11 @@ class BpMainWindow(QMainWindow):
         self._actions['r2i'].setEnabled(status)
         self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
+
+    def _snapshot(self):
+        """
+        Capture images from OrthView.
+
+        """
+        self.image_view.save_image()
 

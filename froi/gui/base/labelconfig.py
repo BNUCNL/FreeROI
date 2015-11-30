@@ -2,7 +2,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
-import json
 import collections
 
 from PyQt4.QtGui import *
@@ -17,32 +16,15 @@ class LabelConfig(object):
         self.label_color = {}
         self.label_list = []
         self.load(filepath)
-        #with open(filepath, 'r') as f:
-        #    try:
-        #        tmp_dict = json.load(f, object_pairs_hook=collections.OrderedDict)
-        #    except ValueError:
-        #        tmp_dict = collections.OrderedDict()
-        #    for key, val in tmp_dict.iteritems():
-        #        self.label_list.append(key)
-        #        if not val:
-        #            self.label_index[key] = 0
-        #        else:
-        #            self.label_index[key] = int(val[0])
-        #        if len(val) < 2:
-        #            self.label_color[key] = default_color
-        #        else:
-        #            self.label_color[key] = QColor(val[1])
         self._is_global = is_global
 
     def load(self, filepath):
-        tmp_dict = collections.OrderedDict()
         with open(filepath, 'r+') as f:
             for line in f:
                 line = line.split()
                 if line:
                     self.label_index[line[1]] = int(line[0])
                     self.label_color[line[1]] = QColor(int(line[2]), int(line[3]), int(line[4]))
-        return tmp_dict
 
     def dump(self):
         if hasattr(self, 'filepath'):
@@ -94,6 +76,9 @@ class LabelConfig(object):
     def get_label_list(self):
         return self.label_index.keys()
 
+    def get_index_list(self):
+        return sorted(self.label_index.values())
+
     def get_label_index(self, label):
         if label:
             if self.has_label(label):
@@ -116,11 +101,6 @@ class LabelConfig(object):
 
     def save(self):
         self.dump()
-        #colors = map(QColor.rgb, self.label_color.values())
-        #tmp_dict = dict(zip(self.label_index.keys(), 
-        #                    zip(self.label_index.values(), colors)))
-        #with open(self.filepath, 'w') as f:
-        #    json.dump(tmp_dict, f, indent=4)
 
     def get_colormap(self):
         rgb = lambda color: [color.red(), color.green(), color.blue()]

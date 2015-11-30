@@ -3,7 +3,9 @@
 """Implementation of model part in Qt Model-View architecture.
 
 """
-
+import numpy.linalg as npl
+from nibabel.affines import apply_affine
+from nibabel import aff2axcodes
 import numpy as np
 from PyQt4.QtCore import *
 
@@ -32,13 +34,15 @@ class VolumeListModel(QAbstractListModel):
         """
         super(VolumeListModel, self).__init__(parent)
         self._data = data_list
+        self._affine = None
+        self._ras_space = None
+        self._ras_unit = None
+        self._axcodes = None
         self._current_index = None
         self._selected_indexes = []
         self._grid_scale_factor = 1.0
         self._orth_scale_factor = 1.0
-        # FIXME current position should be initialized when the first
-        # volume added.
-        # The current position is a 3D data.
+        # The current position is an index of 3D space.
         self._cross_pos = [0, 0, 0]
         self._display_cross = True
         self._connect_undo_redo()
@@ -53,6 +57,13 @@ class VolumeListModel(QAbstractListModel):
         """
         return self._cross_pos
 
+    def get_space_pos(self):
+        """
+        Get current cursor position in RAS space.
+
+        """
+        return apply_affine(self._affine, self._cross_pos)
+
     def set_cross_pos(self, new_coord):
         """
         Set current cursor position.
@@ -61,6 +72,41 @@ class VolumeListModel(QAbstractListModel):
         self._cross_pos = new_coord
         self.update_orth_rgba()
         self.cross_pos_changed.emit()
+
+    def set_space_pos(self, new_space_coord):
+        """
+        Set current cursor position based on RAS coordinates.
+
+        """
+        new_coord = apply_affine(npl.inv(self._affine), new_space_coord)
+        new_coord = np.floor(new_coord)
+        new_coord = [int(item) for item in new_coord]
+        if self.is_valid_coord(new_coord):
+            self.set_cross_pos(new_coord)
+
+    def is_valid_coord(self, coord):
+        """
+        Filter valid coordinate.
+
+        """
+        data_shape = self._data[0].get_data_shape()
+        if coord[0]>=0 and coord[0]<data_shape[0]:
+            if coord[1]>=0 and coord[1]<data_shape[1]:
+                if coord[2]>=0 and coord[2]<data_shape[2]:
+                    return True
+        else:
+            False
+
+    def get_axcodes(self):
+        """
+        Get codes for voxel axis derived from affine.
+        i.e., ('R', 'A', 'S')
+
+        """
+        if isinstance(self._affine, np.ndarray):
+            return aff2axcodes(self._affine)
+        else:
+            return None
 
     def update_orth_rgba(self):
         """
@@ -290,6 +336,7 @@ class VolumeListModel(QAbstractListModel):
                                  self._cross_pos[2]])
             ok = self.insertRow(0, vol)
             if ok:
+                self._get_sapce_info(vol)
                 self.repaint_slices.emit(-1)
                 return True
             else:
@@ -582,45 +629,6 @@ class VolumeListModel(QAbstractListModel):
         return [self._data[idx.row()].get_coronal_rgba() for
                 idx in self.selectedIndexes()]
 
-    #def sagital_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(np.rot90(self._data[index]._data[:, slice, :, 
-    #                                        self._data[index]._time_point]))
-    #        else:
-    #            temp = f(np.rot90(self._data[index]._data[:, slice, :]))
-    #        rgba_list.append(temp)
-    #    return rgba_list
-
-    #def axial_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(self._data[index]._data[:, :, slice,
-    #                        self._data[index]._time_point])
-    #        else:
-    #            temp = f(self._data[index]._data[:, :, slice])
-    #        rgba_list.append(temp)
-    #    return rgba_list 
-
-    #def coronal_rgba_list(self, slice):
-    #    index_list = [idx.row() for idx in self.selectedIndexes()]
-    #    rgba_list = []
-    #    for index in index_list:
-    #        f = self._data[index]._rendering_factory()
-    #        if self._data[index].is_4d():
-    #            temp = f(np.rot90(self._data[index]._data[slice, :, :, 
-    #                        self._data[index]._time_point]))
-    #        else:
-    #            temp = f(np.rot90(self._data[index]._data[slice, :, :]))
-    #        rgba_list.append(temp)
-    #    return rgba_list
-
     def set_cur_label(self, label_config):
         row = self.currentIndex().row()
         self._data[row].set_label(label_config)
@@ -632,4 +640,26 @@ class VolumeListModel(QAbstractListModel):
 
     def get_label_config_center(self):
         return self._label_config_center
+
+    def _get_sapce_info(self, vol):
+        """
+        Get affine and corresponding RAS sapce from the first volume.
+
+        """
+        header = vol.get_header()
+        self._ras_unit = header.get_xyzt_units()[0]
+        space_list = ['unknown', 'Scanner', 'Aligned', 'Talairach', 'MNI']
+        if header['sform_code']:
+            self._ras_space = space_list[header['sform_code'].item()]
+            self._affine = header.get_sform()
+        elif header['qform_code']:
+            self._ras_space = space_list[header['qform_code'].item()]
+            self._affine = header.get_qform()
+
+    def get_space_name(self):
+        """
+        Get RAS space name.
+
+        """
+        return self._ras_space
 

@@ -10,7 +10,7 @@ from drawsettings import DrawSettings
 from labeleditdialog import LabelEditDialog
 from froi.gui.base.labelconfig import LabelConfig
 from addlabelgroupdialog import AddLabelGroupDialog
-from no_gui_tools import *
+
 
 class LabelManageDialog(QDialog, DrawSettings):
     """
@@ -144,26 +144,5 @@ class LabelManageDialog(QDialog, DrawSettings):
         label_edit_dialog = LabelEditDialog(self._label_models[index], self._label_configs[index])
         label_edit_dialog.setWindowTitle("Edit " + self._label_configs[index].get_name())
         label_edit_dialog.exec_()
-
-    # def _save_label(self):
-    #     self._label_config.current_save()
-    #
-    # def is_valid_label(self):
-    #     return self.combobox.currentText()
-    #
-    # def get_current_label(self):
-    #     if self.is_valid_label():
-    #         return str(self.combobox.currentText())
-    #     raise ValueError, "Current label invalid"
-    #
-    # def get_current_index(self):
-    #     if self.is_valid_label():
-    #         return self._label_config.get_label_index(self.get_current_label())
-    #     raise ValueError, "Current label invalid"
-    #
-    # def get_current_color(self):
-    #     if self.is_valid_label():
-    #         return self._label_config.get_label_color(self.get_current_label())
-
 
 
