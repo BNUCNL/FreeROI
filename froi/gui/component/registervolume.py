@@ -9,6 +9,7 @@ import re
 import sys
 import nibabel as nib
 import numpy as np
+import math
 
 class RegisterVolumeDialog(QDialog):
     """
@@ -22,6 +23,7 @@ class RegisterVolumeDialog(QDialog):
         self._temp_dir = None
         self._source_image_filename = source_image_filename
         self._auxiliary_image_filename = ''
+        self._delta = 0.015
 
         self._init_gui()
         self._create_actions()
@@ -34,7 +36,7 @@ class RegisterVolumeDialog(QDialog):
 
         source_image = QLabel('Source Image :')
         self._source_image_dir = QLabel('')
-        self._source_image_dir.setText(self._source_image_filename)
+        self._source_image_dir.setText(os.path.basename(self._source_image_filename.strip('/')))
 
         self._auxiliary_image_check = QCheckBox('Auxiliary Image :')
         self._auxiliary_image_check.setChecked(False)
@@ -63,19 +65,22 @@ class RegisterVolumeDialog(QDialog):
         radio_group.addButton(self._spm_radio)
         self._fsl_radio.setChecked(True)
 
+        self._nearest_neighbour_cb = QCheckBox('Interpolation: Nearest Neighbour')
+
         radio_group_vlayout = QVBoxLayout()
         radio_group_vlayout.addWidget(self._fsl_radio)
         radio_group_vlayout.addWidget(self._spm_radio)
+        radio_group_vlayout.addWidget(self._nearest_neighbour_cb)
 
         tools_group = QGroupBox("Tools: ")
         tools_group.setLayout(radio_group_vlayout)
 
         self._register_button = QPushButton("Register")
-        self._register_button.setFixedWidth(100)
+        self._register_button.setFixedWidth(120)
         self._register_button.adjustSize()
 
         self._cancel_button = QPushButton("Cancel")
-        self._cancel_button.setFixedWidth(100)
+        self._cancel_button.setFixedWidth(120)
         self._cancel_button.adjustSize()
 
         hbox_layout = QHBoxLayout()
@@ -90,17 +95,29 @@ class RegisterVolumeDialog(QDialog):
         self.setLayout(vbox_layout)
         self.setMinimumSize(500, 300)
 
+        self._progress_dialog = QProgressDialog(self)
+        self._progress_dialog.setMinimumWidth(500)
+        self._progress_dialog.setRange(0, 100)
+        self._progress_dialog.setWindowTitle('Registering')
+
+        self._progress_value = 0.0
+        self._update_timer = QTimer(self)
+        self.connect(self._update_timer, SIGNAL("timeout()"), self._update_progress)
+
+
     def _create_actions(self):
         self._auxiliary_image_button.clicked.connect(self._auxiliary_image_browse)
         self._auxiliary_image_check.clicked.connect(self._auxiliary_image_checkable)
         self._register_button.clicked.connect(self._register)
         self._cancel_button.clicked.connect(self.done)
+        self._progress_dialog.destroyed.connect(self._regester_canceled)
+        self._progress_dialog.canceled.connect(self._regester_canceled)
 
     def _auxiliary_image_browse(self):
         auxiliary_image_filepath = self._open_file_dialog("Add auxiliary image file.")
         if auxiliary_image_filepath is not None:
             self._temp_dir = os.path.dirname(auxiliary_image_filepath)
-            self._auxiliary_image_dir.setText(auxiliary_image_filepath)
+            self._auxiliary_image_dir.setText(os.path.basename(auxiliary_image_filepath.strip('/')))
             self._auxiliary_image_filename = auxiliary_image_filepath
 
     def _auxiliary_image_checkable(self):
@@ -129,9 +146,56 @@ class RegisterVolumeDialog(QDialog):
                 file_path = str(file_name)
         return file_path
 
+    def _update_progress(self, error_info=None):
+        value = (2. / (1 + math.exp(-self._progress_value)) - 1.01) * 100
+        self._progress_dialog.setValue(value)
+        self._progress_value += self._delta
+
+    def _regester_finished(self, error_info=None):
+        print '_regester_finished => !!!!!'
+        self._progress_dialog.close()
+        self._progress_value = 0
+        self._update_timer.stop()
+
+        if error_info is not None:
+            QMessageBox.warning(self,
+                                'Warning',
+                                error_info,
+                                QMessageBox.Yes)
+            self._progress_dialog.hide()
+        else:
+            res = self._register_thread.get_output()
+            print 'is success! res=> ', res
+
+            if res is not None:
+                for filepath in res:
+                    basename = os.path.basename(filepath.strip('/'))
+                    filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
+                    new_vol = nib.load(filepath).get_data()
+                    print 'new_vol.shape: ', new_vol.shape
+                    self._model.addItem(new_vol,
+                                        None,
+                                        filename,
+                                        self._model._data[0].get_header(),
+                                        None, None, 255, 'red2yellow')
+                    # #delete the register file
+                    # os.remove(filepath)
+        #delete the temp file
+        os.remove(self._target_image_filename)
+        self.done(0)
+
+    def _regester_canceled(self):
+        print '_regester_canceled => !!!!!'
+        self._progress_dialog.close()
+        self._progress_value = 0
+        self._update_timer.stop()
+        self.done(0)
+
+
     def _register(self):
         target_image_index_row = self._target_image_combo.currentIndex()
-        target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
+        self._target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
+        self._register_button.setEnabled(False)
 
         if str(self._source_image_dir.text()) is '':
             QMessageBox.warning(self,
@@ -147,51 +211,27 @@ class RegisterVolumeDialog(QDialog):
                                     'The auxiliary image should be ended with .nii, not .nii.gz or anything else.',
                                     QMessageBox.Yes)
                 return
+            self._delta = 0.015
             temp_filename = self._source_image_filename
             self._source_image_filename = self._auxiliary_image_filename
             self._auxiliary_image_filename = temp_filename
         else:
             self._auxiliary_image_filename = ''
+            self._delta = 0.03
 
-        if self._fsl_radio.isChecked():
-            #fsl register
-            rm = RegisterMethod(str(target_image_filename),
-                                str(self._source_image_filename),
-                                str(self._auxiliary_image_filename),
-                                self)
-            res = rm.fsl_register()
-        else:
-            #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
-            if not str(self._source_image_filename).endswith('.nii'):
-                QMessageBox.warning(self,
-                                    'Warning',
-                                    'The source image should be ended with .nii, not .nii.gz or anything else.',
-                                    QMessageBox.Yes)
-                return
+        res = None
+        self._update_timer.start(500)
 
-            #spm register
-            rm = RegisterMethod(str(target_image_filename),
-                                str(self._source_image_filename),
-                                str(self._auxiliary_image_filename),
-                                self)
-            res = rm.spm_register()
+        self._register_thread = RegisterThread([self._target_image_filename,
+                                               str(self._source_image_filename),
+                                               str(self._auxiliary_image_filename),
+                                               self._nearest_neighbour_cb.isChecked(),
+                                               self._fsl_radio.isChecked()])
+        self.connect(self._register_thread, SIGNAL("register"), self._regester_finished)
+        self._register_thread.start()
+        self.hide()
+        self._progress_dialog.exec_()
 
-        #delete the temp file
-        os.remove(target_image_filename)
-        if res is not None:
-            for filepath in res:
-                basename = os.path.basename(filepath.strip('/'))
-                filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
-                new_vol = nib.load(filepath).get_data()
-                print 'new_vol.shape: ', new_vol.shape
-                self._model.addItem(new_vol,
-                                    None,
-                                    filename,
-                                    self._model._data[0].get_header(),
-                                    None, None, 255, 'red2yellow')
-                # #delete the register file
-                # os.remove(filepath)
-        self.done(0)
 
     def _generate_temp_image_file(self, row):
         import os
@@ -209,13 +249,67 @@ class RegisterVolumeDialog(QDialog):
 
         return temp_file_path
 
+class RegisterThread(QThread):
+    def __init__(self, subreddits):
+        QThread.__init__(self)
+        self._subreddits = subreddits
+        self._target_image_filename = subreddits[0]
+        self._source_image_filename = subreddits[1]
+        self._auxiliary_image_filename = subreddits[2]
+        self._interpolation_method = subreddits[3]
+        self._is_fsl = subreddits[4]
+        self._output = None
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        try:
+            if self._is_fsl:
+                #fsl register
+                rm = RegisterMethod(self._target_image_filename,
+                                    self._source_image_filename,
+                                    self._auxiliary_image_filename,
+                                    self._interpolation_method)
+                res = rm.fsl_register()
+            else:
+                #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
+                if not str(self._source_image_filename).endswith('.nii'):
+                    QMessageBox.warning(self,
+                                        'Warning',
+                                        'The source image should be ended with .nii, not .nii.gz or anything else.',
+                                        QMessageBox.Yes)
+                    return
+
+                #spm register
+                rm = RegisterMethod(self._target_image_filename,
+                                    self._source_image_filename,
+                                    self._auxiliary_image_filename,
+                                    self._interpolation_method)
+                res = rm.spm_register()
+        except:
+            print 'Register error occur!'
+            res = None
+
+        self._output = res
+        self.emit(SIGNAL('register'), rm.get_error_info())
+
+    def get_output(self):
+        return self._output
+
 
 class RegisterMethod(object):
-    def __init__(self, target_image_filename, source_image_filename, auxiliary_image_filename, error_window, parent=None):
+    def __init__(self,
+                 target_image_filename,
+                 source_image_filename,
+                 auxiliary_image_filename,
+                 interpolation_method,
+                 parent=None):
         self._target_image_filename = target_image_filename
         self._source_image_filename = source_image_filename
         self._auxiliary_image_filename = auxiliary_image_filename
-        self._error_window = error_window
+        self._interpolation_method = interpolation_method
+        self._error_info = None
 
     #-------------------------------------------- fsl register ---------------------------------------
     def fsl_register(self):
@@ -227,7 +321,7 @@ class RegisterMethod(object):
         elif self._source_image_filename is not '' and self._auxiliary_image_filename is '':
             return [self._fsl_register(self._target_image_filename, self._source_image_filename)[0]]
         else:
-            raise ValueError('FSL register error as for the wrong input!')
+            self.set_error_info('FSL register error as for the wrong input!')
             return None
 
     def _fsl_register(self, target_image, source_image, omat=None):
@@ -251,6 +345,8 @@ class RegisterMethod(object):
             out_matrix_filename_path = str(out_matrix_filename_path)
         flirt.inputs.out_file = output_filename_path
         flirt.inputs.out_matrix_file = out_matrix_filename_path
+        if self._interpolation_method:
+            flirt.inputs.interp = 'nearestneighbour'
 
         if omat is not None:
             flirt.inputs.in_matrix_file = omat
@@ -258,13 +354,9 @@ class RegisterMethod(object):
         try:
             res = flirt.run()
         except:
-            QMessageBox.warning(self._error_window,
-                                'Warning',
-                                'FSL error occured! Make sure the fsl path is in the environment variable ' + \
-                                'or the paramter is correct.',
-                                QMessageBox.Yes)
-            return 
-
+            self.set_error_info('FSL error occured! Make sure the fsl path is in the environment variable ' + \
+                                'or the paramter is correct.')
+            return
         return res.outputs.out_file, res.outputs.out_matrix_file
 
     def _fsl_register_auxiliary_image(self):
@@ -287,11 +379,8 @@ class RegisterMethod(object):
         try:
             mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
         except:
-            QMessageBox.warning(self._error_window,
-                                'Warning',
-                                'Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
-                                'environmentr path.',
-                                 QMessageBox.Yes)
+            self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
+                                'environmentr path.')
             return 
         
         if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
@@ -299,7 +388,7 @@ class RegisterMethod(object):
         elif self._source_image_filename is not '' and self._auxiliary_image_filename is '':
             return [self._spm_normalize(self._target_image_filename, self._source_image_filename)[0]]
         else:
-            raise ValueError('SPM normalize error as for the wrong input!')
+            self.set_error_info('SPM normalize error as for the wrong input!')
             return None
 
     def _spm_normalize(self, target_image, source_image, omat=None):
@@ -323,16 +412,15 @@ class RegisterMethod(object):
             norm.inputs.source = source_image
 
         #Should be auto calculated based on the given template image !!!!
-        norm.inputs.write_bounding_box = self._compute_boundingbox(voxel_sizes)
+        norm.inputs.write_bounding_box = self._compute_boundingbox()
+        if self._interpolation_method:
+            norm.inputs.write_interp = 0
 
         try:
             res = norm.run()
         except:
-            QMessageBox.warning(self,
-                                'Warining',
-                                'Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'or the paramter is correct.',
-                                QMessageBox.Ok)
+            self.set_error_info('Spm error occured! Make sure the spm path has been added to the matlab path ' + \
+                                'or the paramter is correct.')
             return 
 
         if omat is None:
@@ -360,23 +448,39 @@ class RegisterMethod(object):
 
         nib.save(nib.Nifti1Image(nan_data, nan_affine), filename)
 
-    def _compute_boundingbox(self, voxel_sizes):
+    def _compute_boundingbox(self):
         #Compute the bounding_box parameter based on the target_image
-        import nibabel as nib
-        from nibabel.affines import apply_affine
-        import numpy as np
-
         target_image = nib.load(self._target_image_filename)
-        target_shape = target_image.get_shape()
-        target_origin = apply_affine(np.linalg.inv(target_image.affine), [0, 0, 0])
-        offset = -0.05 #20mm
+        bounds = self._get_bounds(target_image.shape, target_image.get_affine())
 
-        bounding_box = [[offset - voxel_sizes[0] * target_origin[0],
-                         offset - voxel_sizes[1] * target_origin[1],
-                         offset - voxel_sizes[2] * target_origin[2]],
-                        [voxel_sizes[0] * (target_shape[0] - target_origin[0] - 1 - offset),
-                         voxel_sizes[1] * (target_shape[1] - target_origin[1] - 1 - offset),
-                         voxel_sizes[2] * (target_shape[2] - target_origin[2] - 1 - offset)]]
+        bounding_box = [[i[0] for i in bounds], [j[1] for j in bounds]]
 
         return bounding_box
+
+    def _get_bounds(self, shape, affine):
+        """ Return the world-space bounds occupied by an array given an affine.
+        """
+        adim, bdim, cdim = shape
+        adim -= 1
+        bdim -= 1
+        cdim -= 1
+        # form a collection of vectors for each 8 corners of the box
+        box = np.array([[0.,   0,    0,    1],
+                        [adim, 0,    0,    1],
+                        [0,    bdim, 0,    1],
+                        [0,    0,    cdim, 1],
+                        [adim, bdim, 0,    1],
+                        [adim, 0,    cdim, 1],
+                        [0,    bdim, cdim, 1],
+                        [adim, bdim, cdim, 1] ]).T
+        box = np.dot(affine, box)[:3]
+        bounding_box = list(zip(box.min(axis=-1), box.max(axis=-1)))
+
+        return bounding_box
+
+    def set_error_info(self, error_info):
+        self._error_info = error_info
+
+    def get_error_info(self):
+        return self._error_info
 
