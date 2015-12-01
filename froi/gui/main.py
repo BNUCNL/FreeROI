@@ -40,6 +40,7 @@ from component.opendialog import OpenDialog
 from component.labelmanagedialog import LabelManageDialog
 from component.labelconfigcenter import LabelConfigCenter
 from component.roidialog import ROIDialog
+from component.atlasdialog import AtlasDialog
 from component.binaryerosiondialog import BinaryerosionDialog
 from component.binarydilationdialog import BinarydilationDialog
 from component.greydilationdialog import GreydilationDialog
@@ -510,6 +511,14 @@ class BpMainWindow(QMainWindow):
         self._actions['edge_dete'].triggered.connect(self._edge_detection)
         self._actions['edge_dete'].setEnabled(False)
 
+        # Atlas information
+        self._actions['atlas'] = QAction(QIcon(os.path.join(
+                                                self._icon_dir, 'atlas.png')),
+                                         self.tr("Candidate Label"),
+                                         self)
+        self._actions['atlas'].triggered.connect(self._atlas_dialog)
+        self._actions['atlas'].setEnabled(False)
+
         # ROI Merging
         self._actions['roi_merge'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'merging.png')),
@@ -517,6 +526,7 @@ class BpMainWindow(QMainWindow):
                                              self)
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
+
 
     def _add_toolbar(self):
         """
@@ -850,6 +860,7 @@ class BpMainWindow(QMainWindow):
         self.view_menu.addAction(self._actions['cross_hover_view'])
 
         self.tool_menu = self.menuBar().addMenu(self.tr("Tools"))
+
         # Basic tools
         basic_tools = self.tool_menu.addMenu(self.tr("Basic Tools"))
         basic_tools.addAction(self._actions['binarization'])
@@ -871,6 +882,7 @@ class BpMainWindow(QMainWindow):
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['r2i'])
+
         # Morphological tools
         morphological_tools = self.tool_menu.addMenu(
                                     self.tr("Morphological Processing"))
@@ -880,6 +892,7 @@ class BpMainWindow(QMainWindow):
         morphological_tools.addAction(self._actions['greydilation'])
         morphological_tools.addAction(self._actions['greyerosion'])
         # label management
+        self.tool_menu.addAction(self._actions['atlas'])
         self.tool_menu.addAction(self._actions['label_management'])
         self.tool_menu.addAction(self._actions['snapshot'])
 
@@ -935,6 +948,16 @@ class BpMainWindow(QMainWindow):
             self.roidialog.show()
         else:
             self._actions['edit'].setChecked(True)
+
+    def _atlas_dialog(self):
+        """
+        Atlas information
+        """
+        if 'atlasdialog' in self.__dict__:
+            self.atlasdialog.show()
+        else:
+            self.atlasdialog = AtlasDialog(self.model, self)
+            self.atlasdialog.show()
 
     def _roi_batch_enable(self):
         self.image_view.set_label_mouse_tracking(False)
@@ -1233,6 +1256,7 @@ class BpMainWindow(QMainWindow):
         self._actions['localmax'].setEnabled(status)
         self._actions['inverse'].setEnabled(status)
         self._actions['smoothing'].setEnabled(status)
+        self._actions['atlas'].setEnabled(status)
         self._actions['region_grow'].setEnabled(status)
         self._actions['watershed'].setEnabled(status)
         self._actions['slic'].setEnabled(status)

@@ -20,11 +20,10 @@ class ToolsTabWidget(QDialog):
     def __init__(self, model, main_win, parent=None):
         super(ToolsTabWidget, self).__init__(parent)
         self._icon_dir = get_icon_dir()
-
+        self._model = model
         self._init_gui()
         self._create_actions()
         self._main_win = main_win
-        self._model = model
 
     def _init_gui(self):
         """
@@ -66,7 +65,7 @@ class ToolsTabWidget(QDialog):
 
     def _create_actions(self):
         """
-        Create actions about the toobar
+        Create actions about the toolbar
         """
         self.detection_button.clicked.connect(self._edge_detection_clicked)
         self.roimerge_button.clicked.connect(self._roimerge_clicked)

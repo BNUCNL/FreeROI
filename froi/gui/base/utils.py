@@ -5,6 +5,23 @@ import os
 import froi
 
 
+def get_file_names(path, postfix):
+    """
+    get file names with certain postfix automatically
+
+    Parameters
+    ----------
+    path:
+        The file path.
+    postfix:
+        postfix of file, such as ".xml"
+    """
+    flist = list()
+    for i in os.listdir(path):
+        if os.path.splitext(i)[1]==postfix:
+            flist.append(i)
+    return flist
+
 def get_icon_dir():
     """
     Get directory which contains icons.
