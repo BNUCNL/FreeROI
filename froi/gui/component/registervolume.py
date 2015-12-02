@@ -23,7 +23,7 @@ class RegisterVolumeDialog(QDialog):
         self._temp_dir = None
         self._source_image_filename = source_image_filename
         self._auxiliary_image_filename = ''
-        self._delta = 0.015
+        self._delta = 0.01
 
         self._init_gui()
         self._create_actions()
@@ -109,7 +109,8 @@ class RegisterVolumeDialog(QDialog):
         self._auxiliary_image_button.clicked.connect(self._auxiliary_image_browse)
         self._auxiliary_image_check.clicked.connect(self._auxiliary_image_checkable)
         self._register_button.clicked.connect(self._register)
-        self._cancel_button.clicked.connect(self.done)
+        self._cancel_button.clicked.connect(self._regester_canceled)
+        self.destroyed.connect(self._regester_canceled)
         self._progress_dialog.destroyed.connect(self._regester_canceled)
         self._progress_dialog.canceled.connect(self._regester_canceled)
 
@@ -152,10 +153,12 @@ class RegisterVolumeDialog(QDialog):
         self._progress_value += self._delta
 
     def _regester_finished(self, error_info=None):
-        print '_regester_finished => !!!!!'
+        self._progress_dialog.setValue(100)
         self._progress_dialog.close()
         self._progress_value = 0
         self._update_timer.stop()
+
+
 
         if error_info is not None:
             QMessageBox.warning(self,
@@ -165,14 +168,19 @@ class RegisterVolumeDialog(QDialog):
             self._progress_dialog.hide()
         else:
             res = self._register_thread.get_output()
-            print 'is success! res=> ', res
-
             if res is not None:
                 for filepath in res:
                     basename = os.path.basename(filepath.strip('/'))
                     filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', basename)
                     new_vol = nib.load(filepath).get_data()
-                    print 'new_vol.shape: ', new_vol.shape
+                    if new_vol.shape != self._model._data[0].get_data_shape():
+                        QMessageBox.warning(self,
+                                            'Warning',
+                                            'This error may be caused by SPM for the wrong calculated boundbingbox, '
+                                            'you can use FSL instead.',
+                                            QMessageBox.Yes)
+                        break
+
                     self._model.addItem(new_vol,
                                         None,
                                         filename,
@@ -185,10 +193,10 @@ class RegisterVolumeDialog(QDialog):
         self.done(0)
 
     def _regester_canceled(self):
-        print '_regester_canceled => !!!!!'
         self._progress_dialog.close()
         self._progress_value = 0
-        self._update_timer.stop()
+        if self._update_timer.isActive():
+            self._update_timer.stop()
         self.done(0)
 
 
@@ -211,7 +219,7 @@ class RegisterVolumeDialog(QDialog):
                                     'The auxiliary image should be ended with .nii, not .nii.gz or anything else.',
                                     QMessageBox.Yes)
                 return
-            self._delta = 0.015
+            self._delta = 0.01
             temp_filename = self._source_image_filename
             self._source_image_filename = self._auxiliary_image_filename
             self._auxiliary_image_filename = temp_filename
@@ -253,6 +261,7 @@ class RegisterThread(QThread):
     def __init__(self, subreddits):
         QThread.__init__(self)
         self._subreddits = subreddits
+
         self._target_image_filename = subreddits[0]
         self._source_image_filename = subreddits[1]
         self._auxiliary_image_filename = subreddits[2]
@@ -288,7 +297,7 @@ class RegisterThread(QThread):
                                     self._interpolation_method)
                 res = rm.spm_register()
         except:
-            print 'Register error occur!'
+            # 'Register error occur!'
             res = None
 
         self._output = res
