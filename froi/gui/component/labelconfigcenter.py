@@ -57,7 +57,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def __init__(self, label_configs, list_view_model, label_models, is_roi_edit=False, parent=None):
         super(LabelConfigCenter, self).__init__()
-        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+        # self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.label_configs = label_configs
         self._label_models = label_models
         self._list_view_model = list_view_model
@@ -116,7 +116,6 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         #     self.label_list_view.selectionModel().currentChanged.connect(
         #                     self.single_roi_view_update)
 
-
     def _create_actions(self):
         self.config_combobox.currentIndexChanged.connect(self._update_labels)
         self.config_combobox.currentIndexChanged.connect(
@@ -139,7 +138,6 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def is_drawing_valid(self):
         return self.config_combobox.currentIndex() >= 0
-
 
     def get_current_list_view_index(self):
         idx = self.config_combobox.currentIndex()
@@ -220,7 +218,6 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def get_current_label_list(self):
         return self.get_all_labelconfig_names()
-
 
     def add_current_label(self, label, index=None, color=None):
         if index is None:

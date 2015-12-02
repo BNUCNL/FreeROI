@@ -204,15 +204,6 @@ class BpMainWindow(QMainWindow):
         self._actions['add_template'].triggered.connect(self._add_template)
         self._actions['add_template'].setEnabled(True)
 
-        # Open register action
-        self._actions['register_volume'] = QAction(QIcon(os.path.join(
-                                            self._icon_dir, 'open.png')),
-                                            self.tr("&Register Volume"),
-                                            self)
-        self._actions['register_volume'].setShortcut(self.tr("Ctrl+r"))
-        self._actions['register_volume'].triggered.connect(self._register_volume)
-        self._actions['register_volume'].setEnabled(True)
-
         # Add a new image action
         self._actions['add_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
@@ -710,8 +701,14 @@ class BpMainWindow(QMainWindow):
                 self.list_view.setCurrentIndex(self.model.index(0))
             self.is_save_configure = True
         else:
-            QMessageBox.information(self,'FreeROI', 'Cannot load ' + \
-                                    file_path + ': due to mismatch data size.')
+            ret = QMessageBox.question(self,
+                                     'FreeROI',
+                                     'Cannot load ' + file_path + ': due to mismatch data size.\nNeed registration?',
+                                     QMessageBox.Cancel,
+                                     QMessageBox.Yes)
+            if ret == QMessageBox.Yes:
+                register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
+                register_volume_dialog.exec_()
 
     def __new_image(self):
         self._new_image()
@@ -837,7 +834,6 @@ class BpMainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu(self.tr("File"))
         self.file_menu.addAction(self._actions['add_image'])
         self.file_menu.addAction(self._actions['add_template'])
-        self.file_menu.addAction(self._actions['register_volume'])
         self.file_menu.addSeparator()
         self.file_menu.addAction(self._actions['new_image'])
         self.file_menu.addAction(self._actions['remove_image'])
@@ -1085,11 +1081,6 @@ class BpMainWindow(QMainWindow):
     def _opening(self):
         new_dialog = OpenDialog(self.model)
         new_dialog.exec_()
-
-    def _register_volume(self):
-        print 'Register dialog!'
-        register_volume_dialog = RegisterVolumeDialog(self.model)
-        register_volume_dialog.exec_()
 
     def _voxelstats(self):
         new_dialog = VoxelStatsDialog(self.model, self)
