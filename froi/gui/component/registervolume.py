@@ -273,13 +273,13 @@ class RegisterThread(QThread):
         self.wait()
 
     def run(self):
+        rm = RegisterMethod(self._target_image_filename,
+                            self._source_image_filename,
+                            self._auxiliary_image_filename,
+                            self._interpolation_method)
         try:
             if self._is_fsl:
                 #fsl register
-                rm = RegisterMethod(self._target_image_filename,
-                                    self._source_image_filename,
-                                    self._auxiliary_image_filename,
-                                    self._interpolation_method)
                 res = rm.fsl_register()
             else:
                 #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
@@ -291,10 +291,6 @@ class RegisterThread(QThread):
                     return
 
                 #spm register
-                rm = RegisterMethod(self._target_image_filename,
-                                    self._source_image_filename,
-                                    self._auxiliary_image_filename,
-                                    self._interpolation_method)
                 res = rm.spm_register()
         except:
             # 'Register error occur!'
