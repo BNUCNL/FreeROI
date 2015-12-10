@@ -680,6 +680,8 @@ class BpMainWindow(QMainWindow):
                 self._actions['undo'].setEnabled(False)
                 self._actions['redo'].setEnabled(False)
                 self._functional_module_set_enabled(True)
+                if not self.model.is_mni_space():
+                    self._actions['atlas'].setEnabled(False)
                 # connect signals with slots
                 self.list_view.current_changed.connect(self._update_undo)
                 self.list_view.current_changed.connect(self._update_redo)

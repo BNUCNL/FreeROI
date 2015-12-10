@@ -360,7 +360,7 @@ class RegisterMethod(object):
             res = flirt.run()
         except:
             self.set_error_info('FSL error occured! Make sure the fsl path is in the environment variable ' + \
-                                'or the paramter is correct.')
+                                'or the parameter is correct.')
             return
         return res.outputs.out_file, res.outputs.out_matrix_file
 
@@ -385,7 +385,7 @@ class RegisterMethod(object):
             mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
         except:
             self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
-                                'environmentr path.')
+                                'environment path.')
             return 
         
         if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
@@ -425,7 +425,7 @@ class RegisterMethod(object):
             res = norm.run()
         except:
             self.set_error_info('Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'or the paramter is correct.')
+                                'or the parameter is correct.')
             return 
 
         if omat is None:

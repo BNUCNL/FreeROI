@@ -663,3 +663,9 @@ class VolumeListModel(QAbstractListModel):
         """
         return self._ras_space
 
+    def is_mni_space(self):
+        if self._ras_space is "MNI":
+            return True
+        else:
+            return False
+
