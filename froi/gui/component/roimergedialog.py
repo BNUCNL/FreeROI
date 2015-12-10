@@ -63,12 +63,16 @@ class ROIMergeDialog(QDialog):
                 break
 
         if first_data is not None:
+            first_min = self._model.data(self._model.index(tmp_idx), Qt.UserRole)
             for idx, item in img_iter:
                 if item.isChecked():
                     data = self._model.data(self._model.index(idx),
                                             Qt.UserRole + 6)
                     try:
-                        first_data = merge(first_data, data)
+                        data_min = self._model.data(self._model.index(idx), Qt.UserRole)
+                        first_data = merge(first_data, data, first_min, data_min)
+                        #update the min value
+                        first_min if first_min < data_min else data_min
                         vol_name.append(self.imgs[idx].text())
                     except ValueError:
                         QMessageBox.critical(self, "Conflicts dectected %s" % 
