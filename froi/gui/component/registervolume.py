@@ -63,7 +63,12 @@ class RegisterVolumeDialog(QDialog):
         radio_group = QButtonGroup()
         radio_group.addButton(self._fsl_radio)
         radio_group.addButton(self._spm_radio)
-        self._fsl_radio.setChecked(True)
+        if sys.platform == 'win32':
+            self._fsl_radio.setChecked(False)
+            self._fsl_radio.setEnabled(False)
+            self._spm_radio.setChecked(True)
+        else:
+            self._fsl_radio.setChecked(True)
 
         self._nearest_neighbour_cb = QCheckBox('Interpolation: Nearest Neighbour')
 
