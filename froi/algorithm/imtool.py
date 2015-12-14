@@ -150,9 +150,9 @@ def intersect(source, mask):
     temp = np.rot90(temp, 3)
     return temp
 
-def merge(a, b, a_min, b_min):
-    a_mask = a > a_min
-    b_mask = b > b_min
+def merge(a, b):
+    a_mask = a > 0
+    b_mask = b > 0
     if len((a_mask & b_mask).nonzero()[0]) > 0:
         raise ValueError, 'Conflicts!'
     c = a + b
