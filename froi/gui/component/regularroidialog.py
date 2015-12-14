@@ -5,6 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
+from froi.io.csv import get_cord_from_file
 
 class RegularROIDialog(QDialog):
     """
@@ -111,7 +112,7 @@ class RegularROIDialog(QDialog):
         file_name = QFileDialog.getOpenFileName(self,
                                                 title,
                                                 temp_dir,
-                                                "Txt files (*.txt)")
+                                                "Cordinate files (*.txt *.csv)")
         import sys
         file_path = None
         if not file_name.isEmpty():
@@ -138,7 +139,7 @@ class RegularROIDialog(QDialog):
         out = self.out_edit.text()
         cord_filepath = str(self._cordinate_file_dir.text())
         if cord_filepath is '' and self._cordinate_file_radio.isChecked():
-            QMessageBox.critical(self, "The cordinate cannot be empty!", 'Please select the cordinate txt file.')
+            QMessageBox.critical(self, "The cordinate cannot be empty!", 'Please select the cordinate file.')
             return
 
         if not radius:
@@ -174,9 +175,9 @@ class RegularROIDialog(QDialog):
                                        Qt.UserRole + 6)
             data = target_data.copy()
             try:
-                coord_list, value_list, new_data = self._get_cord_from_txt_file(data, cord_filepath)
+                coord_list, value_list, new_data = get_cord_from_file(data, cord_filepath, self._model.get_affine())
             except ValueError, error_info:
-                QMessageBox.critical(self, 'Please check the cordinate in the txt file.', str(error_info))
+                QMessageBox.critical(self, 'Please check the cordinate in the file.', str(error_info))
                 return
         else:
             center_data = self._model.data(self._model.currentIndex(),
@@ -195,47 +196,4 @@ class RegularROIDialog(QDialog):
                             None, None, 255, 'rainbow')
         self.done(0)
 
-    def _get_cord_from_txt_file(self, data, cord_filepath):
-        """
-        Return all cordinate from txt the txt file.
 
-        """
-        cord_file = open(cord_filepath, 'r')
-        all_cords = []
-        value_list = []
-        shape = data.shape
-        import numpy as np
-        new_data = np.zeros_like(data)
-
-        line = cord_file.readline()
-        while line:
-            try:
-                cord = "".join(line.split()).split(',')
-                if len(cord) != 3:
-                    raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' can only be three dimension!')
-                new_cord = list(float(i) for i in cord)
-
-                from nibabel.affines import apply_affine
-                from math import floor
-                import numpy as np
-
-                image_affine = self._model.get_affine()
-                new_cord = apply_affine(np.linalg.inv(image_affine), new_cord)
-                new_cord = list(int(i) for i in new_cord)
-
-                all_cords.append(new_cord)
-                if (new_cord[0] < 0 or new_cord[0] >= shape[0]) or \
-                   (new_cord[1] < 0 or new_cord[1] >= shape[1]) or \
-                   (new_cord[2] < 0 or new_cord[2] >= shape[2]):
-                    raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' out of bounds.')
-                else:
-                    value = data[new_cord[0], new_cord[1], new_cord[2]]
-                    value_list.append(value)
-                    new_data[new_cord[0], new_cord[1], new_cord[2]] = value
-            except:
-                raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' error!')
-            line = cord_file.readline()
-
-        cord_file.close()
-
-        return all_cords, value_list, new_data
