@@ -57,7 +57,7 @@ class ROIMergeDialog(QDialog):
         for idx, first in img_iter:
              if first.isChecked():
                 first_data = self._model.data(self._model.index(idx),
-                                              Qt.UserRole + 6)
+                                              Qt.UserRole + 5)
                 tmp_idx = idx
                 vol_name.append(self.imgs[idx].text())
                 break
@@ -66,7 +66,7 @@ class ROIMergeDialog(QDialog):
             for idx, item in img_iter:
                 if item.isChecked():
                     data = self._model.data(self._model.index(idx),
-                                            Qt.UserRole + 6)
+                                            Qt.UserRole + 5)
                     try:
                         first_data = merge(first_data, data)
                         vol_name.append(self.imgs[idx].text())

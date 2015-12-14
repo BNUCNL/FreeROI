@@ -656,10 +656,23 @@ class VolumeListModel(QAbstractListModel):
             self._ras_space = space_list[header['qform_code'].item()]
             self._affine = header.get_qform()
 
+    def get_affine(self):
+        """
+        Get affine matrix.
+
+        """
+        return self._affine
+
     def get_space_name(self):
         """
         Get RAS space name.
 
         """
         return self._ras_space
+
+    def is_mni_space(self):
+        if self._ras_space is "MNI":
+            return True
+        else:
+            return False
 

@@ -20,7 +20,7 @@ class RegisterVolumeDialog(QDialog):
         super(RegisterVolumeDialog, self).__init__(parent)
 
         self._model = model
-        self._temp_dir = None
+        self._temp_dir = os.path.dirname(source_image_filename)
         self._source_image_filename = source_image_filename
         self._auxiliary_image_filename = ''
         self._delta = 0.01
@@ -63,7 +63,12 @@ class RegisterVolumeDialog(QDialog):
         radio_group = QButtonGroup()
         radio_group.addButton(self._fsl_radio)
         radio_group.addButton(self._spm_radio)
-        self._fsl_radio.setChecked(True)
+        if sys.platform == 'win32':
+            self._fsl_radio.setChecked(False)
+            self._fsl_radio.setEnabled(False)
+            self._spm_radio.setChecked(True)
+        else:
+            self._fsl_radio.setChecked(True)
 
         self._nearest_neighbour_cb = QCheckBox('Interpolation: Nearest Neighbour')
 
@@ -130,13 +135,9 @@ class RegisterVolumeDialog(QDialog):
             self._auxiliary_image_button.setVisible(False)
 
     def _open_file_dialog(self, title):
-        if self._temp_dir == None:
-            temp_dir = QDir.currentPath()
-        else:
-            temp_dir = self._temp_dir
         file_name = QFileDialog.getOpenFileName(self,
                                                 title,
-                                                temp_dir,
+                                                self._temp_dir,
                                                 "Nifti files (*.nii *.nii.gz)")
         import sys
         file_path = None
@@ -201,16 +202,24 @@ class RegisterVolumeDialog(QDialog):
 
 
     def _register(self):
-        target_image_index_row = self._target_image_combo.currentIndex()
-        self._target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
-        self._register_button.setEnabled(False)
-
         if str(self._source_image_dir.text()) is '':
             QMessageBox.warning(self,
                                 'Warning',
                                 'The target image cannot be empty!',
                                 QMessageBox.Yes)
             return
+
+        if not os.access(os.path.dirname(self._temp_dir), os.W_OK):
+            QMessageBox.warning(self,
+                                'Warning',
+                                'The current directory is not writeable. Please copy the opened file to other directory which can be writeable.',
+                                QMessageBox.Yes)
+            self.done(0)
+            return
+
+        target_image_index_row = self._target_image_combo.currentIndex()
+        self._target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
+        self._register_button.setEnabled(False)
 
         if self._auxiliary_image_check.isChecked() and self._auxiliary_image_filename is not '':
             if not str(self._auxiliary_image_filename).endswith('.nii'):
@@ -243,12 +252,7 @@ class RegisterVolumeDialog(QDialog):
 
     def _generate_temp_image_file(self, row):
         import os
-
-        if not self._temp_dir:
-            temp_dir = str(QDir.currentPath())
-        else:
-            temp_dir = self._temp_dir
-        temp_file_path = os.path.join(temp_dir, 'temp_' + str(self._model.data(self._model.index(row), Qt.DisplayRole)) + '.nii')
+        temp_file_path = os.path.join(self._temp_dir, 'temp_' + str(self._model.data(self._model.index(row), Qt.DisplayRole)) + '.nii')
         if sys.platform == 'win32':
             file_path = unicode(temp_file_path).encode('gb2312')
         else:
@@ -273,13 +277,13 @@ class RegisterThread(QThread):
         self.wait()
 
     def run(self):
+        rm = RegisterMethod(self._target_image_filename,
+                            self._source_image_filename,
+                            self._auxiliary_image_filename,
+                            self._interpolation_method)
         try:
             if self._is_fsl:
                 #fsl register
-                rm = RegisterMethod(self._target_image_filename,
-                                    self._source_image_filename,
-                                    self._auxiliary_image_filename,
-                                    self._interpolation_method)
                 res = rm.fsl_register()
             else:
                 #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
@@ -291,10 +295,6 @@ class RegisterThread(QThread):
                     return
 
                 #spm register
-                rm = RegisterMethod(self._target_image_filename,
-                                    self._source_image_filename,
-                                    self._auxiliary_image_filename,
-                                    self._interpolation_method)
                 res = rm.spm_register()
         except:
             # 'Register error occur!'
@@ -364,7 +364,7 @@ class RegisterMethod(object):
             res = flirt.run()
         except:
             self.set_error_info('FSL error occured! Make sure the fsl path is in the environment variable ' + \
-                                'or the paramter is correct.')
+                                'or the parameter is correct.')
             return
         return res.outputs.out_file, res.outputs.out_matrix_file
 
@@ -389,7 +389,7 @@ class RegisterMethod(object):
             mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
         except:
             self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
-                                'environmentr path.')
+                                'environment path.')
             return 
         
         if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
@@ -429,7 +429,7 @@ class RegisterMethod(object):
             res = norm.run()
         except:
             self.set_error_info('Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'or the paramter is correct.')
+                                'or the parameter is correct.')
             return 
 
         if omat is None:
