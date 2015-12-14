@@ -20,7 +20,7 @@ class RegisterVolumeDialog(QDialog):
         super(RegisterVolumeDialog, self).__init__(parent)
 
         self._model = model
-        self._temp_dir = None
+        self._temp_dir = os.path.dirname(source_image_filename)
         self._source_image_filename = source_image_filename
         self._auxiliary_image_filename = ''
         self._delta = 0.01
@@ -135,13 +135,9 @@ class RegisterVolumeDialog(QDialog):
             self._auxiliary_image_button.setVisible(False)
 
     def _open_file_dialog(self, title):
-        if self._temp_dir == None:
-            temp_dir = QDir.currentPath()
-        else:
-            temp_dir = self._temp_dir
         file_name = QFileDialog.getOpenFileName(self,
                                                 title,
-                                                temp_dir,
+                                                self._temp_dir,
                                                 "Nifti files (*.nii *.nii.gz)")
         import sys
         file_path = None
@@ -206,16 +202,24 @@ class RegisterVolumeDialog(QDialog):
 
 
     def _register(self):
-        target_image_index_row = self._target_image_combo.currentIndex()
-        self._target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
-        self._register_button.setEnabled(False)
-
         if str(self._source_image_dir.text()) is '':
             QMessageBox.warning(self,
                                 'Warning',
                                 'The target image cannot be empty!',
                                 QMessageBox.Yes)
             return
+
+        if not os.access(os.path.dirname(self._temp_dir), os.W_OK):
+            QMessageBox.warning(self,
+                                'Warning',
+                                'The current directory is not writeable. Please copy the opened file to other directory which can be writeable.',
+                                QMessageBox.Yes)
+            self.done(0)
+            return
+
+        target_image_index_row = self._target_image_combo.currentIndex()
+        self._target_image_filename = str(self._generate_temp_image_file(target_image_index_row))
+        self._register_button.setEnabled(False)
 
         if self._auxiliary_image_check.isChecked() and self._auxiliary_image_filename is not '':
             if not str(self._auxiliary_image_filename).endswith('.nii'):
@@ -248,12 +252,7 @@ class RegisterVolumeDialog(QDialog):
 
     def _generate_temp_image_file(self, row):
         import os
-
-        if not self._temp_dir:
-            temp_dir = str(QDir.currentPath())
-        else:
-            temp_dir = self._temp_dir
-        temp_file_path = os.path.join(temp_dir, 'temp_' + str(self._model.data(self._model.index(row), Qt.DisplayRole)) + '.nii')
+        temp_file_path = os.path.join(self._temp_dir, 'temp_' + str(self._model.data(self._model.index(row), Qt.DisplayRole)) + '.nii')
         if sys.platform == 'win32':
             file_path = unicode(temp_file_path).encode('gb2312')
         else:
