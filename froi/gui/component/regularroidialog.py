@@ -7,11 +7,9 @@ from PyQt4.QtGui import *
 from froi.algorithm import imtool
 from froi.io.csv import get_cord_from_file
 
-class RegularROIDialog(QDialog):
-    """
-    A dialog for generate a regular ROI
 
-    """
+class RegularROIDialog(QDialog):
+    """A dialog for generate a regular ROI."""
 
     def __init__(self, model, parent=None):
         super(RegularROIDialog, self).__init__(parent)

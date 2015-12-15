@@ -1,22 +1,21 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import nibabel as nib
 from collections import OrderedDict
+
+import nibabel as nib
 
 
 def get_nii_data(path, nii_name):
-    """
-    get nii data
-    """
+    """Get nii data."""
     img_name = nii_name + ".nii.gz"
     img = nib.load(path+img_name)
     img_data = img.get_data()
     return img_data
 
 def get_atlasprob(data, x, y, z):
-    """
-    extract atlas probability values according to coordinate.
+    """Extract atlas probability values according to coordinate.
+
     return a probability list.
 
     Parameters
@@ -30,8 +29,8 @@ def get_atlasprob(data, x, y, z):
     return prob
 
 def sorting(labellist, problist):
-    """
-    sort the label according to probability value.
+    """Sort the label according to probability value.
+
     return a string which including the sorted nonzero probability and the corresponding label.
 
     Parameters

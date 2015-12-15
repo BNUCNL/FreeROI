@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-class OpenDialog(QDialog):
-    """
-    A dialog for action of intersection.
 
-    """
+class OpenDialog(QDialog):
+    """A dialog for action of intersection."""
     def __init__(self, model, parent=None):
         super(OpenDialog, self).__init__(parent)
         self._model = model
@@ -19,10 +17,7 @@ class OpenDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Opening")
 
@@ -75,10 +70,7 @@ class OpenDialog(QDialog):
         self.out_edit.setText(output_name)
 
     def _run_open(self):
-        """
-        Run an grey opening.
-
-        """
+        """Run an grey opening."""
         vol_name = str(self.out_edit.text())
         radius = self.radius_edit.text()
 

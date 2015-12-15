@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.io import csv
 
-class ClusterStatsDialog(QDialog):
-    """
-    A dialog for reporting cluster stats.
 
-    """
+class ClusterStatsDialog(QDialog):
+    """A dialog for reporting cluster stats."""
     def __init__(self, cluster_info, parent=None):
         super(ClusterStatsDialog, self).__init__(parent)
         self._cluster_info = cluster_info
@@ -24,10 +22,7 @@ class ClusterStatsDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Cluster Stats")
 
@@ -105,10 +100,7 @@ class ClusterStatsDialog(QDialog):
         self.cancel_button.clicked.connect(self.done)
 
     def _save(self):
-        """
-        Export cluster stats info to a file.
-
-        """
+        """Export cluster stats info to a file."""
         path = QFileDialog.getSaveFileName(self, 'Save file as ...',
                                            'output.csv',
                                            'csv files (*.csv *.txt)')

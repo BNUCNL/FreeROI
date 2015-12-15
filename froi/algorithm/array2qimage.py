@@ -1,8 +1,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Some basic functions for image construction
 
-"""
+"""Some basic functions for image construction."""
 
 import sys as _sys
 import numpy as _np
@@ -21,10 +20,7 @@ bgra_dtype = _np.dtype({'b': (_np.uint8, _bgra[0], 'blue'),
                         'a': (_np.uint8, _bgra[3], 'alpha')})
 
 def gray(array, alpha):
-    """
-    Return a rgba array which color ranges from black to white.
-    
-    """
+    """Return a rgba array which color ranges from black to white."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     array[array<=0] = 0
@@ -37,10 +33,7 @@ def gray(array, alpha):
     return new_array
 
 def red2yellow(array, alpha):
-    """
-    Return a rgba array which color ranges from red to yellow.
-    
-    """
+    """Return a rgba array which color ranges from red to yellow."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     array[array<=0] = 0
@@ -53,10 +46,7 @@ def red2yellow(array, alpha):
     return new_array
 
 def blue2cyanblue(array, alpha):
-    """
-    Return a rgba array which color ranges from blue to cyanblue.
-    
-    """
+    """Return a rgba array which color ranges from blue to cyanblue."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     array[array<=0] = 0
@@ -69,10 +59,7 @@ def blue2cyanblue(array, alpha):
     return new_array
 
 def red(array, alpha):
-    """
-    Return a whole red rgba array.
-    
-    """
+    """Return a whole red rgba array."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     new_array[..., 0] = 255 * array.clip(0, 1)
@@ -83,10 +70,7 @@ def red(array, alpha):
     return new_array
 
 def green(array, alpha):
-    """
-    Return a whole green rgba array.
-    
-    """
+    """Return a whole green rgba array."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     new_array[..., 0] = 0
@@ -97,10 +81,7 @@ def green(array, alpha):
     return new_array
 
 def blue(array, alpha):
-    """
-    Return a whole blue rgba array.
-    
-    """
+    """Return a whole blue rgba array."""
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     new_array[..., 0] = 0
@@ -111,10 +92,7 @@ def blue(array, alpha):
     return new_array
 
 def single_roi(array, alpha, roi):
-    """
-    Return a single roi view array.
-
-    """
+    """Return a single roi view array."""
     color = (70, 70, 70)
     h, w = array.shape
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
@@ -128,6 +106,7 @@ def single_roi(array, alpha, roi):
     return new_array
 
 def _normalize255(array, normalize, scale_length=255.0):
+    """Normalize the array."""
     if not normalize:
         return array
 
@@ -152,8 +131,9 @@ def _normalize255(array, normalize, scale_length=255.0):
         return _np.round(array)
 
 def gray2qimage(array, normalize=False):
-    """Convert a 2D numpy array 'array' into a 8-bit, indexed QImage with
-    a specific colormap. The first dimension represents the vertical image
+    """Convert a 2D numpy array 'array' into a 8-bit, indexed QImage with a specific colormap.
+
+    The first dimension represents the vertical image
     axis.
 
     The parameter 'normalize' can be used to normalize an image's value range
@@ -173,8 +153,6 @@ def gray2qimage(array, normalize=False):
     If the source array 'array' contains masked values, the result will have 
     only 255 shades of gray, and one color map entry will be used to make the
     corresponding pixels transparent.
-
-
     """
     if _np.ndim(array) != 2:
         raise ValueError("gray2qimage can only convert 2D arrays")
@@ -192,6 +170,7 @@ def gray2qimage(array, normalize=False):
     return result
 
 def byte_view(qimage, byteorder = 'little'):
+    """Return the bytes in the view with the given byteorder."""
     raw = _qimageview(qimage)
     result = raw.view(_np.uint8).reshape(raw.shape + (-1, ))
     if byteorder and byteorder != _sys.byteorder:
@@ -199,6 +178,7 @@ def byte_view(qimage, byteorder = 'little'):
     return result
 
 def rgb_view(qimage, byteorder='big'):
+    """Return the rgb value array in view."""
     if byteorder is None:
         byteorder = _sys.byteorder
     bytes = byte_view(qimage, byteorder)
@@ -212,6 +192,7 @@ def rgb_view(qimage, byteorder='big'):
         return bytes[..., 1:]
 
 def alpha_view(qimage):
+    """Return the alpha value array in view."""
     bytes = byte_view(qimage, byteorder = None)
     if bytes.shape[2] != 4:
         raise ValueError, "For alpha_view, the image must have 32 bit pixel" + \
@@ -348,7 +329,7 @@ def qrgba2qimage(array):
     return result
 
 def null_image(h, w):
-    """return a whole black rgba array"""
+    """Return a whole black rgba array."""
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     new_array[..., 3] = 255
     return new_array

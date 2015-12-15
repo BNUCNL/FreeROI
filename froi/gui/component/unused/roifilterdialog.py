@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
+
 class ROIFilterDialog(QDialog):
     """
     A dialog for action of intersection.

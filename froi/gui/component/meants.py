@@ -2,17 +2,16 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 from froi.io import csv
 
-class MeanTSDialog(QDialog):
-    """
-    A dialog for action of intersection.
 
-    """
+class MeanTSDialog(QDialog):
+    """A dialog for action of intersection."""
     def __init__(self, model, parent=None):
         super(MeanTSDialog, self).__init__(parent)
         self._model = model
@@ -21,10 +20,7 @@ class MeanTSDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Export Mean Time Course")
 

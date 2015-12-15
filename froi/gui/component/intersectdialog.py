@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-class IntersectDialog(QDialog):
-    """
-    A dialog for action of intersection.
 
-    """
+class IntersectDialog(QDialog):
+    """A dialog for action of intersection."""
     def __init__(self, model, parent=None):
         super(IntersectDialog, self).__init__(parent)
         self._model = model
@@ -19,10 +17,7 @@ class IntersectDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Intersect")
 
@@ -75,10 +70,7 @@ class IntersectDialog(QDialog):
         self.out_edit.setText(output_name)
 
     def _run_intersect(self):
-        """
-        Run an intersecting processing.
-
-        """
+        """Run an intersecting processing."""
         vol_name = str(self.out_edit.text())
         if not vol_name:
             QMessageBox.critical(self, "No output volume name",

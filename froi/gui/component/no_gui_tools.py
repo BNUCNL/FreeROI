@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-def inverse_image(model):
-    """
-    Inverse current selected image by multiplying with -1.
 
-    """
+def inverse_image(model):
+    """Inverse current selected image by multiplying with -1."""
     # get data and name from current selected image
     current_row = model.currentIndex().row()
     source_vol = model.data(model.index(current_row), Qt.UserRole + 6)
@@ -25,10 +23,7 @@ def inverse_image(model):
 
 
 def edge_detection(model):
-    """
-    Image edge detection.
-
-    """
+    """Image edge detection."""
     # get data and name from current selected image
     current_row = model.currentIndex().row()
     source_vol = model.data(model.index(current_row), Qt.UserRole + 6)

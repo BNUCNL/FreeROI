@@ -11,11 +11,9 @@ from PyQt4.QtCore import *
 
 from ..base.bpdataset import VolumeDataset
 
+
 class VolumeListModel(QAbstractListModel):
-    """
-    Definition of class VolumeListModel.
-    
-    """
+    """Definition of class VolumeListModel."""
     # customized signal
     repaint_slices = pyqtSignal(int, name='repaint_slices')
     scale_changed = pyqtSignal()
@@ -28,10 +26,7 @@ class VolumeListModel(QAbstractListModel):
     new_no = 1
 
     def __init__(self, data_list, label_config_center, parent=None):
-        """
-        Initialize an instance.
-
-        """
+        """Initialize an instance."""
         super(VolumeListModel, self).__init__(parent)
         self._data = data_list
         self._affine = None
@@ -51,33 +46,21 @@ class VolumeListModel(QAbstractListModel):
                 self.update_all_rgba)
 
     def get_cross_pos(self):
-        """
-        Get current cursor position.
-
-        """
+        """Get current cursor position."""
         return self._cross_pos
 
     def get_space_pos(self):
-        """
-        Get current cursor position in RAS space.
-
-        """
+        """Get current cursor position in RAS space."""
         return apply_affine(self._affine, self._cross_pos)
 
     def set_cross_pos(self, new_coord):
-        """
-        Set current cursor position.
-
-        """
+        """Set current cursor position."""
         self._cross_pos = new_coord
         self.update_orth_rgba()
         self.cross_pos_changed.emit()
 
     def set_space_pos(self, new_space_coord):
-        """
-        Set current cursor position based on RAS coordinates.
-
-        """
+        """Set current cursor position based on RAS coordinates."""
         new_coord = apply_affine(npl.inv(self._affine), new_space_coord)
         new_coord = np.floor(new_coord)
         new_coord = [int(item) for item in new_coord]
@@ -85,10 +68,7 @@ class VolumeListModel(QAbstractListModel):
             self.set_cross_pos(new_coord)
 
     def is_valid_coord(self, coord):
-        """
-        Filter valid coordinate.
-
-        """
+        """Filter valid coordinate."""
         data_shape = self._data[0].get_data_shape()
         if coord[0]>=0 and coord[0]<data_shape[0]:
             if coord[1]>=0 and coord[1]<data_shape[1]:
@@ -98,10 +78,9 @@ class VolumeListModel(QAbstractListModel):
             False
 
     def get_axcodes(self):
-        """
-        Get codes for voxel axis derived from affine.
-        i.e., ('R', 'A', 'S')
+        """Get codes for voxel axis derived from affine.
 
+        i.e., ('R', 'A', 'S')
         """
         if isinstance(self._affine, np.ndarray):
             return aff2axcodes(self._affine)
@@ -109,42 +88,26 @@ class VolumeListModel(QAbstractListModel):
             return None
 
     def update_orth_rgba(self):
-        """
-        Update RGBA data for OrthView.
-
-        """
+        """Update RGBA data for OrthView."""
         for data in self._data:
             data.set_cross_pos(self.get_cross_pos())
 
     def display_cross(self):
-        """
-        Return the status of current position indicator.
-
-        """
+        """Return the status of current position indicator."""
         return self._display_cross
 
     def set_cross_status(self, status):
-        """
-        Set the status of current position indicator.
-
-        """
+        """Set the status of current position indicator."""
         if isinstance(status, bool) and not status == self.display_cross():
             self._display_cross = status
             self.cross_pos_changed.emit()
 
     def rowCount(self, parent=QModelIndex()):
-        """
-        Return the item numbers in the list.
-        
-        """
+        """ Return the item numbers in the list."""
         return len(self._data)
 
     def data(self, index, role):
-        """
-        Return the data stored under the given role for the item 
-        referred to by the index.
-        
-        """
+        """Return the data stored under the given role for the item referred to by the index."""
         if not index.isValid() or not 0 <= index.row() < self.rowCount():
             return QVariant()
 
@@ -183,10 +146,7 @@ class VolumeListModel(QAbstractListModel):
         return QVariant()
 
     def setData(self, index, value, role):
-        """
-        Set data according to the data role and item index.
-        
-        """
+        """Set data according to the data role and item index."""
         if not index.isValid() or not 0 <= index.row() < self.rowCount():
             return False
 
@@ -246,25 +206,16 @@ class VolumeListModel(QAbstractListModel):
         return True
 
     def flags(self, index):
-        """
-        Set item flag.
-        
-        """
+        """Set item flag."""
         flag = super(VolumeListModel, self).flags(index)
         return flag | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
 
     def insertRow(self, row, vol, parent=QModelIndex()):
-        """
-        Insert a new item to the list.
-        
-        """
+        """Insert a new item to the list. """
         return self.insertRows(row, 1, [vol], parent)
 
     def insertRows(self, row, count, vol_list, parent=QModelIndex()):
-        """
-        Insert new items to the list.
-        
-        """
+        """Insert new items to the list."""
         self.beginInsertRows(parent, row, (row + (count - 1)))
         for index in range(count):
             try:
@@ -280,17 +231,11 @@ class VolumeListModel(QAbstractListModel):
         return True
 
     def removeRow(self, row, parent=QModelIndex()):
-        """
-        Remove one item from the list.
-        
-        """
+        """Remove one item from the list."""
         return self.removeRows(row, 1, parent)
 
     def removeRows(self, row, count, parent=QModelIndex()):
-        """
-        Remove items from the list.
-        
-        """
+        """Remove items from the list."""
         #print type(row),'----------------------',type(count)
         self.beginRemoveRows(parent, row, (row + count - 1))
         for index in range(count):
@@ -300,8 +245,7 @@ class VolumeListModel(QAbstractListModel):
 
     def addItem(self, source, label_config=None, name=None, header=None,
                 view_min=None, view_max=None, alpha=255, colormap='gray'):
-        """
-        Add a new item.
+        """Add a new item.
 
         Example:
         --------
@@ -343,14 +287,11 @@ class VolumeListModel(QAbstractListModel):
                 return False
 
     def delItem(self, row):
-        """
-        Delete a item.
+        """Delete a item.
 
         Example:
         --------
-
         >>> model.delItem(3)   # delete the 4th item
-
         """
         ok = self.removeRow(row)
         if ok:
@@ -381,10 +322,7 @@ class VolumeListModel(QAbstractListModel):
                          new_header, 0, 100, 255, colormap)
         
     def moveUp(self, row, parent=QModelIndex()):
-        """
-        Move the specific row up for one step.
-
-        """
+        """Move the specific row up for one step. """
         if row != 0:
             self.beginMoveRows(parent, row, row, parent, row - 1)
             self._data[row], self._data[row - 1] = \
@@ -409,27 +347,18 @@ class VolumeListModel(QAbstractListModel):
             raise ValueError("Index out of range!")
 
     def currentIndex(self):
-        """
-        Return current index.
-
-        """
+        """Return current index."""
         return self._current_index
 
     def setCurrentIndex(self, index):
-        """
-        Set current row.
-
-        """
+        """Set current row."""
         if index.row() >= 0 and index.row() <= self.rowCount():
             self._current_index = index
         else:
             raise ValueError('Invalid value.')
 
     def setSelectedIndexes(self):
-        """
-        Return all selected items and save into _selected_indexes.
-
-        """
+        """Return all selected items and save into _selected_indexes."""
         self._selected_indexes = []
         for row in range(self.rowCount()):
             idx = self.index(row) 
@@ -437,10 +366,7 @@ class VolumeListModel(QAbstractListModel):
                 self._selected_indexes.insert(0, idx)
 
     def getItemList(self):
-        """
-        Return whole items' name.
-
-        """
+        """Return whole items' name."""
         item_list = []
         for row in range(self.rowCount()):
             idx = self.index(row)
@@ -448,18 +374,12 @@ class VolumeListModel(QAbstractListModel):
         return item_list
 
     def selectedIndexes(self):
-        """
-        Get selected items.
-
-        """
+        """ Get selected items."""
         self.setSelectedIndexes()
         return self._selected_indexes
 
     def set_scale_factor(self, value, type):
-        """
-        Set scale factor.
-
-        """
+        """Set scale factor."""
         if type == 'grid':
             self._grid_scale_factor = value
         elif type == 'orth':
@@ -468,10 +388,7 @@ class VolumeListModel(QAbstractListModel):
         self.scale_changed.emit()
 
     def get_scale_factor(self, type):
-        """
-        Get scale factor.
-
-        """
+        """Get scale factor."""
         if type == 'grid':
             return self._grid_scale_factor
         elif type == 'orth':
@@ -479,10 +396,7 @@ class VolumeListModel(QAbstractListModel):
 
     def modify_voxels(self, coord_list=None, value=None, roi=None,
                       target_row=None, ignore=True):
-        """
-        Set (x, y, z) voxel's value on specific layer.
-
-        """
+        """Set (x, y, z) voxel's value on specific layer."""
         if value is None:
             return
 
@@ -517,39 +431,24 @@ class VolumeListModel(QAbstractListModel):
             return False
 
     def rgba_list(self, index):
-        """
-        Get RGBA array for `index`th label.
-
-        """
+        """ Get RGBA array for `index`th label."""
         return [self._data[idx.row()].get_rgba(index) for 
                 idx in self.selectedIndexes()]
 
     def getX(self):
-        """
-        Get the height of the picture.
-
-        """
+        """Get the height of the picture."""
         return self._data[0].get_data_shape()[1]
 
     def getY(self):
-        """
-        Get width of the picture.
-
-        """
+        """Get width of the picture."""
         return self._data[0].get_data_shape()[0]
 
     def getZ(self):
-        """
-        Get layer index.
-
-        """
+        """Get layer index."""
         return self._data[0].get_data_shape()[2]
 
     def set_time_point(self, tpoint):
-        """
-        Set time point for every volume.
-
-        """
+        """Set time point for every volume."""
         if isinstance(tpoint, int) and not tpoint < 0:
             for data in self._data:
                 data.set_time_point(tpoint)
@@ -606,26 +505,17 @@ class VolumeListModel(QAbstractListModel):
         self.repaint_slices.emit(-1)
 
     def get_sagital_rgba_list(self):
-        """
-        Get RGBA array for sagital direction in OrthView.
-
-        """
+        """Get RGBA array for sagital direction in OrthView."""
         return [self._data[idx.row()].get_sagital_rgba() for
                 idx in self.selectedIndexes()]
 
     def get_axial_rgba_list(self):
-        """
-        get RGBA array for axial direction in OrthView.
-
-        """
+        """get RGBA array for axial direction in OrthView. """
         return [self._data[idx.row()].get_axial_rgba() for
                 idx in self.selectedIndexes()]
 
     def get_coronal_rgba_list(self):
-        """
-        get RGBA array for axial direction in OrthView.
-
-        """
+        """get RGBA array for axial direction in OrthView."""
         return [self._data[idx.row()].get_coronal_rgba() for
                 idx in self.selectedIndexes()]
 
@@ -642,10 +532,7 @@ class VolumeListModel(QAbstractListModel):
         return self._label_config_center
 
     def _get_sapce_info(self, vol):
-        """
-        Get affine and corresponding RAS sapce from the first volume.
-
-        """
+        """Get affine and corresponding RAS sapce from the first volume."""
         header = vol.get_header()
         self._ras_unit = header.get_xyzt_units()[0]
         space_list = ['unknown', 'Scanner', 'Aligned', 'Talairach', 'MNI']
@@ -657,17 +544,11 @@ class VolumeListModel(QAbstractListModel):
             self._affine = header.get_qform()
 
     def get_affine(self):
-        """
-        Get affine matrix.
-
-        """
+        """ Get affine matrix."""
         return self._affine
 
     def get_space_name(self):
-        """
-        Get RAS space name.
-
-        """
+        """ Get RAS space name."""
         return self._ras_space
 
     def is_mni_space(self):

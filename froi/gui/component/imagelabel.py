@@ -1,28 +1,23 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import numpy as np 
+import numpy as np
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from froi.algorithm.array2qimage import composition, qrgba2qimage
 
+
 """ImageLabel class. It is used to show a slice of the 3D image"""
 
 class ImageLabel(QLabel):
-    """
-    Class ImageLabel provides basic methods for image displaying.
-
-    """
+    """Class ImageLabel provides basic methods for image displaying."""
 
     # resized signal
     #resized_signal = pyqtSignal(float, float, int)
 
     def __init__(self, model, painter_status, n_slice, parent=None):
-        """
-        Initialize an instance.
-
-        """
+        """Initialize an instance."""
         super(ImageLabel, self).__init__(parent)
         # set background color
         palette = self.palette()
@@ -42,45 +37,30 @@ class ImageLabel(QLabel):
         self.voxels = set() 
 
     def sizeHint(self):
-        """
-        Size hint configuration.
-
-        """
+        """ Size hint configuration."""
         default_size = QSize(self.background.shape[1],
                              self.background.shape[0])
         scale_factor = self.model.get_scale_factor('grid')
         return default_size * scale_factor
 
     def set_model(self, model):
-        """
-        Set data model.
-
-        """
+        """Set data model."""
         self.model = model
         self.model.repaint_slices.connect(self.update_image)
 
     def update_image(self, m_slice):
-        """
-        Repaint image.
-
-        """
+        """Repaint image."""
         # -1 for all
         if m_slice == -1 or m_slice == self.n_slice:
             self.repaint()
         self.updateGeometry()
 
     def is_current_slice(self):
-        """
-        Return True if cursor select current slice.
-
-        """
+        """Return True if cursor select current slice."""
         return self.n_slice == self.model.get_cross_pos()[2]
 
     def paintEvent(self, e):
-        """
-        Reimplement repaintEvent.
-
-        """
+        """Reimplement repaintEvent."""
         self.voxels_painter = QPainter()
         self.voxels_painter.begin(self)
         if not self.image or not self.drawing:
@@ -213,23 +193,17 @@ class ImageLabel(QLabel):
                 (y >= 0 and y < self.model.getX()))
 
 class ImageLabel3d(QLabel):
-    """
-    Class ImageLabel3d provides basic methods for image displaying in three
-    different orientation.
+    """Class ImageLabel3d provides basic methods for image displaying in three different orientation.
 
     Attention:
     Methods, e.g. painEvent, must be reimplemented.
-
     """
 
     # draw voxels signal
     draw_voxels_sig = pyqtSignal()
     
     def __init__(self, model, painter_status, holder, parent=None):
-        """
-        Initialize an instance.
-
-        """
+        """Initialize an instance."""
         super(ImageLabel3d, self).__init__(parent)
 
         # set background color as black
@@ -265,19 +239,13 @@ class ImageLabel3d(QLabel):
         self.is_painting = True
 
     def set_model(self, model):
-        """
-        Set date model.
-
-        """
+        """Set date model."""
         self.model = model
         self.model.repaint_slices.connect(self.update_image)
         self.get_axcodes()
 
     def get_axcodes(self):
-        """
-        Get axis codes from model.
-
-        """
+        """Get axis codes from model."""
         tmp = self.model.get_axcodes()
         self.axcodes = []
         for item in tmp:
@@ -296,60 +264,39 @@ class ImageLabel3d(QLabel):
         return self.axcodes
 
     def sizeHint(self):
-        """
-        Size hint configuration.
-
-        """
+        """Size hint configuration."""
         return QSize(self.size().width(), self.size().height())
 
     def update_image(self, coord=None):
-        """
-        Update image.
-
-        """
+        """Update image."""
         self.repaint()
 
     def make_background(self):
-        """
-        Create a whole black background.
-
-        """
+        """Create a whole black background."""
         background = np.zeros((self.size().height(), self.size().width(), 3),
                               dtype=np.uint8)
         return qrgba2qimage(background)
 
     def get_ver_margin(self):
-        """
-        Get black vertical margin for the image.
-
-        """
+        """Get black vertical margin for the image."""
         margin = np.zeros((self.size().height(), self.margin_size, 3),
                           dtype=np.uint8)
         return qrgba2qimage(margin)
 
     def get_hor_margin(self):
-        """
-        Get horizontal margin for the image.
-
-        """
+        """Get horizontal margin for the image."""
         margin = np.zeros((self.margin_size, self.size().width(), 3),
                           dtype=np.uint8)
         return qrgba2qimage(margin)
 
     def center_src_point(self):
-        """
-        Return the coordinate of left-up corner.
-
-        """
+        """Return the coordinate of left-up corner."""
         x = (self.size().width() - self.pm.size().width()) / 2
         y = (self.size().height() - self.pm.size().height()) / 2
         return (x, y)
 
     def horizontal_valid_range(self):
-        """
-        Return the valid range of horizontal axis.
-
-        """
+        """Return the valid range of horizontal axis."""
         if not self.is_painting:
             min_val = self.pic_src_point[0]
             if min_val < 0:
@@ -362,10 +309,7 @@ class ImageLabel3d(QLabel):
             return (0, -1)
 
     def vertical_valid_range(self):
-        """
-        Return the valid range of vertical axis.
-
-        """
+        """Return the valid range of vertical axis."""
         if not self.is_painting:
             min_val = self.pic_src_point[1]
             if min_val < 0:
@@ -378,21 +322,14 @@ class ImageLabel3d(QLabel):
             return (0, -1)
 
     def _mouse_in(self, x, y):
-        """
-        Check whether current cursor position is in the valid area of the 
-        picture.
-
-        """
+        """Check whether current cursor position is in the valid area of the picture."""
         return (self.horizontal_valid_range()[0] <= x < \
                 self.horizontal_valid_range()[1] and \
                 self.vertical_valid_range()[0] <= y < \
                 self.vertical_valid_range()[1])
 
     def mouseReleaseEvent(self, e):
-        """
-        Reimplement mouseReleaseEvent.
-
-        """
+        """Reimplement mouseReleaseEvent."""
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         if self.painter_status.is_drawing_valid() and (not 
            self.painter_status.is_roi_tool()):
@@ -410,24 +347,15 @@ class ImageLabel3d(QLabel):
             self.setCursor(Qt.OpenHandCursor)
 
 class SagittalImageLabel(ImageLabel3d):
-    """
-    ImageLabel in sagittal view.
-
-    """
+    """ImageLabel in sagittal view."""
     def get_expanding_size(self):
-        """
-        Compute a proper expanding size used to display
-
-        """
+        """Compute a proper expanding size used to display."""
         w_times = float(self.size().width()) / self.model.getX()
         h_times = float(self.size().height()) / self.model.getZ()
         return np.min([w_times, h_times])
 
     def paintEvent(self, e):
-        """
-        Reimplement paintEvent.
-
-        """
+        """Reimplement paintEvent."""
         self.is_painting = True
         self.voxels_painter = QPainter()
         self.voxels_painter.begin(self)
@@ -519,10 +447,7 @@ class SagittalImageLabel(ImageLabel3d):
         self.is_painting = False
 
     def save_image(self):
-        """
-        Save image as file.
-
-        """
+        """Save image as file."""
         file_name = self.__class__.__name__ + '.png'
         pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
         self.voxels_painter = QPainter()
@@ -611,10 +536,7 @@ class SagittalImageLabel(ImageLabel3d):
         pic.save(file_name)
 
     def draw_voxels(self, voxels):
-        """
-        Draw selected voxels.
-
-        """
+        """Draw selected voxels."""
         self.voxels_painter.setPen(self.painter_status.get_drawing_color())
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         points = [QPoint(self.pic_src_point[0] + \
@@ -627,10 +549,7 @@ class SagittalImageLabel(ImageLabel3d):
             self.voxels_painter.drawPoints(*points)
 
     def mousePressEvent(self, e):
-        """
-        Reimplement mousePressEvent.
-
-        """
+        """Reimplement mousePressEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():
@@ -692,10 +611,7 @@ class SagittalImageLabel(ImageLabel3d):
             self.model.set_cross_pos(current_pos)
 
     def mouseMoveEvent(self, e):
-        """
-        Reimplement mouseMoveEvent.
-
-        """
+        """Reimplement mouseMoveEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():
@@ -742,24 +658,15 @@ class SagittalImageLabel(ImageLabel3d):
             self.setCursor(Qt.ArrowCursor)
             
 class AxialImageLabel(ImageLabel3d):
-    """
-    ImageLabel in axial view.
-
-    """
+    """ImageLabel in axial view."""
     def get_expanding_size(self):
-        """
-        Compute a proper expanding size used to display
-
-        """
+        """Compute a proper expanding size used to display."""
         w_times = float(self.size().width()) / self.model.getY()
         h_times = float(self.size().height()) / self.model.getX()
         return np.min([w_times, h_times])
 
     def paintEvent(self, e):
-        """
-        Reimplement paintEvent.
-
-        """
+        """Reimplement paintEvent."""
         self.is_painting = True
         self.voxels_painter = QPainter()
         self.voxels_painter.begin(self)
@@ -850,10 +757,7 @@ class AxialImageLabel(ImageLabel3d):
         self.is_painting = False
     
     def save_image(self):
-        """
-        Save image as file.
-
-        """
+        """Save image as file."""
         file_name = self.__class__.__name__ + '.png'
         pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
         self.is_painting = True
@@ -943,10 +847,7 @@ class AxialImageLabel(ImageLabel3d):
         pic.save(file_name)
     
     def draw_voxels(self, voxels):
-        """
-        Draw selected voxels.
-
-        """
+        """Draw selected voxels."""
         self.voxels_painter.setPen(self.painter_status.get_drawing_color())
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         points = [QPoint(self.pic_src_point[0] + v[0], 
@@ -958,10 +859,7 @@ class AxialImageLabel(ImageLabel3d):
             self.voxels_painter.drawPoints(*points)
 
     def mousePressEvent(self, e):
-        """
-        Reimplement mousePressEvent.
-
-        """
+        """Reimplement mousePressEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():
@@ -1023,10 +921,7 @@ class AxialImageLabel(ImageLabel3d):
             self.model.set_cross_pos(current_pos)
 
     def mouseMoveEvent(self, e):
-        """
-        Reimplement mouseMoveEvent.
-
-        """
+        """Reimplement mouseMoveEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():
@@ -1073,24 +968,15 @@ class AxialImageLabel(ImageLabel3d):
             self.setCursor(Qt.ArrowCursor)
 
 class CoronalImageLabel(ImageLabel3d):
-    """
-    ImageLabel in coronal view.
-
-    """
+    """ImageLabel in coronal view."""
     def get_expanding_size(self):
-        """
-        Compute a proper expanding size used to display
-
-        """
+        """Compute a proper expanding size used to display."""
         w_times = float(self.size().width()) / self.model.getY()
         h_times = float(self.size().height()) / self.model.getZ()
         return np.min([w_times, h_times])
 
     def paintEvent(self, e):
-        """
-        Reimplement paintEvent.
-
-        """
+        """Reimplement paintEvent."""
         self.is_painting = True
         self.voxels_painter = QPainter()
         self.voxels_painter.begin(self)
@@ -1178,10 +1064,7 @@ class CoronalImageLabel(ImageLabel3d):
         self.is_painting = False
     
     def save_image(self):
-        """
-        Save image as file.
-
-        """
+        """Save image as file."""
         file_name = self.__class__.__name__ + '.png'
         pic = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
         self.voxels_painter = QPainter()
@@ -1267,10 +1150,7 @@ class CoronalImageLabel(ImageLabel3d):
         pic.save(file_name)
     
     def draw_voxels(self, voxels):
-        """
-        Draw selected voxels.
-
-        """
+        """Draw selected voxels."""
         self.voxels_painter.setPen(self.painter_status.get_drawing_color())
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         points = [QPoint(v[0] + self.pic_src_point[0], 
@@ -1282,10 +1162,7 @@ class CoronalImageLabel(ImageLabel3d):
             self.voxels_painter.drawPoints(*points)
 
     def mousePressEvent(self, e):
-        """
-        Reimplement mousePressEvent.
-
-        """
+        """Reimplement mousePressEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():
@@ -1347,10 +1224,7 @@ class CoronalImageLabel(ImageLabel3d):
             self.model.set_cross_pos(current_pos)
 
     def mouseMoveEvent(self, e):
-        """
-        Reimplement mouseMoveEvent.
-
-        """
+        """Reimplement mouseMoveEvent."""
         if not self._mouse_in(e.x(), e.y()):
             return
         if self.painter_status.is_drawing_valid():

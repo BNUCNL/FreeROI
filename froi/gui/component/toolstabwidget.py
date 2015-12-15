@@ -1,7 +1,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import os
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -11,11 +10,9 @@ from roi2gwmidialog import Roi2gwmiDialog
 from regularroidialog import RegularROIDialog
 from froi.gui.base.utils import *
 
-class ToolsTabWidget(QDialog):
-    """
-    Model for tools tabwidget.
 
-    """
+class ToolsTabWidget(QDialog):
+    """Model for tools tabwidget."""
 
     def __init__(self, model, main_win, parent=None):
         super(ToolsTabWidget, self).__init__(parent)
@@ -26,9 +23,7 @@ class ToolsTabWidget(QDialog):
         self._main_win = main_win
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-        """
+        """Initialize GUI."""
         self.detection_button = QPushButton()
         self.detection_button.setFocusPolicy(Qt.NoFocus)
         self.detection_button.setIcon(QIcon(os.path.join(self._icon_dir,
@@ -64,41 +59,31 @@ class ToolsTabWidget(QDialog):
         gridlayout.addWidget(self.regularroi_button, 1, 0)
 
     def _create_actions(self):
-        """
-        Create actions about the toolbar
-        """
+        """Create actions about the toolbar."""
         self.detection_button.clicked.connect(self._edge_detection_clicked)
         self.roimerge_button.clicked.connect(self._roimerge_clicked)
         self.roi2interface_button.clicked.connect(self._r2i_clicked)
         self.regularroi_button.clicked.connect(self._regular_roi_clicked)
 
     def _edge_detection_clicked(self):
-        '''
-        edge detection clicked
-        '''
+        """Edge detection clicked."""
         if self.detection_button.isEnabled():
             edge_detection(self._model)
 
     def _roimerge_clicked(self):
-        '''
-        roi merge clicked
-        '''
+        """Roi merge clicked."""
         if self.roimerge_button.isEnabled():
             new_dialog = ROIMergeDialog(self._model)
             new_dialog.exec_()
 
     def _r2i_clicked(self):
-        '''
-        roi2interface clicked
-        '''
+        """Rroi2interface clicked."""
         if self.roi2interface_button.isEnabled():
             new_dialog = Roi2gwmiDialog(self._model)
             new_dialog.exec_()
 
     def _regular_roi_clicked(self):
-        '''
-        regular roi clicked
-        '''
+        """Rregular roi clicked."""
         if self.regularroi_button.isEnabled():
             new_dialog = RegularROIDialog(self._model)
             new_dialog.exec_()

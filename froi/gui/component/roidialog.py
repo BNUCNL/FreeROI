@@ -6,10 +6,9 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 
+
 class ROIDialog(QDialog, DrawSettings):
-    """
-    ROI toolset.
-    """
+    """ROI toolset."""
     last_target_name = "New Volume"
     voxel_edit_enabled = pyqtSignal()
     roi_edit_enabled = pyqtSignal()
@@ -226,18 +225,12 @@ class ROIDialog(QDialog, DrawSettings):
         self.roi_edit.clear()
 
     def hideEvent(self, e):
-        """
-        Reimplement hide event.
-
-        """
+        """Reimplement hide event."""
         self._pos = self.pos()
         e.accept()
 
     def showEvent(self, e):
-        """
-        Reimplement show event.
-
-        """
+        """Reimplement show event."""
         if hasattr(self, '_pos'):
             self.move(self._pos)
         e.accept()

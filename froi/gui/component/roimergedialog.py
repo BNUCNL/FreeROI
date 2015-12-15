@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm.imtool import merge
 
-class ROIMergeDialog(QDialog):
-    """
-    A dialog for ROI selection and merging.
 
-    """
+class ROIMergeDialog(QDialog):
+    """A dialog for ROI selection and merging."""
     def __init__(self, model, parent=None):
         super(ROIMergeDialog, self).__init__(parent)
         self._model = model
@@ -19,10 +17,7 @@ class ROIMergeDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         self.setWindowTitle('Selecet Volumes')
         imgs = []
         vol_list = self._model.getItemList()
