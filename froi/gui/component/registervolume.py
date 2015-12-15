@@ -157,14 +157,12 @@ class RegisterVolumeDialog(QDialog):
         self._progress_value = 0
         self._update_timer.stop()
 
-
-
         if error_info is not None:
             QMessageBox.warning(self,
                                 'Warning',
                                 error_info,
                                 QMessageBox.Yes)
-            self._progress_dialog.hide()
+            self._progress_dialog.done(0)
         else:
             res = self._register_thread.get_output()
             if res is not None:
@@ -225,6 +223,7 @@ class RegisterVolumeDialog(QDialog):
                                     'Warning',
                                     'The auxiliary image should be ended with .nii, not .nii.gz or anything else.',
                                     QMessageBox.Yes)
+                self._register_button.setEnabled(True)
                 return
             self._delta = 0.01
             temp_filename = self._source_image_filename
@@ -234,7 +233,6 @@ class RegisterVolumeDialog(QDialog):
             self._auxiliary_image_filename = ''
             self._delta = 0.03
 
-        res = None
         self._update_timer.start(500)
 
         self._register_thread = RegisterThread([self._target_image_filename,
@@ -279,6 +277,7 @@ class RegisterThread(QThread):
                             self._source_image_filename,
                             self._auxiliary_image_filename,
                             self._interpolation_method)
+        res = None
         try:
             if self._is_fsl:
                 #fsl register
@@ -286,17 +285,13 @@ class RegisterThread(QThread):
             else:
                 #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
                 if not str(self._source_image_filename).endswith('.nii'):
-                    QMessageBox.warning(self,
-                                        'Warning',
-                                        'The source image should be ended with .nii, not .nii.gz or anything else.',
-                                        QMessageBox.Yes)
-                    return
-
-                #spm register
-                res = rm.spm_register()
+                    rm.set_error_info("The source image should be ended with .nii, not .nii.gz or anything else.")
+                else:
+                    #spm register
+                    res = rm.spm_register()
         except:
             # 'Register error occur!'
-            res = None
+            rm.set_error_info("Unknown error!")
 
         self._output = res
         self.emit(SIGNAL('register'), rm.get_error_info())
@@ -385,6 +380,7 @@ class RegisterMethod(object):
         import nipype.interfaces.matlab as mlab      # how to run matlab
         try:
             mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
+            mlab.MatlabCommand.run()
         except:
             self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
                                 'environment path.')
@@ -399,7 +395,7 @@ class RegisterMethod(object):
             return None
 
     def _spm_normalize(self, target_image, source_image, omat=None):
-        '''SPM Normalize'''
+        """SPM Normalize"""
         # Reference link
         # http://www.mit.edu/~satra/nipype-nightly/interfaces/generated/nipype.interfaces.spm.preprocess.html
         # http://nipy.org/nipype/users/examples/fmri_spm_dartel.html
@@ -409,7 +405,6 @@ class RegisterMethod(object):
         zooms = nib.load(target_image).get_header().get_zooms()
         voxel_sizes = [float(zooms[0]), float(zooms[1]), float(zooms[2])]
         norm.inputs.write_voxel_sizes = voxel_sizes
-
         if omat is not None:
             norm.inputs.apply_to_files = source_image
             norm.inputs.jobtype = 'write'
@@ -422,7 +417,6 @@ class RegisterMethod(object):
         norm.inputs.write_bounding_box = self._compute_boundingbox()
         if self._interpolation_method:
             norm.inputs.write_interp = 0
-
         try:
             res = norm.run()
         except:
