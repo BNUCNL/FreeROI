@@ -4,10 +4,7 @@
 from PyQt4.QtGui import *
 
 class AddLabelGroupDialog(QDialog):
-    """
-    A dialog for adding a new label.
-
-    """
+    """A dialog for adding a new label."""
     def __init__(self, parent=None):
         super(AddLabelGroupDialog, self).__init__(parent)
         self._new_label_group_name = None

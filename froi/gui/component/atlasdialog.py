@@ -2,10 +2,13 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+
 from PyQt4.QtGui import *
+
 from froi.gui.base.utils import get_file_names
 from froi.io.xml_api import *
 from froi.io.atlas_api import *
+
 
 class AtlasDatamodel():
     """
@@ -20,7 +23,6 @@ class AtlasDatamodel():
     def get_atlas_names(self):
         """
         Get atlas name which is equal to xml names.
-
         """
         xml_names = get_file_names(self.tar_path,'.xml')
         return xml_names
@@ -28,7 +30,6 @@ class AtlasDatamodel():
     def get_atlas_data(self, xml_name):
         """
         Get atlas nii data.
-
         """
         nii_name = get_info(self.tar_path+ xml_name, 'imagefile')
         nii_data = get_nii_data(self.tar_path, nii_name[0])
@@ -37,7 +38,6 @@ class AtlasDatamodel():
     def get_label_info(self, xml_name):
         """
         Get atlas label information.
-
         """
         label_list = get_info(self.tar_path+ xml_name, 'label')
         return label_list
@@ -46,7 +46,6 @@ class AtlasDatamodel():
 class AtlasDialog(QDialog, AtlasDatamodel):
     """
     A dialog for action of Atlas.
-
     """
     default_atlas = ['Harvard-Oxford_Cortical_Structural_Atlas.xml', \
                      'Harvard-Oxford_Subcortical_Structural_Atlas.xml']
@@ -61,7 +60,6 @@ class AtlasDialog(QDialog, AtlasDatamodel):
     def atlas_display(self, data, label):
         """
         The layout of a single atlas prob information.
-
         """
         xyz = self._model.get_cross_pos()
         prob_list = get_atlasprob(data, xyz[0], xyz[1], xyz[2])
@@ -71,7 +69,6 @@ class AtlasDialog(QDialog, AtlasDatamodel):
     def _init_gui(self):
         """
         Initialize GUI.
-
         """
         # set dialog title
         self.setWindowTitle("Candidate Label")
@@ -164,7 +161,6 @@ class AtlasDialog(QDialog, AtlasDatamodel):
     def _get_setting_status(self):
         """
         Get setting status.
-
         """
         return self.status
 
@@ -172,7 +168,6 @@ class AtlasDialog(QDialog, AtlasDatamodel):
 class signal():
     """
     A base class for setting dialog.
-
     """
     def __init__(self, signal):
         self.signal = signal
@@ -181,7 +176,6 @@ class signal():
 class SettingDialog(QDialog, signal, AtlasDatamodel):
     """
     A dialog for setting button.
-
     """
     def __init__(self, stat, parent=None):
         super(SettingDialog, self).__init__(parent)
@@ -193,7 +187,6 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
     def _init_gui(self):
         """
         Initialize GUI.
-
         """
         self.label,self.check=list(),list()
         for i in range(len(self.xml_names)):
@@ -228,27 +221,18 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
         self.setLayout(self.Layout1)
 
     def _create_actions(self):
-        """
-        Create actions for the button
-
-        """
+        """Create actions for the button."""
         self.save_button.clicked.connect(self._save)
 
     def _save(self):
-        """
-        Actions for save button.
-
-        """
+        """Actions for save button."""
         self.stat=[]
         for i in range(len(self.xml_names)):
             self.stat.append(self.check[i].isChecked())
         self.close()
 
     def _update_checkbox_status(self):
-        """
-        Update checkbox status.
-
-        """
+        """Update checkbox status."""
         for i in range(len(self.stat)):
             if self.stat[i]:
                 self.check[i].setChecked(True)
@@ -256,8 +240,5 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
                 self.check[i].setChecked(False)
 
     def _get_checkbox_status(self):
-        """
-        Get checkbox status.
-
-        """
+        """Get checkbox status."""
         return self.stat

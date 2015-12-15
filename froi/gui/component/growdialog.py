@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import regiongrow as rg
 
-class GrowDialog(QDialog):
-    """
-    A dialog for action of intersection.
 
-    """
+class GrowDialog(QDialog):
+    """A dialog for action of intersection."""
     def __init__(self, model, main_win, parent=None):
         super(GrowDialog, self).__init__(parent)
         self._model = model
@@ -19,10 +17,7 @@ class GrowDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Region Growing")
 

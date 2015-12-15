@@ -2,14 +2,10 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from nibabel.affines import apply_affine
-from math import floor
 import numpy as np
 
 def save2csv(data, csv_file):
-    """
-    Save a 1/2D list data into a csv file.
-
-    """
+    """Save a 1/2D list data into a csv file."""
     if isinstance(data, list):
         try:
             f = open(csv_file, 'w')
@@ -28,10 +24,7 @@ def save2csv(data, csv_file):
         raise ValueError, "Input must be a list."
 
 def nparray2csv(data, labels=None, csv_file=None):
-    """
-    Save a np array into a csv file.
-
-    """
+    """Save a np array into a csv file."""
     if isinstance(data, np.ndarray):
         try:
             f = open(csv_file, 'w')
@@ -51,10 +44,7 @@ def nparray2csv(data, labels=None, csv_file=None):
         raise valueError, "Input must be a numpy array."
 
 def get_cord_from_file(data, cord_filepath, image_affine):
-        """
-        Return all cordinate from txt the txt file.
-
-        """
+        """Return all cordinate from the txt or csv file."""
         cord_file = open(cord_filepath, 'r')
         all_cords = []
         value_list = []

@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-class SmoothingDialog(QDialog):
-    """
-    A dialog for image smoothing.
 
-    """
+class SmoothingDialog(QDialog):
+    """A dialog for image smoothing."""
     def __init__(self, model, parent=None):
         super(SmoothingDialog, self).__init__(parent)
         self._model = model
@@ -18,10 +16,7 @@ class SmoothingDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Smoothing")
 

@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-class VoxelStatsDialog(QDialog):
-    """
-    A dialog for voxel stats.
 
-    """
+class VoxelStatsDialog(QDialog):
+    """A dialog for voxel stats."""
     def __init__(self, model, parent=None):
         super(VoxelStatsDialog, self).__init__(parent)
         self._model = model
@@ -24,10 +22,7 @@ class VoxelStatsDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Voxel Number Stats")
 

@@ -6,8 +6,7 @@ import froi
 
 
 def get_file_names(path, postfix):
-    """
-    get file names with certain postfix automatically
+    """Get file names with certain postfix automatically
 
     Parameters
     ----------
@@ -23,10 +22,7 @@ def get_file_names(path, postfix):
     return flist
 
 def get_icon_dir():
-    """
-    Get directory which contains icons.
-
-    """
+    """Get directory which contains icons."""
     pjoin = os.path.join
     apath = os.path.abspath
     froi_dir = os.path.dirname(froi.__file__)
@@ -39,10 +35,7 @@ def get_icon_dir():
     return icon_dir
 
 def get_data_dir():
-    """
-    Get data directory path.
-
-    """
+    """Get data directory path."""
     pjoin = os.path.join
     apath = os.path.abspath
     froi_dir = os.path.dirname(froi.__file__)

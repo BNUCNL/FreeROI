@@ -5,8 +5,8 @@ import xml.dom.minidom
 
 
 def get_info(xmlname, tagname):
-    """
-    get specific information from xml file according to the name of tag.
+    """Get specific information from xml file according to the name of tag.
+
     Parameters
     ----------
     xmlname

@@ -7,11 +7,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
-class BinarizationDialog(QDialog):
-    """
-    A dialog for action of binaryzation.
 
-    """
+class BinarizationDialog(QDialog):
+    """A dialog for action of binaryzation."""
     def __init__(self, model, parent=None):
         super(BinarizationDialog, self).__init__(parent)
         self._model = model
@@ -20,10 +18,7 @@ class BinarizationDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Binarization")
 

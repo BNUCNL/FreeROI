@@ -6,22 +6,18 @@ in a grid style.
 """
 
 from PyQt4.QtGui import *
+
 from imagelabel import ImageLabel
 
-class GridView(QScrollArea):
-    """
-    Implementation a widget for image display in a grid style.
 
-    """
+class GridView(QScrollArea):
+    """Implementation a widget for image display in a grid style."""
     # number of slice each row
     _row_count = 7
 
     def __init__(self, model=None, draw_settings=None, 
                  vertical_srollbar_position=0, parent=None):
-        """
-        Initialize the widget.
-
-        """
+        """Initialize the widget."""
         super(GridView, self).__init__(parent)
 
         # set scroll bar position
@@ -72,18 +68,12 @@ class GridView(QScrollArea):
         return self.verticalScrollBar().value()
 
     def set_label_mouse_tracking(self, t=False):
-        """
-        Set mouse tracking status.
-
-        """
+        """Set mouse tracking status."""
         for label in self.image_labels:
             label.setMouseTracking(t)
     
     def set_cursor(self, cursor_shape):
-        """
-        Set cursor shape.
-
-        """
+        """Set cursor shape."""
         for label in self.image_labels:
             label.setCursor(cursor_shape)
 
@@ -97,10 +87,7 @@ class GridView(QScrollArea):
         self._row_count = row_count
 
     def resize_item(self):
-        """
-        Resize images function.
-
-        """
+        """Resize images function."""
         for image in self.image_labels:
             self.layout.removeWidget(image)
         self.update_row_count(self.size().width())
@@ -111,17 +98,11 @@ class GridView(QScrollArea):
         self.update_layout()
         
     def set_draw_settings(self, draw_settings):
-        """
-        Set scale factor.
-
-        """
+        """Set scale factor."""
         self._draw_settings = draw_settings
 
     def update_cross_pos(self):
-        """
-        Set crosshair coordinate as a new value.
-
-        """
+        """Set crosshair coordinate as a new value."""
         old_slice = self._cross_pos[2]
         self._cross_pos = self._model.get_cross_pos()
         self.image_labels[old_slice].repaint()

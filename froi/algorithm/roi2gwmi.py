@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
 #code by Dangxiaobin at 2013-11-28
 
 """
@@ -10,17 +11,13 @@ import time as time
 from scipy.spatial import distance as ds
 
 def is_inside(v, shape):
-    """
-    Check whether the coordinate is inside the shaped volume.
-    """
+    """Check whether the coordinate is inside the shaped volume."""
     return ((v[0] >= 0) & (v[0] < shape[0]) &
             (v[1] >= 0) & (v[1] < shape[1]) &
             (v[2] >= 0) & (v[2] < shape[2]))
     
 def get_neighbors(coor,radius,shape):
-    """
-    Get the neighbor coordinates with in radius cube.
-    """
+    """Get the neighbor coordinates with in radius cube."""
     neighbors = []
     offsets = []
    
@@ -49,9 +46,7 @@ def get_neighbors(coor,radius,shape):
     return neighbors   
 
 def get_neighbors_surface(coor,radius,shape):
-    """
-    Get the cube surface. 
-    """
+    """Get the cube surface."""
     neigh = []
     if radius <=0:
         return neigh
@@ -65,8 +60,8 @@ def get_neighbors_surface(coor,radius,shape):
         return neigh
 
 def roi_to_gwmi(img,brain_wm,nth):
-    """
-    Transform the functional roi to wm.
+    """Transform the functional roi to wm.
+
     Algorithm: find the nearest wm voxel.
     """
     #st = time.time()
@@ -137,8 +132,8 @@ def roi_to_gwmi(img,brain_wm,nth):
     return result_mask
 
 def roi_to_gwmi_1(img,brain_wm):
-    """
-    Transform the functional roi to wm.
+    """ Transform the functional roi to wm.
+
     Algorithm: find the nearest wm voxel.
     """
     #st = time.time()
@@ -219,7 +214,7 @@ def roi_to_gwmi_1(img,brain_wm):
 
 
 def roi_projection(img,roi,dis_th,val_th,mode):
-    
+    """Roi projection."""
     #st = time.time()
     data = img
     

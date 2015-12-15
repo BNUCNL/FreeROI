@@ -7,17 +7,11 @@ from drawsettings import DrawSettings
 from addlabeldialog import *
 
 class LabelEditDialog(QDialog, DrawSettings):
-    """
-    A dialog window for label selection.
-
-    """
+    """A dialog window for label selection."""
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
     def __init__(self, label_model, label_configs, parent=None):
-        """
-        Initialize a dialog widget.
-
-        """
+        """Initialize a dialog widget."""
         super(LabelEditDialog, self).__init__(parent)
         self._label_model = label_model
         self._label_configs = label_configs
@@ -25,10 +19,7 @@ class LabelEditDialog(QDialog, DrawSettings):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         self.setWindowModality(Qt.NonModal)
 
         self.list_view = QListView(self)
@@ -55,10 +46,7 @@ class LabelEditDialog(QDialog, DrawSettings):
         self.setLayout(vbox_layout)
 
     def _create_actions(self):
-        """
-        Create some actions.
-
-        """
+        """Create some actions."""
         self.add_btn.clicked.connect(self._add_label)
         self.del_btn.clicked.connect(self._del_label)
         self.edit_btn.clicked.connect(self._edit_label)
@@ -72,10 +60,7 @@ class LabelEditDialog(QDialog, DrawSettings):
             self.edit_btn.setEnabled(True)
 
     def _add_label(self):
-        """
-        Add a new label.
-
-        """
+        """Add a new label."""
         add_dialog = AddLabelDialog(self._label_configs)
         add_dialog.setWindowTitle("Add a new label")
         add_dialog.exec_()
@@ -90,10 +75,7 @@ class LabelEditDialog(QDialog, DrawSettings):
             self._update_button_status()
 
     def _del_label(self):
-        """
-        Delete a existing label.
-
-        """
+        """Delete a existing label."""
         row = self.list_view.currentIndex().row()
         if row == -1 and self._label_model.rowCount() > 0:
             row = self._label_model.rowCount() - 1

@@ -9,10 +9,7 @@ from PyQt4.QtGui import *
 from scipy.ndimage import morphology
 
 class GreyerosionDialog(QDialog):
-    """
-    A dialog for action of greyerosion.
-
-    """
+    """A dialog for action of greyerosion."""
     def __init__(self, model, parent=None):
         super(GreyerosionDialog, self).__init__(parent)
         self._model = model
@@ -21,10 +18,7 @@ class GreyerosionDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Greyerosion")
 

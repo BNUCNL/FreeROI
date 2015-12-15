@@ -5,6 +5,7 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import imtool
 
+
 class Edge_detectionDialog(QDialog):
     """
     A dialog for action of edge_detection.

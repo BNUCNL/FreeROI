@@ -5,10 +5,7 @@
 
 
 class PainterStatus(object):
-    """
-    Use the Stragety pattern.
-
-    """
+    """Use the Stragety pattern."""
     def __init__(self, draw_settings):
         self.draw_settings = draw_settings
 
@@ -49,10 +46,7 @@ class PainterStatus(object):
         return self.draw_settings.get_drawing_color()
 
 class DrawSettings(object):
-    """
-    Settings for cursor status.
-
-    """
+    """Settings for cursor status."""
     def is_view(self):
         return False
     
