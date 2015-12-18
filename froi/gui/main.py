@@ -1,27 +1,23 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Graphic User Interface.
 
-"""
+"""Graphic User Interface."""
 
 import sys
 import os
-import ConfigParser
 import glob
-import froi as src_pkg
 
-from froi.version import __version__
-
+import ConfigParser
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+from froi.version import __version__
 from base.labelconfig import LabelConfig
 from base.utils import get_icon_dir
 from component.listwidget import LayerView
 from component.gridwidget import GridView
 from component.orthwidget import OrthView
 from component.datamodel import VolumeListModel
-from component.imagelabel import ImageLabel
 from component.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from component.binarizationdialog import BinarizationDialog
 from component.intersectdialog import IntersectDialog
@@ -49,6 +45,7 @@ from component.meants import MeanTSDialog
 from component.voxelstatsdialog import VoxelStatsDialog
 from component.registervolume import RegisterVolumeDialog
 
+
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
 
@@ -62,14 +59,10 @@ class BpMainWindow(QMainWindow):
     ......
     >>> win.show()
     >>> app.exec_()
-
     """
 
     def __init__(self, parent=None):
-        """
-        Initialize an instance of BpMainWindow.
-        
-        """
+        """Initialize an instance of BpMainWindow."""
         # Inherited from QMainWindow
         if sys.platform == 'darwin':
             # Workaround for Qt issue on OSX that causes QMainWindow to
@@ -88,10 +81,7 @@ class BpMainWindow(QMainWindow):
         self.model = None
 
     def config_extra_settings(self, data_dir):
-        """
-        Set data directory and update some configurations.
-
-        """
+        """Set data directory and update some configurations."""
         # load data directory configuration
         self.label_path = data_dir
         self.label_config_dir = os.path.join(self.label_path, 'labelconfig')
@@ -116,20 +106,14 @@ class BpMainWindow(QMainWindow):
         self._create_menus()
 
     def center(self):
-        """
-        Display main window in the center of screen
-
-        """
+        """Display main window in the center of screen."""
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
     def _init_configuration(self):
-        """
-        Load configuration for GUI.
-
-        """
+        """Load configuration for GUI."""
         config_file = os.path.expanduser('~/.froi.conf')
         if os.path.exists(config_file):
             config = ConfigParser.RawConfigParser()
@@ -151,10 +135,7 @@ class BpMainWindow(QMainWindow):
             self.default_grid_scale_factor = 2.0
 
     def _save_configuration(self):
-        """
-        Save GUI configuration to a file.
-
-        """
+        """Save GUI configuration to a file."""
         config_file = os.path.expanduser('~/.freeroi.conf')
 
         config = ConfigParser.RawConfigParser()
@@ -188,10 +169,7 @@ class BpMainWindow(QMainWindow):
         e.accept()
 
     def _create_actions(self):
-        """
-        Create actions.
-
-        """
+        """Create actions."""
         # create a dictionary to store actions info
         self._actions = {}
 
@@ -520,10 +498,7 @@ class BpMainWindow(QMainWindow):
 
 
     def _add_toolbar(self):
-        """
-        Add toolbar.
-
-        """
+        """Add toolbar."""
         # Initialize a spinbox for zoom-scale selection
         self._spinbox = QSpinBox()
         self._spinbox.setMaximum(500)
@@ -561,18 +536,12 @@ class BpMainWindow(QMainWindow):
         self._toolbar.addWidget(self._spinbox)
 
     def _set_scale_factor(self, value):
-        """
-        Set scale factor.
-
-        """
+        """Set scale factor."""
         value = float(value) / 100
         self.model.set_scale_factor(value, self.image_view.display_type())
 
     def _add_template(self):
-        """
-        Open a dialog window and select a template file.
-
-        """
+        """Open a dialog window and select a template file."""
         template_dir = os.path.join(self.label_path, 'standard',
                                     'MNI152_T1_2mm_brain.nii.gz')
         template_name = QFileDialog.getOpenFileName(
@@ -588,10 +557,7 @@ class BpMainWindow(QMainWindow):
             self._add_img(template_path)
 
     def _add_image(self):
-        """
-        Add new item.
-
-        """
+        """Add new item."""
         if self._temp_dir == None:
             temp_dir = QDir.currentPath()
         else:
@@ -608,10 +574,7 @@ class BpMainWindow(QMainWindow):
             self._add_img(file_path)
 
     def _duplicate_image(self):
-        """
-        Duplicate image.
-
-        """
+        """Duplicate image."""
         index = self.model.currentIndex()
         dup_img = self.model._data[index.row()].duplicate()
         self.model.insertRow(0, dup_img)
@@ -622,10 +585,7 @@ class BpMainWindow(QMainWindow):
         
     def _add_img(self, source, name=None, header=None, view_min=None,
                  view_max=None, alpha=255, colormap='gray'):
-        """
-        Add image.
-
-        """
+        """ Add image."""
         # If model is NULL, then re-initialize it.
         if not self.model:
             self._init_label_config_center()
@@ -713,19 +673,18 @@ class BpMainWindow(QMainWindow):
                 register_volume_dialog.exec_()
 
     def __new_image(self):
+        """Create new image."""
         self._new_image()
 
     def _update_remove_image(self):
+        """Update the display after removing an image."""
         if self.model.rowCount() == 1:
             self._actions['remove_image'].setEnabled(False)
         else:
             self._actions['remove_image'].setEnabled(True)
 
     def _new_image(self, data=None, name=None, colormap=None):
-        """
-        Create a new volume for brain parcellation.
-
-        """
+        """Create a new volume for brain parcellation."""
         if colormap is None:
             colormap = self._label_config_center.get_first_label_config()
         self.model.new_image(data, name, None, colormap)
@@ -735,23 +694,18 @@ class BpMainWindow(QMainWindow):
         self._actions['remove_image'].setEnabled(True)
 
     def new_image_action(self):
+        """Change the related status of other actions after creating an image."""
         self._actions['remove_image'].setEnabled(True)
 
     def _remove_image(self):
-        """
-        Remove current image.
-
-        """
+        """Remove current image."""
         row = self.list_view.currentRow()
         self.model.delItem(row)
         if self.model.rowCount() == 1:
             self._actions['remove_image'].setEnabled(False)
 
     def _save_image(self):
-        """
-        Save image as a nifti file.
-
-        """
+        """Save image as a nifti file."""
         index = self.model.currentIndex()
         if not self._temp_dir:
             temp_dir = str(QDir.currentPath())
@@ -779,10 +733,7 @@ class BpMainWindow(QMainWindow):
             self.model._data[index.row()].save2nifti(path)
 
     def _close_display(self):
-        """
-        Close current display.
-
-        """
+        """Close current display."""
         self.setCentralWidget(QWidget())
         self._set_scale_factor(self.default_grid_scale_factor)
         self.removeToolBar(self._toolbar)
@@ -804,10 +755,7 @@ class BpMainWindow(QMainWindow):
         self._functional_module_set_enabled(False)
 
     def _about_freeroi(self):
-        """
-        About software.
-
-        """
+        """ About software."""
         QMessageBox.about(self, self.tr("About FreeROI"),
                           self.tr("<p><b>FreeROI</b> is a versatile image "
                                   "processing software developed for "
@@ -899,10 +847,7 @@ class BpMainWindow(QMainWindow):
         self.help_menu.addAction(self._actions['about_qt'])
 
     def _cursor_enable(self):
-        """
-        Cursor enabled.
-
-        """
+        """Cursor enabled."""
         if self._actions['cursor'].isChecked():
             self._actions['cursor'].setChecked(True)
             if isinstance(self.image_view, OrthView):
@@ -917,26 +862,21 @@ class BpMainWindow(QMainWindow):
             self._actions['cursor'].setChecked(True)
 
     def _voxel_edit_enable(self):
-        """
-        Brush enabled.
-
-        """
+        """Brush enabled."""
         self._label_config_center.set_is_roi_edit(False)
         self.painter_status.set_draw_settings(self._label_config_center)
         self.image_view.set_cursor(Qt.CrossCursor)
         self.image_view.set_label_mouse_tracking(False)
 
     def _roi_edit_enable(self):
-        """
-        ROI brush enabled.
-
-        """
+        """ROI brush enabled."""
         self._label_config_center.set_is_roi_edit(True)
         self.painter_status.set_draw_settings(self._label_config_center)
         self.image_view.set_cursor(Qt.CrossCursor)
         self.image_view.set_label_mouse_tracking(False)
 
     def _roidialog_enable(self):
+        """ROI dialog enabled."""
         if self._actions['edit'].isChecked():
             self._actions['cursor'].setChecked(False)
             if isinstance(self.image_view, OrthView):
@@ -948,9 +888,7 @@ class BpMainWindow(QMainWindow):
             self._actions['edit'].setChecked(True)
 
     def _atlas_dialog(self):
-        """
-        Atlas information
-        """
+        """Atlas information dialog."""
         if 'atlasdialog' in self.__dict__:
             self.atlasdialog.show()
         else:
@@ -958,19 +896,18 @@ class BpMainWindow(QMainWindow):
             self.atlasdialog.show()
 
     def _roi_batch_enable(self):
+        """ROI batch enabled."""
         self.image_view.set_label_mouse_tracking(False)
         self._label_config_center.set_is_roi_edit(False)
         self.painter_status.set_draw_settings(self.roidialog)
 
     def _roidialog_disable(self):
+        """Disable the roi dialog."""
         self.roidialog.hide()
         self._actions['edit'].setChecked(False)
 
     def _hand_enable(self):
-        """
-        Hand enabled.
-
-        """
+        """Hand enabled."""
         if self._actions['hand'].isChecked():
             self._actions['cursor'].setChecked(False)
             self._actions['hand'].setChecked(True)
@@ -985,26 +922,26 @@ class BpMainWindow(QMainWindow):
             self._actions['hand'].setChecked(True)
 
     def _switch_cursor_status(self):
+        """Change the cursor status."""
         self._actions['cursor'].setChecked(True)
         self._cursor_enable()
 
     def _update_undo(self):
+        """Update the undo status."""
         if self.model.current_undo_available():
             self._actions['undo'].setEnabled(True)
         else:
             self._actions['undo'].setEnabled(False)
 
     def _update_redo(self):
+        """Update the redo status."""
         if self.model.current_redo_available():
             self._actions['redo'].setEnabled(True)
         else:
             self._actions['redo'].setEnabled(False)
 
     def _init_roi_dialog(self):
-        """
-        Initialize ROI Dialog
-
-        """
+        """Initialize ROI Dialog."""
         self._actions['label_management'].setEnabled(False)
         self.roidialog = ROIDialog(self.model, self._label_config_center, self)
         self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
@@ -1014,10 +951,7 @@ class BpMainWindow(QMainWindow):
                 self.roidialog.clear_rois)
 
     def _init_label_config_center(self):
-        """
-        Initialize LabelConfigCenter
-
-        """
+        """Initialize LabelConfigCenter."""
         lbl_path = os.path.join(self.label_config_dir,
                                 '*.' + self.label_config_suffix)
         label_configs = glob.glob(lbl_path)
@@ -1041,10 +975,7 @@ class BpMainWindow(QMainWindow):
         self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 
     def _get_label_config(self, file_path):
-        """
-        Get label config file.
-
-        """
+        """Get label config file."""
         # Get label config file
         dir = os.path.dirname(file_path)
         file = os.path.basename(file_path)
@@ -1060,35 +991,44 @@ class BpMainWindow(QMainWindow):
         return label_config
 
     def _undo(self):
+        """The undo action."""
         self.model.undo_current_image()
 
     def _redo(self):
+        """The redo action."""
         self.model.redo_current_image()
 
     def _regular_roi(self):
+        """Generate regular(cube, sphere, etc.)  roi dialog."""
         regular_roi_dialog = RegularROIDialog(self.model)
         regular_roi_dialog.exec_()
 
     def _edge_detection(self):
+        """Detect the image edge."""
         edge_detection(self.model)
 
     def _roi_merge(self):
+        """ROI merge dialog."""
         new_dialog = ROIMergeDialog(self.model)
         new_dialog.exec_()
 
     def _r2i(self):
+        """ROI to gwmi dialog."""
         new_dialog = Roi2gwmiDialog(self.model)
         new_dialog.exec_()
 
     def _opening(self):
+        """Opening Dialog which using the opening algorithm to process the image."""
         new_dialog = OpenDialog(self.model)
         new_dialog.exec_()
 
     def _voxelstats(self):
+        """Voxel statistical analysis dialog."""
         new_dialog = VoxelStatsDialog(self.model, self)
         new_dialog.show()
 
     def _label_manage(self):
+        """Label management dialog."""
         self.label_manage_dialog = LabelManageDialog(self.label_configs,
                                                      self._list_view_model,
                                                      self._label_models,
@@ -1098,6 +1038,7 @@ class BpMainWindow(QMainWindow):
         self.label_manage_dialog.exec_()
 
     def _ld_lbl(self):
+        """Local label config file."""
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Load Label File',
                                                 QDir.currentPath(),
@@ -1107,6 +1048,7 @@ class BpMainWindow(QMainWindow):
             self.model.set_cur_label(label_config)
 
     def _ld_glbl(self):
+        """Local global label config file."""
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Load Label File',
                                                 QDir.currentPath(),
@@ -1116,10 +1058,7 @@ class BpMainWindow(QMainWindow):
             self.model.set_global_label(label_config)
 
     def _grid_view(self):
-        """
-        Grid view option.
-
-        """
+        """Grid view option."""
         self._actions['grid_view'].setEnabled(False)
         self._actions['orth_view'].setEnabled(True)
         self._actions['hand'].setEnabled(False)
@@ -1138,11 +1077,7 @@ class BpMainWindow(QMainWindow):
         self.centralWidget().layout().addWidget(self.image_view)
 
     def _orth_view(self):
-        """
-        Orth view option.
-        """
-
-
+        """Orth view option."""
         self._actions['orth_view'].setEnabled(False)
         self._actions['grid_view'].setEnabled(True)
         self._actions['snapshot'].setEnabled(True)
@@ -1162,6 +1097,7 @@ class BpMainWindow(QMainWindow):
         self.centralWidget().layout().addWidget(self.image_view)
 
     def _display_cross_hover(self):
+        """Display the cross hover on the image."""
         if self.model._display_cross:
             self.model.set_cross_status(False)
             self._actions['cross_hover_view'].setText('Enable cross hover')
@@ -1172,10 +1108,7 @@ class BpMainWindow(QMainWindow):
             self._actions['cross_hover_view'].setIcon(QIcon(os.path.join(self._icon_dir,'cross_hover_enable.png')))
 
     def _reset_view(self):
-        """
-        Reset view parameters.
-
-        """
+        """Reset view parameters."""
         if self.image_view.display_type() == 'orth':
             if not self.model.get_scale_factor('orth') == \
                     self.default_orth_scale_factor:
@@ -1187,61 +1120,76 @@ class BpMainWindow(QMainWindow):
                 self._spinbox.setValue(100 * self.default_grid_scale_factor)
 
     def _binarization(self):
+        """Image binarization dialog."""
         binarization_dialog = BinarizationDialog(self.model)
         binarization_dialog.exec_()
 
     def _binaryerosion(self):
+        """Image binaryerosion dialog."""
         binaryerosion_dialog = BinaryerosionDialog(self.model)
         binaryerosion_dialog.exec_()
 
     def _binarydilation(self):
+        """Image binarydilation dialog."""
         binarydilation_dialog = BinarydilationDialog(self.model)
         binarydilation_dialog.exec_()
 
     def _greyerosion(self):
+        """Image greyerosion dialog."""
         greyerosiondialog = GreyerosionDialog(self.model)
         greyerosiondialog.exec_()
 
     def _greydilation(self):
+        """Image greydilation dialog."""
         greydilation_dialog = GreydilationDialog(self.model)
         greydilation_dialog.exec_()
 
     def _intersect(self):
+        """Image intersect dialog."""
         intersect_dialog = IntersectDialog(self.model)
         intersect_dialog.exec_()
 
     def _meants(self):
+        """Image meants dialog."""
         new_dialog = MeanTSDialog(self.model)
         new_dialog.exec_()
 
     def _local_max(self):
+        """Compute image local max value dialog."""
         new_dialog = LocalMaxDialog(self.model, self)
         new_dialog.exec_()
 
     def _inverse(self):
+        """Inverse the given image."""
         inverse_image(self.model)
 
     def _smooth(self):
+        """Image smooth dialog."""
         new_dialog = SmoothingDialog(self.model)
         new_dialog.exec_()
 
     def _region_grow(self):
+        """Image region grow dialog."""
         new_dialog = GrowDialog(self.model, self)
         new_dialog.exec_()
 
     def _watershed(self):
+        """Image watershed dialog."""
         new_dialog = WatershedDialog(self.model, self)
         new_dialog.exec_()
 
     def _slic(self):
+        """Image supervoxel segmentation dialog."""
         new_dialog = SLICDialog(self.model, self)
         new_dialog.exec_()
 
     def _cluster(self):
+        """Image cluster dialog."""
         new_dialog = ClusterDialog(self.model, self)
         new_dialog.exec_()
 
     def _functional_module_set_enabled(self, status):
+        """Enable the actions."""
         self._actions['binarization'].setEnabled(status)
         self._actions['intersect'].setEnabled(status)
         self._actions['meants'].setEnabled(status)
@@ -1266,9 +1214,6 @@ class BpMainWindow(QMainWindow):
         self._actions['roi_merge'].setEnabled(status)
 
     def _snapshot(self):
-        """
-        Capture images from OrthView.
-
-        """
+        """Capture images from OrthView."""
         self.image_view.save_image()
 

@@ -4,16 +4,14 @@ __author__ = 'zhouguangfu'
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
 import numpy as np
 from scipy.ndimage import morphology
+
 from froi.algorithm import imtool
 
-class BinarydilationDialog(QDialog):
-    """
-    A dialog for action of binarydilation.
 
-    """
+class BinarydilationDialog(QDialog):
+    """A dialog for action of binarydilation."""
     def __init__(self, model, parent=None):
         super(BinarydilationDialog, self).__init__(parent)
         self._model = model
@@ -22,10 +20,7 @@ class BinarydilationDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Binarydilation")
 

@@ -9,6 +9,7 @@ from skimage import morphology as skmorph
 from scipy.spatial import distance
 
 def mesh_3d_grid(x, y, z):
+    """Create the 3D mesh grid."""
     x = np.asarray(x)
     y = np.asarray(y)
     z = np.asarray(z)
@@ -25,18 +26,20 @@ def mesh_3d_grid(x, y, z):
     return X, Y, Z
 
 def ball(radius, dtype=np.uint8):
-    """Generate a ball structure element"""
+    """Generate a ball structure element."""
     L = np.linspace(-radius, radius, 2*radius+1)
     X, Y, Z = mesh_3d_grid(L, L, L)
     s = X**2 + Y**2 + Z**2
     return np.array(s <= radius * radius, dtype=dtype)
 
 def opening(src, r=2):
+    """Using the opening image algrithm to process the src image."""
     se = ball(r)
     result = nd.grey_opening(src, footprint=se)
     return result
 
 def local_maximum(data, dist=1):
+    """Generate the local maxinum value in image."""
     lmax = np.zeros(data.shape)
     p = skft.peak_local_max(data, dist).T
     p = (np.array(p[0]), np.array(p[1]), np.array(p[2]))
@@ -44,6 +47,7 @@ def local_maximum(data, dist=1):
     return lmax
 
 def roi_filtering(src, ref):
+    """Filter the value using the given ref image."""
     mask = ref > 0
     all_roi = np.unique(src[mask])
     result = np.zeros(src.shape)
@@ -52,10 +56,7 @@ def roi_filtering(src, ref):
     return result
 
 def sphere_roi(data, x, y, z, radius, value):
-    """
-    Generate a sphere roi which center in (x, y, z).
-
-    """
+    """Generate a sphere roi which center in (x, y, z)."""
     for n_x in range(x - radius, x + radius + 1):
         for n_y in range(y - radius, y + radius + 1):
             for n_z in range(z - radius, z + radius + 1):
@@ -75,10 +76,7 @@ def sphere_roi(data, x, y, z, radius, value):
     return data
 
 def cube_roi(data, x, y, z, radius, value):
-    """
-    Generate a cube roi which center in (x, y, z).
-
-    """
+    """Generate a cube roi which center in (x, y, z)."""
     for n_x in range(x - radius, x + radius + 1):
         for n_y in range(y - radius, y + radius + 1):
             for n_z in range(z - radius, z + radius + 1):
@@ -91,19 +89,18 @@ def cube_roi(data, x, y, z, radius, value):
     return data
 
 def nonzero_coord(data):
-    """
-    Return all non-zero voxels' coordinate.
-
-    """
+    """Return all non-zero voxels' coordinate."""
     x, y, z = np.nonzero(data)
     coord_list = zip(x, y, z)
     value_list = [data[coord] for coord in coord_list]
     return coord_list, value_list
 
 def binaryzation(data,threshold):
+    """Image binaryzation with the given threshold"""
     return (data > threshold).astype(int)
 
 def multi_label_edge_detection(data):
+    """Detect the edge in the image with multi-labels."""
     f = nd.generate_binary_structure(len(data.shape), 1)
     # the unwanted thick bounds
     bound = (nd.grey_erosion(data,footprint=f) != \
@@ -113,16 +110,11 @@ def multi_label_edge_detection(data):
     return data
 
 def inverse_transformation(data):
-    """
-    Return a inverted image.
-    """
+    """Return a inverted image."""
     return -data
 
 def cluster_labeling(data, threshold, conn=2):
-    """
-    Label different clusters in an image.
-
-    """
+    """Label different clusters in an image."""
     temp = data.copy()
     temp[temp <= threshold] = 0
     temp[temp > threshold] = 1
@@ -131,18 +123,14 @@ def cluster_labeling(data, threshold, conn=2):
     return labeled_array
 
 def gaussian_smoothing(data, sigma):
-    """
-    Gaussian smoothing.
-
-    """
+    """Gaussian smoothing."""
     data = nd.gaussian_filter(data, sigma)
     return data
 
 def intersect(source, mask):
-    """
-    An intersection action, return a new numpy array. New array will preserve
-    the source data value, and mask data will be binaried as a `mask`.
+    """An intersection action, return a new numpy array.
 
+    New array will preserve the source data value, and mask data will be binaried as a `mask`.
     """
     # binary mask data
     mask[mask > 0] = 1
@@ -151,6 +139,7 @@ def intersect(source, mask):
     return temp
 
 def merge(a, b):
+    """Merge the image a and image b. Return the merged image."""
     a_mask = a > 0
     b_mask = b > 0
     if len((a_mask & b_mask).nonzero()[0]) > 0:
@@ -159,10 +148,7 @@ def merge(a, b):
     return c
 
 def nearest_labeling(src, tar):
-    """
-    For each temp voxel assigns the value of it's closest seed voxel
-
-    """
+    """For each temp voxel assigns the value of it's closest seed voxel."""
     srcn = src.nonzero()
     tarn = tar.nonzero()
     srcn_coord = np.column_stack((srcn[0], srcn[1], srcn[2]))
@@ -173,6 +159,7 @@ def nearest_labeling(src, tar):
     return tar
 
 def region_grow(seed, source, labeling=False):
+    """The region growing algrithm."""
     temp = source.copy()
     labels, n_labels = nd.label(seed)
     mask = source > 0
@@ -184,10 +171,7 @@ def region_grow(seed, source, labeling=False):
     return temp
 
 def extract_mean_ts(source, mask):
-    """
-    Extract mean time course in a mask from source image.
-
-    """
+    """Extract mean time course in a mask from source image."""
     mask[mask > 0] = 1
     mask[mask < 0] = 0
     src_dim = len(source.shape)
@@ -205,10 +189,7 @@ def extract_mean_ts(source, mask):
     return data
 
 def voxel_number(source_data, voxel_value):
-    """
-    Compute the voxel number which voxel value equal to #voxel_value#.
-
-    """
+    """Compute the voxel number which voxel value equal to #voxel_value#."""
     if voxel_value:
         source_data[source_data!=voxel_value] = 0
         source_data[source_data==voxel_value] = 1
@@ -220,11 +201,7 @@ def voxel_number(source_data, voxel_value):
         return whole_voxel_num - source_data.sum()
 
 def cluster_stats(source_data, cluster_data):
-    """
-    Get the cluster size, and the peak value, coordinate based on the
-    #source_data#.
-
-    """
+    """Get the cluster size, and the peak value, coordinate based on the#source_data."""
     if not source_data.shape == cluster_data.shape:
         print 'Inconsistent data shape.'
         return

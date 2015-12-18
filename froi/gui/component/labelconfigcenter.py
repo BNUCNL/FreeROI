@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 
+
 # class ConfigLabelModel(QAbstractListModel):
 #     """
 #     Model for label config list view.
@@ -48,10 +49,7 @@ from drawsettings import DrawSettings
 #         self.dataChanged.emit(index, index)
 
 class LabelConfigCenter(QGroupBox, DrawSettings):
-    """
-    A Qwidget for label config chooser.
-
-    """
+    """A Qwidget for label config chooser."""
     single_roi_view_update = pyqtSignal()
     single_roi_view_update_for_model = pyqtSignal()
 
@@ -76,10 +74,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         return self.label_configs[0]
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         self.config_combobox = QComboBox()
         self.config_combobox.setModel(self._list_view_model)
         # self.config_combobox.addItems(self.config_names)

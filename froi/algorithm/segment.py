@@ -8,10 +8,12 @@ import skimage.morphology as skmorph
 from imtool import inverse_transformation
 
 def distance_transformation(data):
+    """Euclidean distance transformation."""
     dist = ndimage.distance_transform_edt(data)
     return -dist
 
 def gradient_transformation(data):
+    """Gradient distance transformation."""
     gx = ndimage.sobel(data, 0)
     gy = ndimage.sobel(data, 1)
     gz = ndimage.sobel(data, 2)
@@ -19,6 +21,7 @@ def gradient_transformation(data):
     return grad
 
 def watershed(data, sigma, thresh, seeds=None, sfx=inverse_transformation):
+    """The implementation of watershed algorithm."""
     thresh = thresh > 0 and thresh
     if thresh == 0:
         mask = data > thresh 
@@ -41,8 +44,7 @@ def watershed(data, sigma, thresh, seeds=None, sfx=inverse_transformation):
     return markers, seg_input, result
 
 def is_local_maximum(image, labels=None, footprint=None):
-    """
-    Return a boolean array of points that are local maxima
+    """Return a boolean array of points that are local maxima
  
     Parameters
     ----------

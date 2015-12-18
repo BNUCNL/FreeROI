@@ -7,10 +7,7 @@ from PyQt4.QtGui import *
 from skimage.segmentation import slic
 
 class SLICDialog(QDialog):
-    """
-    A dialog for SLIC options
-
-    """
+    """A dialog for SLIC options."""
 
     def __init__(self, model, main_win, parent=None):
         super(SLICDialog, self).__init__(parent)

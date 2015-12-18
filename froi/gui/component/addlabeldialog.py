@@ -5,10 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 class AddLabelDialog(QDialog):
-    """
-    A dialog for adding a new label.
-
-    """
+    """A dialog for adding a new label."""
     def __init__(self, label_configs, edit_label=None, parent=None):
         super(AddLabelDialog, self).__init__(parent)
         self._edit_label = edit_label
@@ -110,10 +107,7 @@ class AddLabelDialog(QDialog):
             return None
 
 class ColorButton(QPushButton):
-    """
-    Button to choose color from a color dialog.
-
-    """
+    """Button to choose color from a color dialog."""
     default_color = QColor(255, 0, 0)
     icon_size = QSize(32, 32)
     color_changed = pyqtSignal(QColor)

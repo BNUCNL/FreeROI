@@ -1,8 +1,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import os
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -17,11 +15,9 @@ from no_gui_tools import inverse_image
 from smoothingdialog import SmoothingDialog
 from binarizationdialog import BinarizationDialog
 
-class BasicWidget(QDialog):
-    """
-    Model for tools tabwidget.
 
-    """
+class BasicWidget(QDialog):
+    """Model for tools tabwidget."""
 
     def __init__(self, model, main_win, parent=None):
         super(BasicWidget, self).__init__(parent)
@@ -33,9 +29,7 @@ class BasicWidget(QDialog):
         self._model = model
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-        """
+        """Initialize GUI."""
         self.grow_button = QPushButton()
         self.grow_button.setFocusPolicy(Qt.NoFocus)
         self.grow_button.setIcon(QIcon(os.path.join(self._icon_dir,
@@ -111,9 +105,7 @@ class BasicWidget(QDialog):
         gridlayout.addWidget(self.smooth_button, 2, 2)
 
     def _create_actions(self):
-        """
-        Create actions about the toobar
-        """
+        """Create actions about the toobar."""
         self.grow_button.clicked.connect(self._grow_clicked)
         self.watershed_button.clicked.connect(self._watershed_clicked)
         self.slic_button.clicked.connect(self._slic_clicked)
@@ -125,51 +117,35 @@ class BasicWidget(QDialog):
         self.smooth_button.clicked.connect(self._smooth_clicked)
 
     def _grow_clicked(self):
-        """
-        region growing clicked
-
-        """
+        """Region growing clicked."""
         if self.grow_button.isEnabled():
             new_dialog = GrowDialog(self._model, self._main_win)
             new_dialog.exec_()
 
     def _watershed_clicked(self):
-        """
-        watershed clicked
-
-        """
+        """Watershed clicked"""
         if self.watershed_button.isEnabled():
             new_dialog = WatershedDialog(self._model, self)
             new_dialog.exec_()
 
     def _slic_clicked(self):
-        """
-        supervoxel clicked
-
-        """
+        """Supervoxel clicked."""
         if self.slic_button.isEnabled():
             new_dialog = SLICDialog(self._model, self)
             new_dialog.exec_()
 
     def _cluster_clicked(self):
-        """
-        Run cluster labeling.
-
-        """
+        """Run cluster labeling."""
         new_dialog = ClusterDialog(self._model)
         new_dialog.exec_()
 
     def _localmax_clicked(self):
-        """
-        Localmax button clicked
-        """
+        """Localmax button clicked."""
         new_dialog = LocalMaxDialog(self._model, self._main_win)
         new_dialog.exec_()
 
     def _intersect_clicked(self):
-        """
-        Make a intersection between two layers.
-        """
+        """Make a intersection between two layers."""
         new_dialog = IntersectDialog(self._model)
         new_dialog.exec_()
 

@@ -13,18 +13,12 @@ from addlabelgroupdialog import AddLabelGroupDialog
 
 
 class LabelManageDialog(QDialog, DrawSettings):
-    """
-    A dialog window for label selection.
-
-    """
+    """A dialog window for label selection."""
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
     def __init__(self,label_configs, list_view_model, label_models, label_config_dir,
                  label_config_suffix, parent=None):
-        """
-        Initialize a dialog widget.
-
-        """
+        """Initialize a dialog widget."""
         super(LabelManageDialog, self).__init__(parent)
         self._label_configs = label_configs
         self._label_config_dir = label_config_dir
@@ -36,10 +30,7 @@ class LabelManageDialog(QDialog, DrawSettings):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         self.setWindowTitle('Label Management')
         self.combobox = QComboBox()
 
@@ -67,10 +58,7 @@ class LabelManageDialog(QDialog, DrawSettings):
         self.setLayout(vbox_layout)
 
     def _create_actions(self):
-        """
-        Create some actions.
-
-        """
+        """Create some actions."""
         self.add_btn.clicked.connect(self._add_label)
         self.del_btn.clicked.connect(self._del_label)
         self.edit_btn.clicked.connect(self._edit_label)
@@ -91,10 +79,7 @@ class LabelManageDialog(QDialog, DrawSettings):
 
 
     def _add_label(self):
-        """
-        Add a new label.
-
-        """
+        """Add a new label."""
         add_label_group_dialog = AddLabelGroupDialog(self)
         add_label_group_dialog.setWindowTitle("Enter a label group name.")
         add_label_group_dialog.exec_()
@@ -120,10 +105,7 @@ class LabelManageDialog(QDialog, DrawSettings):
             self._update_button_status()
 
     def _del_label(self):
-        """
-        Delete a existing label.
-
-        """
+        """Delete a existing label."""
         row = self.list_view.currentIndex().row()
         if row == -1 and self._list_view_model.rowCount() > 0:
             row = self._list_view_model.rowCount() - 1

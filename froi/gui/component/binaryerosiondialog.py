@@ -5,16 +5,14 @@ __author__ = 'zhouguangfu'
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
 import numpy as np
 from scipy.ndimage import morphology
+
 from froi.algorithm import imtool
 
-class BinaryerosionDialog(QDialog):
-    """
-    A dialog for action of binaryerosion.
 
-    """
+class BinaryerosionDialog(QDialog):
+    """A dialog for action of binaryerosion."""
     def __init__(self, model, parent=None):
         super(BinaryerosionDialog, self).__init__(parent)
         self._model = model
@@ -23,10 +21,7 @@ class BinaryerosionDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Binaryerosion")
 

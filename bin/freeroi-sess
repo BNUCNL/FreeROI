@@ -1,15 +1,16 @@
 #! /bin/env python
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Main application for FreeROI GUI.
 
-"""
+"""Main application for FreeROI GUI."""
+
 import os
 import sys
 import argparse
 import subprocess
 
 def main():
+    """Main entrance for batch processing of freeroi."""
     parser = argparse.ArgumentParser(description='FreeROI for batch processing')
 
     parser.add_argument('-df',

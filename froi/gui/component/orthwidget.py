@@ -10,16 +10,11 @@ from PyQt4.QtGui import *
 
 from imagelabel import (SagittalImageLabel, AxialImageLabel, CoronalImageLabel)
 
+
 class OrthView(QWidget):
-    """
-    Implementation a widget for image display in a orthographic style.
-
-    """
+    """Implementation a widget for image display in a orthographic style."""
     def __init__(self, model=None, draw_settings=None, parent=None):
-        """
-        Initialize the widget.
-
-        """
+        """Initialize the widget."""
         super(OrthView, self).__init__(parent)
 
         self._model = model
@@ -83,58 +78,37 @@ class OrthView(QWidget):
         self._corlabel.setCursor(cursor_shape)
 
     def resize_item(self):
-        """
-        Resize label -- remove label from layout first, and re-fill it
-
-        """
+        """Resize label -- remove label from layout first, and re-fill it."""
         self.repaint()
 
     def set_draw_settings(self, draw_settings):
-        """
-        Set scale factor.
-
-        """
+        """Set scale factor."""
         self._draw_settings = draw_settings
 
     def update_cross_pos(self):
-        """
-        Set current coordinate as a new value.
-
-        """
+        """Set current coordinate as a new value."""
         self.repaint()
 
     def repaint(self):
-        """
-        repaint.
-
-        """
+        """Repaint."""
         self._saglabel.update_image()
         self._axilabel.update_image()
         self._corlabel.update_image()
 
     def reset_view(self):
-        """
-        Reset view.
-
-        """
+        """Reset view."""
         self._saglabel.pic_src_point = None
         self._axilabel.pic_src_point = None
         self._corlabel.pic_src_point = None
         self.repaint()
 
     def resizeEvent(self, e):
-        """
-        Reimplement the resize event.
-
-        """
+        """Reimplement the resize event."""
         self.set_expanding_factor()
         self.repaint()
 
     def save_image(self):
-        """
-        Save images from 3 different orientations.
-
-        """
+        """Save images from 3 different orientations."""
         self._saglabel.save_image()
         self._axilabel.save_image()
         self._corlabel.save_image()

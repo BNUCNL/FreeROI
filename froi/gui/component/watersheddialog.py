@@ -6,11 +6,9 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import segment
 
-class WatershedDialog(QDialog):
-    """
-    A dialog for watershed options
 
-    """
+class WatershedDialog(QDialog):
+    """A dialog for watershed options"""
 
     def __init__(self, model, main_win, parent=None):
         super(WatershedDialog, self).__init__(parent)

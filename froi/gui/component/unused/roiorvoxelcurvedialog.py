@@ -7,6 +7,7 @@ from PyQt4.QtGui import *
 
 from froi.gui.component.voxeltimepointcurvedialog import VoxelTimePointCurveDialog
 
+
 class ROIOrVoxelCurveDialog(QDialog):
     """
     A dialog for action of binarydilation.

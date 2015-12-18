@@ -3,11 +3,13 @@
 
 import sys
 import os
-import numpy
-import sipdistutils
 from distutils.core import setup, Extension
 
+import numpy
+
+import sipdistutils
 import PyQt4.pyqtconfig
+
 
 config = PyQt4.pyqtconfig.Configuration()
 

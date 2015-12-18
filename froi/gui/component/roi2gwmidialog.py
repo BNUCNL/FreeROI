@@ -8,10 +8,7 @@ from froi.algorithm import roi2gwmi as r2i
 
 
 class Roi2gwmiDialog(QDialog):
-    """
-    A dialog for action of intersection.
-
-    """
+    """A dialog for action of intersection."""
     def __init__(self, model, parent=None):
         super(Roi2gwmiDialog, self).__init__(parent)
         self._model = model
@@ -20,9 +17,7 @@ class Roi2gwmiDialog(QDialog):
         self._create_actions()
 
     def _init_gui(self):
-        """
-        Initialize GUI.
-        """
+        """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Project ROI to interface")
 

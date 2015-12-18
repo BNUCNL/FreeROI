@@ -5,10 +5,8 @@ and parameters alternating.
 
 """
 
-import os
 from numpy import array_equal
 from numpy import around
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -17,12 +15,11 @@ from toolstabwidget import ToolsTabWidget
 from basicwidget import BasicWidget
 from froi.gui.base.utils import *
 
+
 class LayerView(QWidget):
-    """
-    Implementation a widget for layer selection and parameters alternating.
+    """Implementation a widget for layer selection and parameters alternating.
 
     Inherits QWidget.
-
     """
     current_changed = pyqtSignal()
 
@@ -36,10 +33,7 @@ class LayerView(QWidget):
                         'single ROI']
 
     def __init__(self, label_config_center, parent=None):
-        """
-        Initialize the widget.
-
-        """
+        """Initialize the widget."""
         super(LayerView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setMaximumWidth(280)
@@ -50,10 +44,7 @@ class LayerView(QWidget):
         self._model = None
 
     def _init_gui(self):
-        """
-        Initialize a GUI designation.
-
-        """
+        """Initialize a GUI designation."""
         # initialize QListView
         self._list_view = QListView()
         
@@ -180,10 +171,7 @@ class LayerView(QWidget):
         self.layout().addWidget(self._unity_info_panel)
 
     def setModel(self, model):
-        """
-        Set model of the viewer.
-
-        """
+        """Set model of the viewer."""
         if isinstance(model, QAbstractListModel):
             self._model = model
             self._init_gui()
@@ -193,10 +181,7 @@ class LayerView(QWidget):
             raise ValueError('Input must be a ListModel!')
 
     def _create_actions(self):
-        """
-        Create several necessay actions.
-
-        """
+        """Create several necessay actions."""
         # When select one item, display specific parameters
         self._list_view.selectionModel().currentChanged.connect(
                                             self._disp_current_para)
@@ -243,18 +228,12 @@ class LayerView(QWidget):
         self._space_z.editingFinished.connect(self.set_space_pos)
 
     def _set_time_point(self):
-        """
-        Set time point for model.
-
-        """
+        """Set time point for model."""
         tpoint = self._volume_index_spinbox.value()
         self._model.set_time_point(tpoint)
 
     def _disp_current_para(self):
-        """
-        Display current model's parameters.
-
-        """
+        """Display current model's parameters."""
         index = self._list_view.currentIndex()
 
         if index.row() != -1:
@@ -303,10 +282,7 @@ class LayerView(QWidget):
             self._model.setSelectedIndexes()
         
     def _set_view_min(self):
-        """
-        Set current selected item's view_min value.
-
-        """
+        """Set current selected item's view_min value."""
         index = self._list_view.currentIndex()
         value = self._view_min.text()
         if value == '':
@@ -315,10 +291,7 @@ class LayerView(QWidget):
             self._model.setData(index, value, role=Qt.UserRole)
 
     def _set_view_max(self):
-        """
-        Set current selected item's view_max value.
-
-        """
+        """Set current selected item's view_max value."""
         index = self._list_view.currentIndex()
         value = self._view_max.text()
         if value == '':
@@ -327,10 +300,7 @@ class LayerView(QWidget):
             self._model.setData(index, value, role=Qt.UserRole + 1)
 
     def _set_colormap(self):
-        """
-        Set colormap of current selected item.
-
-        """
+        """Set colormap of current selected item."""
         index = self._list_view.currentIndex()
         value = self._colormap.currentText()
         builtin_len = len(self.builtin_colormap)
@@ -340,19 +310,13 @@ class LayerView(QWidget):
         self._model.setData(index, value, role=Qt.UserRole + 3)
 
     def _set_alpha(self):
-        """
-        Set alpha value of current selected item.
-
-        """
+        """Set alpha value of current selected item."""
         index = self._list_view.currentIndex()
         value = self._visibility.value() * 255 / 100
         self._model.setData(index, value, role=Qt.UserRole + 2)
 
     def _up_action(self):
-        """
-        Move selected item up for one step.
-
-        """
+        """Move selected item up for one step."""
         index = self._list_view.currentIndex()
         self._model.moveUp(index.row())
         index = self._list_view.currentIndex()
@@ -367,10 +331,7 @@ class LayerView(QWidget):
         self._list_view.setFocus()
 
     def _down_action(self):
-        """
-        Move selected item down for one step.
-
-        """
+        """Move selected item down for one step."""
         index = self._list_view.currentIndex()
         self._model.moveDown(index.row())
         index = self._list_view.currentIndex()
@@ -385,24 +346,15 @@ class LayerView(QWidget):
         self._list_view.setFocus()
 
     def currentRow(self):
-        """
-        Return the row of current selected item.
-
-        """
+        """Return the row of current selected item."""
         return self._list_view.currentIndex().row()
 
     def setCurrentIndex(self, index):
-        """
-        Set selected item.
-
-        """
+        """Set selected item."""
         self._list_view.setCurrentIndex(index)
 
     def update_xyzvl(self):
-        """
-        Update the information of crosshair position.
-
-        """
+        """Update the information of crosshair position."""
         # disable signal connection when value changed
         self._coord_x.valueChanged.disconnect()
         self._coord_y.valueChanged.disconnect()
@@ -426,20 +378,14 @@ class LayerView(QWidget):
         self._coord_z.valueChanged.connect(self.set_cross_pos)
 
     def set_cross_pos(self):
-        """
-        Set position of crosshair.
-
-        """
+        """Set position of crosshair."""
         new_coord = [int(self._coord_x.value()),
                      int(self._coord_y.value()),
                      int(self._coord_z.value())]
         self._model.set_cross_pos(new_coord)
 
     def set_space_pos(self):
-        """
-        Set RAS position.
-
-        """
+        """Set RAS position."""
         space_xyz = self._model.get_space_pos()
         try:
             space_x = float(self._space_x.text())
