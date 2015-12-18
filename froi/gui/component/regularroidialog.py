@@ -24,11 +24,11 @@ class RegularROIDialog(QDialog):
     def _init_gui(self):
         self.setWindowTitle("Generate Regular ROI based on seeds image")
 
-        self._target_image_radio = QRadioButton("Target Image :")
-        self._target_image_combo = QComboBox()
+        self._seed_image_radio = QRadioButton("Seed Image :")
+        self._seed_image_combo = QComboBox()
         vol_list = self._model.getItemList()
-        self._target_image_combo.addItems(QStringList(vol_list))
-        self._target_image_radio.setChecked(True)
+        self._seed_image_combo.addItems(QStringList(vol_list))
+        self._seed_image_radio.setChecked(True)
 
         self._cordinate_file_radio= QRadioButton('Cordinate File :')
         self._cordinate_file_dir = QLineEdit('')
@@ -39,7 +39,7 @@ class RegularROIDialog(QDialog):
         self._cordinate_file_dir.setEnabled(False)
 
         radio_button_group = QButtonGroup()
-        radio_button_group.addButton(self._target_image_radio)
+        radio_button_group.addButton(self._seed_image_radio)
         radio_button_group.addButton(self._cordinate_file_radio)
 
         radius_label = QLabel("Radius of ROI (voxel)")
@@ -57,8 +57,8 @@ class RegularROIDialog(QDialog):
         self.cancel_button = QPushButton("Cancel")
         
         grid_layout = QGridLayout()
-        grid_layout.addWidget(self._target_image_radio, 0, 0)
-        grid_layout.addWidget(self._target_image_combo, 0, 1, 1, 2)
+        grid_layout.addWidget(self._seed_image_radio, 0, 0)
+        grid_layout.addWidget(self._seed_image_combo, 0, 1, 1, 2)
         grid_layout.addWidget(self._cordinate_file_radio, 1, 0)
         grid_layout.addWidget(self._cordinate_file_dir, 1, 1)
         grid_layout.addWidget(self._cordinate_file_button, 1, 2)
@@ -81,21 +81,22 @@ class RegularROIDialog(QDialog):
 
     def _create_actions(self):
         self.roi_type_edit.currentIndexChanged.connect(self._update_output_name)
+
         self.run_button.clicked.connect(self._regular_roi)
         self._cordinate_file_button.clicked.connect(self._cordinate_file_browse)
         self._cordinate_file_radio.clicked.connect(self._cordinate_file_checked)
-        self._target_image_radio.clicked.connect(self._target_image_checked)
+        self._seed_image_radio.clicked.connect(self._seed_image_checked)
         self.cancel_button.clicked.connect(self.done)
 
-    def _target_image_checked(self):
-        self._target_image_combo.setEnabled(True)
+    def _seed_image_checked(self):
+        self._seed_image_combo.setEnabled(True)
         self._cordinate_file_dir.setEnabled(False)
         self._cordinate_file_button.setEnabled(False)
 
     def _cordinate_file_checked(self):
         self._cordinate_file_button.setEnabled(True)
         self._cordinate_file_dir.setEnabled(True)
-        self._target_image_combo.setEnabled(False)
+        self._seed_image_combo.setEnabled(False)
 
     def _cordinate_file_browse(self):
         import os
@@ -171,7 +172,7 @@ class RegularROIDialog(QDialog):
             roi_generater = imtool.cube_roi
 
         if self._cordinate_file_radio.isChecked():
-            target_data = self._model.data(self._model.index(self._target_image_combo.currentIndex()),
+            target_data = self._model.data(self._model.index(self._seed_image_combo.currentIndex()),
                                        Qt.UserRole + 6)
             data = target_data.copy()
             try:
