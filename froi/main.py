@@ -11,10 +11,10 @@ import ConfigParser
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.version import __version__
-from base.labelconfig import LabelConfig
-from base.utils import get_icon_dir
-from component.listwidget import LayerView
+from version import __version__
+from core.labelconfig import LabelConfig
+from core.utils import get_icon_dir
+from widgets.listwidget import LayerView
 from component.gridwidget import GridView
 from component.orthwidget import OrthView
 from component.datamodel import VolumeListModel
