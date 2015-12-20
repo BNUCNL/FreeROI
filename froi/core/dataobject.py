@@ -557,3 +557,9 @@ class VolumeDataset(object):
                                 colormap=self.get_colormap())
         return dup_img
 
+class SurfaceDataset(object):
+    """Suface-based dataset in FreeROI GUI system."""
+    def __init__():
+        """Object initialization."""
+        pass
+    
