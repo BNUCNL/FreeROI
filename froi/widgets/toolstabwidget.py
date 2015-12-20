@@ -8,7 +8,7 @@ from no_gui_tools import edge_detection
 from roimergedialog import ROIMergeDialog
 from roi2gwmidialog import Roi2gwmiDialog
 from regularroidialog import RegularROIDialog
-from froi.gui.base.utils import *
+from ..utils import *
 
 
 class ToolsTabWidget(QDialog):

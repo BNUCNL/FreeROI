@@ -7,7 +7,7 @@ from PyQt4.QtGui import *
 import numpy as np
 from scipy.ndimage import morphology
 
-from froi.algorithm import imtool
+from ..algorithm import imtool
 
 
 class BinarydilationDialog(QDialog):

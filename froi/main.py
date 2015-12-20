@@ -13,37 +13,37 @@ from PyQt4.QtGui import *
 
 from version import __version__
 from core.labelconfig import LabelConfig
-from core.utils import get_icon_dir
+from utils import get_icon_dir
 from widgets.listwidget import LayerView
-from component.gridwidget import GridView
-from component.orthwidget import OrthView
-from component.datamodel import VolumeListModel
-from component.drawsettings import PainterStatus, ViewSettings, MoveSettings
-from component.binarizationdialog import BinarizationDialog
-from component.intersectdialog import IntersectDialog
-from component.localmaxdialog import LocalMaxDialog
-from component.no_gui_tools import inverse_image, gen_label_color
-from component.smoothingdialog import SmoothingDialog
-from component.growdialog import GrowDialog
-from component.watersheddialog import WatershedDialog
-from component.slicdialog import SLICDialog
-from component.clusterdialog import ClusterDialog
-from component.regularroidialog import RegularROIDialog
-from component.roi2gwmidialog import Roi2gwmiDialog
-from component.no_gui_tools import edge_detection
-from component.roimergedialog import ROIMergeDialog
-from component.opendialog import OpenDialog
-from component.labelmanagedialog import LabelManageDialog
-from component.labelconfigcenter import LabelConfigCenter
-from component.roidialog import ROIDialog
-from component.atlasdialog import AtlasDialog
-from component.binaryerosiondialog import BinaryerosionDialog
-from component.binarydilationdialog import BinarydilationDialog
-from component.greydilationdialog import GreydilationDialog
-from component.greyerosiondialog import GreyerosionDialog
-from component.meants import MeanTSDialog
-from component.voxelstatsdialog import VoxelStatsDialog
-from component.registervolume import RegisterVolumeDialog
+from widgets.gridwidget import GridView
+from widgets.orthwidget import OrthView
+from widgets.datamodel import VolumeListModel
+from widgets.drawsettings import PainterStatus, ViewSettings, MoveSettings
+from widgets.binarizationdialog import BinarizationDialog
+from widgets.intersectdialog import IntersectDialog
+from widgets.localmaxdialog import LocalMaxDialog
+from widgets.no_gui_tools import inverse_image, gen_label_color
+from widgets.smoothingdialog import SmoothingDialog
+from widgets.growdialog import GrowDialog
+from widgets.watersheddialog import WatershedDialog
+from widgets.slicdialog import SLICDialog
+from widgets.clusterdialog import ClusterDialog
+from widgets.regularroidialog import RegularROIDialog
+from widgets.roi2gwmidialog import Roi2gwmiDialog
+from widgets.no_gui_tools import edge_detection
+from widgets.roimergedialog import ROIMergeDialog
+from widgets.opendialog import OpenDialog
+from widgets.labelmanagedialog import LabelManageDialog
+from widgets.labelconfigcenter import LabelConfigCenter
+from widgets.roidialog import ROIDialog
+from widgets.atlasdialog import AtlasDialog
+from widgets.binaryerosiondialog import BinaryerosionDialog
+from widgets.binarydilationdialog import BinarydilationDialog
+from widgets.greydilationdialog import GreydilationDialog
+from widgets.greyerosiondialog import GreyerosionDialog
+from widgets.meants import MeanTSDialog
+from widgets.voxelstatsdialog import VoxelStatsDialog
+from widgets.registervolume import RegisterVolumeDialog
 
 
 class BpMainWindow(QMainWindow):
@@ -495,7 +495,6 @@ class BpMainWindow(QMainWindow):
                                              self)
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
-
 
     def _add_toolbar(self):
         """Add toolbar."""

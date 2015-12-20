@@ -5,9 +5,9 @@ import os
 
 from PyQt4.QtGui import *
 
-from froi.gui.base.utils import get_file_names
-from froi.io.xml_api import *
-from froi.io.atlas_api import *
+from ..utils import get_file_names
+from ..interface.xml_api import *
+from ..interface.atlas_api import *
 
 
 class AtlasDatamodel():

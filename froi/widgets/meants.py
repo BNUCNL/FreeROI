@@ -6,8 +6,8 @@ import os
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import imtool
-from froi.io import csv
+from ..algorithm import imtool
+from ..interface import csv
 
 
 class MeanTSDialog(QDialog):

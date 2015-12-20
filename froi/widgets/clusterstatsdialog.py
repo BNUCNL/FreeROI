@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.io import csv
+from ..interface import csv
 
 
 class ClusterStatsDialog(QDialog):

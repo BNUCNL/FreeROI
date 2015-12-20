@@ -4,8 +4,8 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import imtool
-from froi.io.csv import get_cord_from_file
+from ..algorithm import imtool
+from ..interface.csv import get_cord_from_file
 
 
 class RegularROIDialog(QDialog):

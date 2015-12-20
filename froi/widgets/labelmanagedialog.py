@@ -8,7 +8,7 @@ from PyQt4.QtGui import *
 
 from drawsettings import DrawSettings
 from labeleditdialog import LabelEditDialog
-from froi.gui.base.labelconfig import LabelConfig
+from ..core.labelconfig import LabelConfig
 from addlabelgroupdialog import AddLabelGroupDialog
 
 

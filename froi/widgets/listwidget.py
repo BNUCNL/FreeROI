@@ -10,10 +10,10 @@ from numpy import around
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from ..base.labelconfig import LabelConfig
+from ..core.labelconfig import LabelConfig
 from toolstabwidget import ToolsTabWidget
 from basicwidget import BasicWidget
-from froi.gui.base.utils import *
+from ..utils import *
 
 
 class LayerView(QWidget):

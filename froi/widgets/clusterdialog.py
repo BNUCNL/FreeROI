@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import imtool
+from ..algorithm import imtool
 from clusterstatsdialog import ClusterStatsDialog
 
 

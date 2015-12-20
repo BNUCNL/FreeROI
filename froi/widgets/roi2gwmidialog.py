@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import roi2gwmi as r2i
+from ..algorithm import roi2gwmi as r2i
 
 
 class Roi2gwmiDialog(QDialog):
