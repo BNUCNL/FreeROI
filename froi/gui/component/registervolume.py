@@ -8,7 +8,7 @@ import math
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from froi.io.registration_utils import RegisterMethod
+from froi.io.reg_interface import RegisterMethod
 
 import nibabel as nib
 
