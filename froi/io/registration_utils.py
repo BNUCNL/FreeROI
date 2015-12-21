@@ -269,6 +269,64 @@ class RegisterMethod(object):
             self.set_error_info('SPM normalize error as for the wrong input!')
             return None
 
+    def _make_normalise_estwrite_job_file(self,
+                                         source_image,
+                                         target_image,
+                                         boundingbox,
+                                         voxel_size,
+                                         interp):
+        prefix = 'matlabbatch{1}.spm.spatial.normalise.estwrite'
+        command = """%-----------------------------------------------------------------------\r\n""" + \
+                  """% Job configuration created by FreeROI.\r\n""" + \
+                  """%-----------------------------------------------------------------------\r\n""" + \
+                  prefix + """.subj.source = {'""" + source_image + """,1'};\r\n""" + \
+                  prefix + """.subj.wtsrc = '';\r\n""" + \
+                  prefix + """.subj.resample = {'""" + source_image + """,1'};\r\n""" + \
+                  prefix + """.eoptions.template = {'""" + target_image + """,1'};\r\n""" + \
+                  prefix + """.eoptions.weight = '';\r\n""" + \
+                  prefix + """.eoptions.smosrc = 8;\r\n""" + \
+                  prefix + """.eoptions.smoref = 0;\r\n""" + \
+                  prefix + """.eoptions.regtype = 'mni';\r\n""" + \
+                  prefix + """.eoptions.cutoff = 25;\r\n""" + \
+                  prefix + """.eoptions.nits = 16;\r\n""" + \
+                  prefix + """.eoptions.reg = 1;\r\n""" + \
+                  prefix + """.roptions.preserve = 0;\r\n""" + \
+                  prefix + """.roptions.bb = """ + str(list(np.array(boundingbox).reshape(-1,))) + """;\r\n""" + \
+                  prefix + """.roptions.vox = """ + str(voxel_size) + """;\r\n""" + \
+                  prefix + """.roptions.interp = 1;\r\n""" + \
+                  prefix + """.eoptions.wrap = [0 0 0];\r\n""" + \
+                  prefix + """.eoptions.prefix = 'w';\r\n"""
+
+        template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise1_job_test.m')
+        file = open(template_mat_filename, "wb")
+        file.write(command)
+        file.close()
+
+
+    def _make_normalise_write_job_file(self,
+                                      source_image,
+                                      omat_file,
+                                      boundingbox,
+                                      voxel_size,
+                                      interp):
+        prefix = 'matlabbatch{1}.spm.spatial.normalise.write'
+        command = """%-----------------------------------------------------------------------\r\n""" + \
+                  """% Job configuration created by FreeROI.\r\n""" + \
+                  """%-----------------------------------------------------------------------\r\n""" + \
+                  prefix + """.subj.matname = {'""" + omat_file + """'};\r\n""" + \
+                  prefix + """.subj.resample = {'""" + source_image + """,1'};\r\n""" + \
+                  prefix + """.roptions.preserve = 0;\r\n""" + \
+                  prefix + """.roptions.bb = """ + str(list(np.array(boundingbox).reshape(-1,))) + """;\r\n""" + \
+                  prefix + """.roptions.vox = """ + str(voxel_size) + """;\r\n""" + \
+                  prefix + """.roptions.interp = 1;\r\n""" + \
+                  prefix + """.eoptions.wrap = [0 0 0];\r\n""" + \
+                  prefix + """.eoptions.prefix = 'w';\r\n"""
+
+        template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise2_job_test.m')
+        file = open(template_mat_filename, "wb")
+        file.write(command)
+        file.close()
+
     def _spm_normalize(self, target_image, source_image, omat=None):
         """SPM Normalize"""
         spm_write = None
@@ -283,33 +341,86 @@ class RegisterMethod(object):
         print 'output_filename: ', output_filename
 
 
+        self._make_normalise_estwrite_job_file(source_image,
+                                               target_image,
+                                               [[-78, -112, -50], [78, 76, 85]],
+                                               [2, 2, 2],
+                                               1)
+        self._make_normalise_write_job_file(source_image,
+                                            os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise1_job.m'),
+                                            [[1, 2, 3], [4, 5, 6]],
+                                            [2, 2, 2],
+                                            1)
+
+        #open .m files
+        #Read the mat files according to the array structure.
         if not omat:
-            template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise1.mat')
+            template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise1_job.m')
             print 'template_mat_filename: ', template_mat_filename
-            mat_contents = sio.loadmat(template_mat_filename)
-            spm = mat_contents['matlabbatch'][0, 0]['spm']
-            spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['estwrite']
+            # mat_contents = sio.loadmat(template_mat_filename)
+            # spm = mat_contents['matlabbatch'][0, 0]['spm']
+            # spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['estwrite']
             # spm_write[0, 0]['subj'][0, 0]['source'][0, 0][0, 0][0] = source_image
             # spm_write[0, 0]['eoptions'][0, 0]['template'][0, 0][0,0][0] = target_image
         else:
-            template_mat_filename = os.path.join(self._data_dir, 'spm_mat_template').join('normalise2.mat')
-            mat_contents = sio.loadmat(template_mat_filename, struct_as_record=False, squeeze_me=True)
-            spm = mat_contents['matlabbatch'][0, 0]['spm']
-            spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['write']
-            spm_write[0, 0]['subj'][0, 0]['matname'][0, 0][0, 0][0] = omat
+            template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template').join('normalise2_job.m')
+            # mat_contents = sio.loadmat(template_mat_filename, struct_as_record=False, squeeze_me=True)
+            # spm = mat_contents['matlabbatch'][0, 0]['spm']
+            # spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['write']
+            # spm_write[0, 0]['subj'][0, 0]['matname'][0, 0][0, 0][0] = omat
         # spm_write[0, 0]['subj'][0, 0]['resample'][0, 0][0, 0][0] = source_image
         # spm_write[0, 0]['eoptions'][0, 0]['regtype'][0, 0][0] = 'mni'
         # spm_write[0, 0]['roptions'][0, 0]['bb'][0, 0] = np.array(self._compute_boundingbox())
-        # spm_write[0, 0]['roptions][0, 0]['prefix'][0, 0][0, 0][0] = 'w'
-        zooms = nib.load(target_image).get_header().get_zooms()
-        voxel_sizes = [float(zooms[0]), float(zooms[1]), float(zooms[2])]
-        # spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0] = np.array(voxel_sizes)
-        # print 'voxel_size: ', spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0]
+        # spm_write[0, 0]['roptions'][0, 0]['prefix'][0, 0][0, 0][0] = 'w'
+        # zooms = nib.load(target_image).get_header().get_zooms()
+        # voxel_sizes = [float(zooms[0]), float(zooms[1]), float(zooms[2])]
+        # # spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0] = np.array(voxel_sizes)
+        # # print 'voxel_size: ', spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0]
 
+        # if self._interpolation_method:
+        #     spm_write[0, 0]['roptions'][0, 0]['interp'][0, 0][0, 0][0] = 0
+        # sio.savemat(template_mat_filename, mat_contents)
+
+
+
+
+
+
+
+
+
+        # #Read the mat files according to the array structure.
+        # if not omat:
+        #     template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template', 'normalise1.mat')
+        #     print 'template_mat_filename: ', template_mat_filename
+        #     mat_contents = sio.loadmat(template_mat_filename)
+        #     spm = mat_contents['matlabbatch'][0, 0]['spm']
+        #     spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['estwrite']
+        #     spm_write[0, 0]['subj'][0, 0]['source'][0, 0][0, 0][0] = source_image
+        #     spm_write[0, 0]['eoptions'][0, 0]['template'][0, 0][0,0][0] = target_image
+        # else:
+        #     template_mat_filename = os.path.join(self._data_dir, 'spm_mat_template').join('normalise2.mat')
+        #     mat_contents = sio.loadmat(template_mat_filename, struct_as_record=False, squeeze_me=True)
+        #     spm = mat_contents['matlabbatch'][0, 0]['spm']
+        #     spm_write = spm[0, 0]['spatial'][0, 0]['normalise'][0, 0]['write']
+        #     spm_write[0, 0]['subj'][0, 0]['matname'][0, 0][0, 0][0] = omat
+        # spm_write[0, 0]['subj'][0, 0]['resample'][0, 0][0, 0][0] = source_image
+        # spm_write[0, 0]['eoptions'][0, 0]['regtype'][0, 0][0] = 'mni'
+        # spm_write[0, 0]['roptions'][0, 0]['bb'][0, 0] = np.array(self._compute_boundingbox())
+        # spm_write[0, 0]['roptions'][0, 0]['prefix'][0, 0][0, 0][0] = 'w'
+        # zooms = nib.load(target_image).get_header().get_zooms()
+        # voxel_sizes = [float(zooms[0]), float(zooms[1]), float(zooms[2])]
+        # # # spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0] = np.array(voxel_sizes)
+        # # # print 'voxel_size: ', spm_write[0, 0]['roptions'][0, 0]['vox'][0, 0]
+        #
         # if self._interpolation_method:
         #     spm_write[0, 0]['roptions'][0, 0]['interp'][0, 0][0, 0][0] = 0
         # sio.savemat(file_name=template_mat_filename, mdict=mat_contents)
 
+
+
+
+        #Another method to read the structure of the mat files.
         # if not omat:
         #     template_mat_filename = os.path.join(froi_utils.get_data_dir(), 'spm_mat_template','normalise1.mat')
         #     print 'template_mat_filename: ', template_mat_filename
@@ -357,7 +468,12 @@ class RegisterMethod(object):
                     print 'spm_ver: ', spm_ver
                     print 'spm_path: ', spm_path
 
-            script = """load """ + template_mat_filename + """;spm_jobman('run', matlabbatch);"""
+            # script = """load """ + template_mat_filename + """;spm_jobman('run', matlabbatch);"""
+            script = """jobfile = {'""" + template_mat_filename + """'};""" \
+                     + """jobs = repmat(jobfile, 1, 1);""" \
+                     + """inputs = cell(0, 1);""" \
+                     + """spm('defaults', 'FMRI');""" \
+                     + """spm_jobman('serial', jobs, '', inputs{:});"""
             # Need initcfg for SPM8
             if spm_ver != 'SPM5':
                 script = "spm_jobman('initcfg');\n" + script
@@ -382,8 +498,6 @@ class RegisterMethod(object):
         else:
             self._spm_nan_to_number(output_filename)
             return output_filename, template_mat_filename
-
-
 
 
     def _spm_normalize_auxiliary_image(self):
