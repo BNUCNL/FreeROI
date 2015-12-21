@@ -99,7 +99,7 @@ class RegisterMethod(object):
         try:
             ret = run_matlab('clear all;')
             if ret != 0:
-                raise 
+                raise
         except:
             self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
                                     'environment path.')
