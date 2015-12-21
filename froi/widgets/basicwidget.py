@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.gui.base.utils import *
+from ..utils import *
 from growdialog import GrowDialog
 from watersheddialog import WatershedDialog
 from slicdialog import SLICDialog

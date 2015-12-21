@@ -2,7 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 """
-Dataset definition class for PyBP GUI system.
+Dataset definition class for FreeROI GUI system.
 """
 
 import re
@@ -13,7 +13,7 @@ import numpy as np
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm import array2qimage as aq
+from ..algorithm import array2qimage as aq
 from labelconfig import LabelConfig
 
 
@@ -557,3 +557,9 @@ class VolumeDataset(object):
                                 colormap=self.get_colormap())
         return dup_img
 
+class SurfaceDataset(object):
+    """Suface-based dataset in FreeROI GUI system."""
+    def __init__():
+        """Object initialization."""
+        pass
+    

@@ -9,7 +9,7 @@ from nibabel import aff2axcodes
 import numpy as np
 from PyQt4.QtCore import *
 
-from ..base.bpdataset import VolumeDataset
+from ..core.dataobject import VolumeDataset
 
 
 class VolumeListModel(QAbstractListModel):

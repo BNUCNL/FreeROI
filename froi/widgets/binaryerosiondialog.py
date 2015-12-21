@@ -1,17 +1,20 @@
+
 __author__ = 'zhouguangfu'
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import numpy as np
+from scipy.ndimage import morphology
 
-from froi.algorithm import imtool
+from ..algorithm import imtool
 
 
-class BinarizationDialog(QDialog):
-    """A dialog for action of binaryzation."""
+class BinaryerosionDialog(QDialog):
+    """A dialog for action of binaryerosion."""
     def __init__(self, model, parent=None):
-        super(BinarizationDialog, self).__init__(parent)
+        super(BinaryerosionDialog, self).__init__(parent)
         self._model = model
 
         self._init_gui()
@@ -20,26 +23,31 @@ class BinarizationDialog(QDialog):
     def _init_gui(self):
         """Initialize GUI."""
         # set dialog title
-        self.setWindowTitle("Binarization")
+        self.setWindowTitle("Binaryerosion")
 
         # initialize widgets
         source_label = QLabel("Source")
         self.source_combo = QComboBox()
-        threshold_label = QLabel("Threshold")
-        self.threshold_edit = QLineEdit()
-        self.threshold_edit.setText(str(
-                self._model._data[self._model.currentIndex().row()].get_view_min()))
+
         vol_list = self._model.getItemList()
         self.source_combo.addItems(vol_list)
         row = self._model.currentIndex().row()
         self.source_combo.setCurrentIndex(row)
+
+        structure_label = QLabel("Structure")
+        self.structure_combo = QComboBox()
+        self.structure_combo.addItem("3x3x3")
+        self.structure_combo.addItem("5x5x5")
+        self.structure_combo.addItem("7x7x7")
+        self.structure_combo.addItem("9x9x9")
         out_label = QLabel("Output volume name")
         self.out_edit = QLineEdit()
+        
 
         # layout config
         grid_layout = QGridLayout()
-        grid_layout.addWidget(threshold_label, 0, 0)
-        grid_layout.addWidget(self.threshold_edit, 0, 1)
+        grid_layout.addWidget(structure_label, 0, 0)
+        grid_layout.addWidget(self.structure_combo, 0, 1)
         grid_layout.addWidget(out_label, 1, 0)
         grid_layout.addWidget(self.out_edit, 1, 1)
 
@@ -60,36 +68,31 @@ class BinarizationDialog(QDialog):
 
     def _create_actions(self):
         self.source_combo.currentIndexChanged.connect(self._create_output)
-        self.threshold_edit.editingFinished.connect(self._create_output)
-        self.run_button.clicked.connect(self._binaryzation)
+        self.run_button.clicked.connect(self._binary_erosion)
         self.cancel_button.clicked.connect(self.done)
 
     def _create_output(self):
         source_name = self.source_combo.currentText()
-        output_name = '_'.join(['bin', str(source_name)])
+        output_name = '_'.join([str(source_name), 'binaryerosion'])
         self.out_edit.setText(output_name)
 
-    def _binaryzation(self):
+    def _binary_erosion(self):
         vol_name = str(self.out_edit.text())
-        threshold = self.threshold_edit.text()
+        num = self.structure_combo.currentIndex() + 3
+        self.structure_array = np.ones((num,num,num), dtype=np.int)
 
         if not vol_name:
             self.out_edit.setFocus()
-            return
-        if not threshold:
-            self.threshold_edit.setFocus()
-            return
-
-        try:
-            threshold = float(threshold)
-        except ValueError:
-            self.threshold_edit.selectAll()
             return
 
         source_row = self.source_combo.currentIndex()
         source_data = self._model.data(self._model.index(source_row),
                                        Qt.UserRole + 6)
-        new_vol = imtool.binaryzation(source_data, threshold)
+
+        binary_vol = imtool.binaryzation(source_data,
+                                    (source_data.max() + source_data.min()) / 2)
+        new_vol = morphology.binary_erosion(binary_vol,
+                                            structure=self.structure_array)
         self._model.addItem(new_vol,
                             None,
                             vol_name,

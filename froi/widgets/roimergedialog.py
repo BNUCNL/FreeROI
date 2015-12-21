@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.algorithm.imtool import merge
+from ..algorithm.imtool import merge
 
 
 class ROIMergeDialog(QDialog):

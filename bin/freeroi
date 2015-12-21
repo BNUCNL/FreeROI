@@ -10,8 +10,8 @@ import argparse
 
 from PyQt4.QtGui import QApplication
 
-from froi.gui.base import utils as froi_utils
-from froi.gui.main import BpMainWindow
+from froi import utils as froi_utils
+from froi.main import BpMainWindow
 
 
 def main():
