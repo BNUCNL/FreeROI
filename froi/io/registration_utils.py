@@ -96,12 +96,12 @@ class RegisterMethod(object):
     #-------------------------------------------- spm normalize ---------------------------------------
     def spm_register(self):
         #detect whether the matlab is exsited.
-        # try:
-        #     self._run_matlab()
-        # except:
-        #     self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
-        #                         'environment path.')
-        #     return
+        try:
+            self._run_matlab()
+        except:
+            self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
+                                'environment path.')
+            return None
 
         if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
             return self._spm_normalize_auxiliary_image()
@@ -375,50 +375,5 @@ class RegisterMethod(object):
         mfile.write(script_lines)
         mfile.close()
         return self._run_matlab(script_name)
-
-
-if __name__ == '__main__':
-    target_image_filename = '/nfs/j3/userhome/zhouguangfu/workingdir/flirt/brain/freeroi/register/std.nii'
-    source_image_filename = '/nfs/j3/userhome/zhouguangfu/workingdir/flirt/brain/freeroi/register/T1_brain.nii'
-
-    auxiliary_image_filename = '/nfs/j3/userhome/zhouguangfu/workingdir/flirt/brain/freeroi/register/mean_func.nii'
-    # auxiliary_image_filename = ''
-    interpolation_method = False
-
-
-    rm = RegisterMethod(target_image_filename,
-                        source_image_filename,
-                        auxiliary_image_filename,
-                        interpolation_method)
-    res = None
-    _is_fsl = False
-
-    if _is_fsl:
-        #fsl register
-        res = rm.fsl_register()
-    else:
-        #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
-        if not str(source_image_filename).endswith('.nii'):
-            rm.set_error_info("The source image should be ended with .nii, not .nii.gz or anything else.")
-        else:
-            #spm register
-            res = rm.spm_register()
-
-    # try:
-    #     if _is_fsl:
-    #         #fsl register
-    #         res = rm.fsl_register()
-    #     else:
-    #         #detect if the chose file is ended with '.nii', because spm cannot process the .nii.gz file.
-    #         if not str(source_image_filename).endswith('.nii'):
-    #             rm.set_error_info("The source image should be ended with .nii, not .nii.gz or anything else.")
-    #         else:
-    #             #spm register
-    #             res = rm.spm_register()
-    # except:
-    #     # 'Register error occur!'
-    #     rm.set_error_info("Unknown error!")
-
-    print 'rm.get_error_info(): ', rm.get_error_info()
 
 
