@@ -8,8 +8,10 @@ import math
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from froi.io.registration_utils import RegisterMethod
+
 import nibabel as nib
-import numpy as np
+
 
 
 class RegisterVolumeDialog(QDialog):
@@ -247,7 +249,6 @@ class RegisterVolumeDialog(QDialog):
 
 
     def _generate_temp_image_file(self, row):
-        import os
         temp_file_path = os.path.join(self._temp_dir, 'temp_' + str(self._model.data(self._model.index(row), Qt.DisplayRole)) + '.nii')
         if sys.platform == 'win32':
             file_path = unicode(temp_file_path).encode('gb2312')
@@ -300,188 +301,14 @@ class RegisterThread(QThread):
         return self._output
 
 
-class RegisterMethod(object):
-    def __init__(self,
-                 target_image_filename,
-                 source_image_filename,
-                 auxiliary_image_filename,
-                 interpolation_method,
-                 parent=None):
-        self._target_image_filename = target_image_filename
-        self._source_image_filename = source_image_filename
-        self._auxiliary_image_filename = auxiliary_image_filename
-        self._interpolation_method = interpolation_method
-        self._error_info = None
-
-    #-------------------------------------------- fsl register ---------------------------------------
-    def fsl_register(self):
-        # Reference link
-        # http://nipy.org/nipype/interfaces/generated/nipype.interfaces.fsl.preprocess.html
-        # Use FSL FLIRT for coregistration.
-        if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
-            return self._fsl_register_auxiliary_image()
-        elif self._source_image_filename is not '' and self._auxiliary_image_filename is '':
-            return [self._fsl_register(self._target_image_filename, self._source_image_filename)[0]]
-        else:
-            self.set_error_info('FSL register error as for the wrong input!')
-            return None
-
-    def _fsl_register(self, target_image, source_image, omat=None):
-        from nipype.interfaces import fsl
-
-        flirt = fsl.FLIRT(bins=640, cost_func='mutualinfo')
-        flirt.inputs.in_file = source_image
-        flirt.inputs.reference = target_image
-        flirt.inputs.output_type = "NIFTI"
-
-        output_basename = os.path.basename(source_image.strip('/'))
-        output_filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', output_basename)
-        output_filename_path = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.nii')
-        out_matrix_filename_path = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.mat')
-
-        if sys.platform == 'win32':
-            output_filename_path = unicode(output_filename_path).encode('gb2312')
-            out_matrix_filename_path = unicode(out_matrix_filename_path).encode('gb2312')
-        else:
-            output_filename_path = str(output_filename_path)
-            out_matrix_filename_path = str(out_matrix_filename_path)
-        flirt.inputs.out_file = output_filename_path
-        flirt.inputs.out_matrix_file = out_matrix_filename_path
-        if self._interpolation_method:
-            flirt.inputs.interp = 'nearestneighbour'
-
-        if omat is not None:
-            flirt.inputs.in_matrix_file = omat
-            flirt.inputs.apply_xfm = True
-        try:
-            res = flirt.run()
-        except:
-            self.set_error_info('FSL error occured! Make sure the fsl path is in the environment variable ' + \
-                                'or the parameter is correct.')
-            return
-        return res.outputs.out_file, res.outputs.out_matrix_file
-
-    def _fsl_register_auxiliary_image(self):
-        #register mean function image to anatomy image
-        r_source_image_filename , apply_matrix = self._fsl_register(self._target_image_filename,
-                                                                    self._source_image_filename)
-
-        apply_matrix = None
-        #register anamoty image to template image
-        r_auxiliary_image_filename , result_matrix = self._fsl_register(self._target_image_filename,
-                                                                    self._auxiliary_image_filename,
-                                                                    omat=apply_matrix)
-        return r_source_image_filename, r_auxiliary_image_filename
 
 
-    #-------------------------------------------- spm normalize ---------------------------------------
-    def spm_register(self):
-        #detect whether the matlab is exsited.
-        import nipype.interfaces.matlab as mlab      # how to run matlab
-        try:
-            mlab.MatlabCommand.set_default_matlab_cmd("matlab -nodesktop -nosplash")
-            mlab.MatlabCommand.run()
-        except:
-            self.set_error_info('Cannot find the matlab! Make sure the matlab path has been added to the system ' + \
-                                'environment path.')
-            return 
-        
-        if self._target_image_filename is not '' and self._auxiliary_image_filename is not '':
-            return self._spm_normalize_auxiliary_image()
-        elif self._source_image_filename is not '' and self._auxiliary_image_filename is '':
-            return [self._spm_normalize(self._target_image_filename, self._source_image_filename)[0]]
-        else:
-            self.set_error_info('SPM normalize error as for the wrong input!')
-            return None
 
-    def _spm_normalize(self, target_image, source_image, omat=None):
-        """SPM Normalize"""
-        # Reference link
-        # http://www.mit.edu/~satra/nipype-nightly/interfaces/generated/nipype.interfaces.spm.preprocess.html
-        # http://nipy.org/nipype/users/examples/fmri_spm_dartel.html
 
-        import nipype.interfaces.spm as spm
-        norm = spm.Normalize()
-        zooms = nib.load(target_image).get_header().get_zooms()
-        voxel_sizes = [float(zooms[0]), float(zooms[1]), float(zooms[2])]
-        norm.inputs.write_voxel_sizes = voxel_sizes
-        if omat is not None:
-            norm.inputs.apply_to_files = source_image
-            norm.inputs.jobtype = 'write'
-            norm.inputs.parameter_file = omat
-        else:
-            norm.inputs.template = target_image
-            norm.inputs.source = source_image
 
-        #Should be auto calculated based on the given template image !!!!
-        norm.inputs.write_bounding_box = self._compute_boundingbox()
-        if self._interpolation_method:
-            norm.inputs.write_interp = 0
-        try:
-            res = norm.run()
-        except:
-            self.set_error_info('Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'or the parameter is correct.')
-            return 
 
-        if omat is None:
-            self._spm_nan_to_number(res.outputs.normalized_source)
-            return res.outputs.normalized_source, res.outputs.normalization_parameters
-        else:
-            self._spm_nan_to_number(res.outputs.normalized_files)
-            return res.outputs.normalized_files, res.outputs.normalization_parameters
 
-    def _spm_normalize_auxiliary_image(self):
-        #register anamoty image to template image
-        w_source_image_filename , out_parameters_matrix = self._spm_normalize(self._target_image_filename,
-                                                                              self._source_image_filename)
 
-        w_auxiliary_image_filename, out_matrix = self._spm_normalize(self._target_image_filename,
-                                                                      self._auxiliary_image_filename,
-                                                                      out_parameters_matrix)
-        return w_source_image_filename, w_auxiliary_image_filename
 
-    def _spm_nan_to_number(self, filename):
-        nan_img = nib.load(filename)
-        nan_data = nan_img.get_data()
-        nan_affine = nan_img.get_affine()
-        nan_data = np.nan_to_num(nan_data)
 
-        nib.save(nib.Nifti1Image(nan_data, nan_affine), filename)
-
-    def _compute_boundingbox(self):
-        #Compute the bounding_box parameter based on the target_image
-        target_image = nib.load(self._target_image_filename)
-        bounds = self._get_bounds(target_image.shape, target_image.get_affine())
-
-        bounding_box = [[i[0] for i in bounds], [j[1] for j in bounds]]
-
-        return bounding_box
-
-    def _get_bounds(self, shape, affine):
-        """ Return the world-space bounds occupied by an array given an affine.
-        """
-        adim, bdim, cdim = shape
-        adim -= 1
-        bdim -= 1
-        cdim -= 1
-        # form a collection of vectors for each 8 corners of the box
-        box = np.array([[0.,   0,    0,    1],
-                        [adim, 0,    0,    1],
-                        [0,    bdim, 0,    1],
-                        [0,    0,    cdim, 1],
-                        [adim, bdim, 0,    1],
-                        [adim, 0,    cdim, 1],
-                        [0,    bdim, cdim, 1],
-                        [adim, bdim, cdim, 1] ]).T
-        box = np.dot(affine, box)[:3]
-        bounding_box = list(zip(box.min(axis=-1), box.max(axis=-1)))
-
-        return bounding_box
-
-    def set_error_info(self, error_info):
-        self._error_info = error_info
-
-    def get_error_info(self):
-        return self._error_info
 
