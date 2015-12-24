@@ -185,10 +185,16 @@ class RegisterVolumeDialog(QDialog):
                                         filename,
                                         self._model._data[0].get_header(),
                                         None, None, 255, 'red2yellow')
-                    # #delete the register file
-                    # os.remove(filepath)
+                    #delete the register file
+                    if not sys.platform == 'win32':
+                        temp_filename = os.path.join(basename, filename[6:] + '.nii').replace("\\", "/")
+                        if os.path.exists(temp_filename):
+                            os.remove(temp_filename)
+                        os.remove(filepath)
+
         #delete the temp file
-        os.remove(self._target_image_filename)
+        if os.path.exists(self._target_image_filename):
+            os.remove(self._target_image_filename)
         self.done(0)
 
     def _regester_canceled(self):
@@ -256,7 +262,7 @@ class RegisterVolumeDialog(QDialog):
             file_path = str(temp_file_path)
         self._model._data[row].save2nifti(file_path)
 
-        return temp_file_path
+        return temp_file_path.replace("\\","/")
 
 class RegisterThread(QThread):
     def __init__(self, subreddits):
@@ -290,9 +296,11 @@ class RegisterThread(QThread):
                 else:
                     #spm register
                     res = rm.spm_register()
-        except:
+        except Exception as e:
             # 'Register error occur!'
-            rm.set_error_info("Unknown error!")
+            rm.set_error_info("Error occured! " + str(e))
+            if os.path.exists(self._target_image_filename):
+                os.remove(self._target_image_filename)
 
         self._output = res
         self.emit(SIGNAL('register'), rm.get_error_info())
