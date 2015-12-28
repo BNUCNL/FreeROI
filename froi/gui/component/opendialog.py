@@ -83,6 +83,11 @@ class OpenDialog(QDialog):
 
         try:
             radius = int(radius)
+            header = self._model.data(self._model.currentIndex(), Qt.UserRole + 11)
+            voxel_size = header.get_zooms()
+            radius = [int(radius * 1. / voxel_size[0]),
+                      int(radius * 1. / voxel_size[1]),
+                      int(radius * 1. / voxel_size[2])]
         except ValueError:
             self.radius_edit.selectAll()
             return

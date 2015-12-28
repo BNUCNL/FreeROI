@@ -27,10 +27,12 @@ def mesh_3d_grid(x, y, z):
 
 def ball(radius, dtype=np.uint8):
     """Generate a ball structure element."""
-    L = np.linspace(-radius, radius, 2*radius+1)
-    X, Y, Z = mesh_3d_grid(L, L, L)
-    s = X**2 + Y**2 + Z**2
-    return np.array(s <= radius * radius, dtype=dtype)
+    L_x = np.linspace(-radius[0], radius[0], 2*radius[0]+1)
+    L_y = np.linspace(-radius[1], radius[1], 2*radius[1]+1)
+    L_z = np.linspace(-radius[2], radius[2], 2*radius[2]+1)
+    X, Y, Z = mesh_3d_grid(L_x, L_y, L_z)
+    s = X**2 * 1. / (radius[0]**2) + Y**2 * 1. / radius[1]**2 + Z**2 * 1. / radius[2]**2
+    return np.array(s <= 1, dtype=dtype)
 
 def opening(src, r=2):
     """Using the opening image algrithm to process the src image."""
@@ -57,9 +59,9 @@ def roi_filtering(src, ref):
 
 def sphere_roi(data, x, y, z, radius, value):
     """Generate a sphere roi which center in (x, y, z)."""
-    for n_x in range(x - radius, x + radius + 1):
-        for n_y in range(y - radius, y + radius + 1):
-            for n_z in range(z - radius, z + radius + 1):
+    for n_x in range(x - radius[0], x + radius[0] + 1):
+        for n_y in range(y - radius[1], y + radius[1] + 1):
+            for n_z in range(z - radius[2], z + radius[2] + 1):
                 #if n_x < 0:
                 #    n_x = data.shape[0] - n_x
                 #if n_y < 0:
@@ -68,7 +70,8 @@ def sphere_roi(data, x, y, z, radius, value):
                 #    n_z = data.shape[2] - n_z
                 n_coord = np.array((n_x, n_y, n_z))
                 coord = np.array((x, y, z))
-                if np.linalg.norm(coord - n_coord) <= radius:
+                minus = coord - n_coord
+                if (np.square(minus) / np.square(np.array(radius)).astype(np.float)).sum() <= 1:
                     try:
                         data[n_x, n_y, n_z] = value
                     except IndexError:
@@ -77,9 +80,9 @@ def sphere_roi(data, x, y, z, radius, value):
 
 def cube_roi(data, x, y, z, radius, value):
     """Generate a cube roi which center in (x, y, z)."""
-    for n_x in range(x - radius, x + radius + 1):
-        for n_y in range(y - radius, y + radius + 1):
-            for n_z in range(z - radius, z + radius + 1):
+    for n_x in range(x - radius[0], x + radius[0] + 1):
+        for n_y in range(y - radius[1], y + radius[1] + 1):
+            for n_z in range(z - radius[2], z + radius[2] + 1):
                 try:
                     data[n_x, n_y, n_z] = value
                 except IndexError:
