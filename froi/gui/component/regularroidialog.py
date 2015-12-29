@@ -18,7 +18,7 @@ class RegularROIDialog(QDialog):
     def _init_gui(self):
         self.setWindowTitle("Generate Regular ROI based on seeds image")
 
-        radius_label = QLabel("Radius of ROI (voxel)")
+        radius_label = QLabel("Radius of ROI (mm)")
         self.radius_edit = QLineEdit()
         
         roi_type_label = QLabel("ROI shape")
