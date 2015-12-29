@@ -99,7 +99,6 @@ class AtlasDialog(QDialog, Atlasinfo):
                 atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
                 self.prob[i].setText(atlas_prob)
             else:
-                self.prob[i].setText('None')
                 self.label[i].setVisible(False)
                 self.prob[i].setVisible(False)
 
@@ -141,23 +140,22 @@ class AtlasDialog(QDialog, Atlasinfo):
         self.stat=list()
         for i in range(len(self.xml_names)):
             self.stat.append(self.prob[i].isVisible())
-        if self.set_button.isEnabled():
-            new_dialog = SettingDialog(self.stat)
-            new_dialog.exec_()
-            self.status = new_dialog._get_checkbox_status()
-            if self.status != []:
-                for i in range(len(self.xml_names)):
-                    if (self.status[i]):
-                        self.label[i].setVisible(True)
-                        self.prob[i].setVisible(True)
-                        if (self.label_list[i]==0):
-                            self.nii_data[i] = self.get_atlas_data(self.xml_names[i])
-                            self.label_list[i] = self.get_label_info(self.xml_names[i])
-                            atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
-                            self.prob[i].setText(atlas_prob)
-                    else:
-                        self.label[i].setVisible(False)
-                        self.prob[i].setVisible(False)
+        new_dialog = SettingDialog(self.stat)
+        new_dialog.exec_()
+        self.status = new_dialog._get_checkbox_status()
+
+        for i in range(len(self.xml_names)):
+            if (self.status[i]):
+                self.label[i].setVisible(True)
+                self.prob[i].setVisible(True)
+                if not self.label_list[i]:
+                    self.nii_data[i] = self.get_atlas_data(self.xml_names[i])
+                    self.label_list[i] = self.get_label_info(self.xml_names[i])
+                    atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
+                    self.prob[i].setText(atlas_prob)
+            else:
+                self.label[i].setVisible(False)
+                self.prob[i].setVisible(False)
 
     def _get_setting_status(self):
         """
