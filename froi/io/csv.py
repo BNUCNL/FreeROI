@@ -44,10 +44,9 @@ def nparray2csv(data, labels=None, csv_file=None):
     else:
         raise ValueError, "Input must be a numpy array."
 
-def get_cord_from_file(header, cord_filepath):
+def get_cord_from_file(header, cord_filepath, image_affine):
         """Return all cordinate from the txt or csv file."""
         shape = header.get_data_shape()
-        image_affine = header.get_best_affine()
         voxel_size = header.get_zooms()
 
 

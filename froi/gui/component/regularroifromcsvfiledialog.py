@@ -103,10 +103,11 @@ class RegularROIFromCSVFileDialog(QDialog):
         roi_generater = imtool.sphere_roi
 
         header = self._model.data(self._model.currentIndex(), Qt.UserRole + 11)
+        image_affine = self._model.get_affine()
         data = self._model.data(self._model.currentIndex(), Qt.UserRole + 6)
         new_data = np.zeros_like(data)
         try:
-            coord_list, radius_list, id_list = get_cord_from_file(header, cord_filepath)
+            coord_list, radius_list, id_list = get_cord_from_file(header, cord_filepath, image_affine)
         except ValueError, error_info:
             QMessageBox.critical(self, 'Please check the cordinate in the file.', str(error_info))
             return

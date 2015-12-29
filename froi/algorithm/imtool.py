@@ -3,10 +3,9 @@
 
 import numpy as np
 from scipy import ndimage as nd
-from scipy.ndimage import morphology
 from skimage import feature as skft
-from skimage import morphology as skmorph
 from scipy.spatial import distance
+from nibabel.affines import apply_affine
 
 def mesh_3d_grid(x, y, z):
     """Create the 3D mesh grid."""
@@ -203,7 +202,7 @@ def voxel_number(source_data, voxel_value):
         whole_voxel_num = data_shape[0] * data_shape[1] * data_shape[2]
         return whole_voxel_num - source_data.sum()
 
-def cluster_stats(source_data, cluster_data):
+def cluster_stats(source_data, cluster_data, image_affine):
     """Get the cluster size, and the peak value, coordinate based on the#source_data."""
     if not source_data.shape == cluster_data.shape:
         print 'Inconsistent data shape.'
@@ -220,6 +219,7 @@ def cluster_stats(source_data, cluster_data):
             max_val = masked_src.max()
             max_coord = np.unravel_index(masked_src.argmax(),
                                          masked_src.shape)
+            max_coord = apply_affine(image_affine, np.array(max_coord))
             cluster_info.append([idx, max_val, max_coord[0], max_coord[1],
                                  max_coord[2], extent])
     cluster_info = np.array(cluster_info)
