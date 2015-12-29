@@ -5,7 +5,7 @@ import os
 
 from PyQt4.QtGui import *
 
-from ..utils import get_file_names
+from ..utils import get_file_names, get_data_dir
 from ..interface.xml_api import *
 from ..interface.atlas_api import *
 
@@ -14,8 +14,8 @@ class AtlasDatamodel():
     """
     Atlas Data Model.
     """
-    parent_path = os.path.dirname(os.getcwd())
-    tar_path = parent_path+'/froi/data/atlas/'
+    parent_path = get_data_dir()
+    tar_path = os.path.join(parent_path, 'atlas')
 
     def __init__(self):
         super(AtlasDatamodel, self).__init__()
@@ -31,7 +31,7 @@ class AtlasDatamodel():
         """
         Get atlas nii data.
         """
-        nii_name = get_info(self.tar_path+ xml_name, 'imagefile')
+        nii_name = get_info(os.path.join(self.tar_path, xml_name), 'imagefile')
         nii_data = get_nii_data(self.tar_path, nii_name[0])
         return nii_data
 
@@ -39,7 +39,7 @@ class AtlasDatamodel():
         """
         Get atlas label information.
         """
-        label_list = get_info(self.tar_path+ xml_name, 'label')
+        label_list = get_info(os.path.join(self.tar_path, xml_name), 'label')
         return label_list
 
 

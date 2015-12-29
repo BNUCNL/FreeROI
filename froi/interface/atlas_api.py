@@ -4,12 +4,13 @@
 from collections import OrderedDict
 
 import nibabel as nib
+import os
 
 
 def get_nii_data(path, nii_name):
     """Get nii data."""
     img_name = nii_name + ".nii.gz"
-    img = nib.load(path+img_name)
+    img = nib.load(os.path.join(path, img_name))
     img_data = img.get_data()
     return img_data
 
@@ -25,7 +26,7 @@ def get_atlasprob(data, x, y, z):
     x,y,z:
         The coordinate value of target voxel.
     """
-    prob = data[x, y, z, :]/100.0
+    prob = data[x, y, z, :] / 100.0
     return prob
 
 def sorting(labellist, problist):
