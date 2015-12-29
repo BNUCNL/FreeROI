@@ -29,6 +29,7 @@ from component.watersheddialog import WatershedDialog
 from component.slicdialog import SLICDialog
 from component.clusterdialog import ClusterDialog
 from component.regularroidialog import RegularROIDialog
+from component.regularroifromcsvfiledialog import RegularROIFromCSVFileDialog
 from component.roi2gwmidialog import Roi2gwmiDialog
 from component.no_gui_tools import edge_detection
 from component.roimergedialog import ROIMergeDialog
@@ -464,6 +465,14 @@ class BpMainWindow(QMainWindow):
         self._actions['regular_roi'].triggered.connect(self._regular_roi)
         self._actions['regular_roi'].setEnabled(False)
 
+        # sphere and cube roi from csv file
+        self._actions['regular_roi_from_csv'] = QAction(QIcon(os.path.join(
+                                                     self._icon_dir, 'sphere_and_cube.png')),
+                                               self.tr("Regular ROI From CSV File"),
+                                               self)
+        self._actions['regular_roi_from_csv'].triggered.connect(self._regular_roi_from_csv_file)
+        self._actions['regular_roi_from_csv'].setEnabled(False)
+
         # ROI to Interface
         self._actions['r2i'] = QAction(QIcon(os.path.join(
                                              self._icon_dir, 'r2i.png')),
@@ -827,6 +836,7 @@ class BpMainWindow(QMainWindow):
         roi_tools.addAction(self._actions['edge_dete'])
         roi_tools.addAction(self._actions['roi_merge'])
         roi_tools.addAction(self._actions['regular_roi'])
+        roi_tools.addAction(self._actions['regular_roi_from_csv'])
         roi_tools.addAction(self._actions['r2i'])
 
         # Morphological tools
@@ -1002,6 +1012,11 @@ class BpMainWindow(QMainWindow):
         """Generate regular(cube, sphere, etc.)  roi dialog."""
         regular_roi_dialog = RegularROIDialog(self.model)
         regular_roi_dialog.exec_()
+
+    def _regular_roi_from_csv_file(self):
+        """Generate regular(cube, sphere, etc.)  roi from csv file."""
+        regular_roi_from_csv_file = RegularROIFromCSVFileDialog(self.model)
+        regular_roi_from_csv_file.exec_()
 
     def _edge_detection(self):
         """Detect the image edge."""
@@ -1208,6 +1223,7 @@ class BpMainWindow(QMainWindow):
         self._actions['greydilation'].setEnabled(status)
         self._actions['greyerosion'].setEnabled(status)
         self._actions['regular_roi'].setEnabled(status)
+        self._actions['regular_roi_from_csv'].setEnabled(status)
         self._actions['label_management'].setEnabled(status)
         self._actions['r2i'].setEnabled(status)
         self._actions['edge_dete'].setEnabled(status)

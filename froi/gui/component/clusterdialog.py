@@ -91,7 +91,8 @@ class ClusterDialog(QDialog):
                             self._model._data[0].get_header(),
                             None, None, 255, 'rainbow')
         self.hide()
-        cluster_info = imtool.cluster_stats(source_data, new_vol)
+        image_affine = self._model.get_affine()
+        cluster_info = imtool.cluster_stats(source_data, new_vol, image_affine)
         stats_dialog = ClusterStatsDialog(cluster_info)
         stats_dialog.exec_()
         self.done(0)

@@ -42,8 +42,8 @@ class RegisterMethod(object):
 
         output_basename = os.path.basename(source_image.strip('/'))
         output_filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', output_basename)
-        omat_filename = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.mat')
-        output_filename = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.nii.gz')
+        omat_filename = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.mat').replace("\\","/")
+        output_filename = os.path.join(os.path.dirname(source_image), output_filename + '_flirt.nii.gz').replace("\\","/")
 
         if sys.platform == 'win32':
             output_filename_path = unicode(output_filename).encode('gb2312')
@@ -119,11 +119,11 @@ class RegisterMethod(object):
                                          boundingbox,
                                          voxel_size,
                                          interp):
-        prefix = 'matlabbatch{1}.spm.spatial.normalise.estwrite'
-        bb = '[' + str(boundingbox[0][0]) + ' ' + str(boundingbox[0][1]) + ' ' + str(boundingbox[0][2]) + ' \r\n' + \
-             str(boundingbox[1][0]) + ' ' + str(boundingbox[1][1]) + ' ' + str(boundingbox[1][2]) + ']'
         return_flag = '\r\n'
-        command = """%-----------------------------------------------------------------------""" + return_flag + \
+        prefix = 'matlabbatch{1}.spm.spatial.normalise.estwrite'
+        bb = '[' + str(boundingbox[0][0]) + ' ' + str(boundingbox[0][1]) + ' ' + str(boundingbox[0][2]) + return_flag + \
+             str(boundingbox[1][0]) + ' ' + str(boundingbox[1][1]) + ' ' + str(boundingbox[1][2]) + ']'
+        command = r"""%-----------------------------------------------------------------------""" + return_flag + \
                   """% Job configuration created by FreeROI.""" + return_flag + \
                   """%-----------------------------------------------------------------------""" + return_flag + \
                   prefix + """.subj.source = {'""" + source_image + """,1'};""" + return_flag + \
@@ -140,11 +140,15 @@ class RegisterMethod(object):
                   prefix + """.roptions.preserve = 0;""" + return_flag + \
                   prefix + """.roptions.bb = """ + bb + """;""" + return_flag + \
                   prefix + """.roptions.vox = """ + str(voxel_size).replace(',', ' ') + """;""" + return_flag + \
-                  prefix + """.roptions.interp = 1;""" + return_flag + \
+                  prefix + """.roptions.interp = """ + str(interp) + """;""" + return_flag + \
                   prefix + """.eoptions.wrap = [0 0 0];""" + return_flag + \
                   prefix + """.eoptions.prefix = 'w';""" + return_flag
 
-        template_mat_filename = os.path.join(os.path.dirname(source_image), 'normalise1_job_test.m')
+        template_mat_filename = os.path.join(os.path.dirname(source_image), 'normalise1_job.m').replace("\\","/")
+        if sys.platform == 'win32':
+            command = command.replace('/', '\\')
+            template_mat_filename = template_mat_filename.replace('/', '\\')
+
         file = open(template_mat_filename, "wb")
         file.write(command)
         file.close()
@@ -157,10 +161,10 @@ class RegisterMethod(object):
                                       boundingbox,
                                       voxel_size,
                                       interp):
-        bb = '[' + str(boundingbox[0][0]) + ' ' + str(boundingbox[0][1]) + ' ' + str(boundingbox[0][2]) + ' \r\n' + \
+        return_flag = '\r\n'
+        bb = '[' + str(boundingbox[0][0]) + ' ' + str(boundingbox[0][1]) + ' ' + str(boundingbox[0][2]) + return_flag + \
              str(boundingbox[1][0]) + ' ' + str(boundingbox[1][1]) + ' ' + str(boundingbox[1][2]) + ']'
         prefix = 'matlabbatch{1}.spm.spatial.normalise.write'
-        return_flag = '\r\n'
         command = """%-----------------------------------------------------------------------""" + return_flag + \
                   """% Job configuration created by FreeROI.""" + return_flag + \
                   """%-----------------------------------------------------------------------""" + return_flag + \
@@ -169,11 +173,15 @@ class RegisterMethod(object):
                   prefix + """.roptions.preserve = 0;""" + return_flag + \
                   prefix + """.roptions.bb = """ + bb + """;""" + return_flag + \
                   prefix + """.roptions.vox = """ + str(voxel_size).replace(',', ' ') + """;""" + return_flag + \
-                  prefix + """.roptions.interp = 1;""" + return_flag + \
+                  prefix + """.roptions.interp = """ + str(interp) + """;""" + return_flag + \
                   prefix + """.eoptions.wrap = [0 0 0];""" + return_flag + \
                   prefix + """.eoptions.prefix = 'w';""" + return_flag
 
-        template_mat_filename = os.path.join(os.path.dirname(source_image), 'normalise2_job_test.m')
+        template_mat_filename = os.path.join(os.path.dirname(source_image), 'normalise2_job.m').replace("\\", "/")
+        if sys.platform == 'win32':
+            command = command.replace('/', '\\')
+            template_mat_filename = template_mat_filename.replace('/', '\\')
+
         file = open(template_mat_filename, "wb")
         file.write(command)
         file.close()
@@ -188,9 +196,9 @@ class RegisterMethod(object):
 
         output_basename = os.path.basename(source_image.strip('/'))
         output_filename = re.sub(r'(.*)\.nii(\.gz)?', r'\1', output_basename)
-        omat_filename = os.path.join(os.path.dirname(source_image), output_filename + '_sn.mat')
-        output_filename = os.path.join(os.path.dirname(source_image), 'w' + output_filename + '.nii')
-
+        omat_filename = os.path.join(os.path.dirname(source_image), output_filename + '_sn.mat').replace("\\", "/")
+        temp_filename = os.path.join(os.path.dirname(source_image), 'temp_w' + output_filename + '.nii').replace("\\", "/")
+        output_filename = os.path.join(os.path.dirname(source_image), 'w' + output_filename + '.nii').replace("\\", "/")
         #SPM normalise
         interp = 1
         if self._interpolation_method:
@@ -240,19 +248,19 @@ class RegisterMethod(object):
 
         #run matlab script
         try:
-            with InTemporaryDirectory():
-                run_matlab_script(r"""spm_path = spm('dir');
-                                        spm_ver = spm('ver');
-                                        fid = fopen('spm_stuff.txt', 'wt');
-                                        fprintf(fid, '%s\n', spm_path);
-                                        fprintf(fid, '%s\n', spm_ver);
-                                        fclose(fid);
-                                        """)
-                with open('spm_stuff.txt', 'rt') as fobj:
-                    lines = fobj.readlines()
-                    spm_path = lines[0].strip()
-                    spm_ver = lines[1].strip()
-
+            # with InTemporaryDirectory():
+            #     run_matlab_script(r"""spm_path = spm('dir');
+            #                             spm_ver = spm('ver');
+            #                             fid = fopen('spm_stuff.txt', 'wt');
+            #                             fprintf(fid, '%s\n', spm_path);
+            #                             fprintf(fid, '%s\n', spm_ver);
+            #                             fclose(fid);
+            #                             """)
+            #     with open('spm_stuff.txt', 'rt') as fobj:
+            #         lines = fobj.readlines()
+            #         spm_path = lines[0].strip()
+            #         spm_ver = lines[1].strip()
+            spm_ver = 'SPM8'
             # script = """load """ + template_mat_filename + """;spm_jobman('run', matlabbatch);"""
             script = """jobfile = {'""" + template_m_filename + """'};""" \
                      + """jobs = repmat(jobfile, 1, 1);""" \
@@ -262,13 +270,13 @@ class RegisterMethod(object):
             # Need initcfg for SPM8
             if spm_ver != 'SPM5':
                 script = "spm_jobman('initcfg');\n" + script
+
             with InTemporaryDirectory():
                 run_matlab_script(script)
                 if not os.path.exists(output_filename):
                     self.set_error_info('Spm error occured!')
-        except:
-            self.set_error_info('Spm error occured! Make sure the spm path has been added to the matlab path ' + \
-                                'or the parameter is correct.')
+        except Exception as e:
+            self.set_error_info('Spm error occured! ' + str(e))
             if os.path.exists(template_m_filename):
                 os.remove(template_m_filename)
             return None, None
@@ -276,7 +284,7 @@ class RegisterMethod(object):
         if os.path.exists(template_m_filename):
             os.remove(template_m_filename)
 
-        self._spm_nan_to_number(output_filename)
+        output_filename = self._spm_nan_to_number(output_filename, temp_filename)
         return output_filename, omat_filename
 
 
@@ -290,13 +298,16 @@ class RegisterMethod(object):
                                                                       out_parameters_matrix)
         return w_source_image_filename, w_auxiliary_image_filename
 
-    def _spm_nan_to_number(self, filename):
+    def _spm_nan_to_number(self, filename, temp_filename):
         nan_img = nib.load(filename)
         nan_data = nan_img.get_data()
-        nan_affine = nan_img.get_affine()
+        nan_header = nan_img.get_header()
         nan_data = np.nan_to_num(nan_data)
 
-        nib.save(nib.Nifti1Image(nan_data, nan_affine), filename)
+        nan_image = nib.nifti1.Nifti1Image(nan_data, None, nan_header)
+        nib.nifti1.save(nan_image, temp_filename)
+
+        return temp_filename
 
     def _compute_boundingbox(self):
         #Compute the bounding_box parameter based on the target_image
