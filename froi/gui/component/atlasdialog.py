@@ -11,7 +11,7 @@ from froi.io.xml_api import *
 from froi.io.atlas_api import *
 
 
-class AtlasDatamodel():
+class Atlasinfo():
     """
     Atlas Data Model.
     """
@@ -19,7 +19,7 @@ class AtlasDatamodel():
     tar_path = os.path.join(parent_path, 'atlas')
 
     def __init__(self):
-        super(AtlasDatamodel, self).__init__()
+        super(Atlasinfo, self).__init__()
 
     def get_atlas_names(self):
         """
@@ -44,7 +44,7 @@ class AtlasDatamodel():
         return label_list
 
 
-class AtlasDialog(QDialog, AtlasDatamodel):
+class AtlasDialog(QDialog, Atlasinfo):
     """
     A dialog for action of Atlas.
     """
@@ -174,7 +174,7 @@ class signal():
         self.signal = signal
 
 
-class SettingDialog(QDialog, signal, AtlasDatamodel):
+class SettingDialog(QDialog, signal, Atlasinfo):
     """
     A dialog for setting button.
     """
