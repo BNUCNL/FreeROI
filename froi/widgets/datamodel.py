@@ -142,6 +142,8 @@ class VolumeListModel(QAbstractListModel):
             return self._data[row].get_time_point()
         elif role == Qt.UserRole + 10:
             return self._data[row].get_data_shape()[3]
+        elif role == Qt.UserRole + 11:
+            return self._data[0].get_header()
 
         return QVariant()
 
