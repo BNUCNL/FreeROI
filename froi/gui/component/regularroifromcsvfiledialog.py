@@ -105,7 +105,7 @@ class RegularROIFromCSVFileDialog(QDialog):
         header = self._model.data(self._model.currentIndex(), Qt.UserRole + 11)
         image_affine = self._model.get_affine()
         data = self._model.data(self._model.currentIndex(), Qt.UserRole + 6)
-        new_data = np.zeros_like(data).astype(np.uint16)
+        new_data = np.zeros_like(data).astype(np.uint32)
         try:
             coord_list, radius_list, id_list = get_cord_from_file(header, cord_filepath, image_affine)
         except ValueError, error_info:
