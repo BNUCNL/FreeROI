@@ -3,6 +3,7 @@
 
 from nibabel.affines import apply_affine
 import numpy as np
+import re
 
 def save2csv(data, csv_file):
     """Save a 1/2D list data into a csv file."""
@@ -41,26 +42,33 @@ def nparray2csv(data, labels=None, csv_file=None):
                 f.write(line_str + '\n')
             f.close()
     else:
-        raise valueError, "Input must be a numpy array."
+        raise ValueError, "Input must be a numpy array."
 
-def get_cord_from_file(data, cord_filepath, image_affine):
+def get_cord_from_file(header, cord_filepath, image_affine):
         """Return all cordinate from the txt or csv file."""
+        shape = header.get_data_shape()
+        voxel_size = header.get_zooms()
+
+
         cord_file = open(cord_filepath, 'r')
         all_cords = []
-        value_list = []
-        shape = data.shape
-        import numpy as np
-        new_data = np.zeros_like(data)
+        all_roi_id = []
+        all_roi_radius = []
 
         line = cord_file.readline()
         while line:
             try:
-                cord = "".join(line.split()).split(',')
-                if len(cord) != 3:
+                cord = line.replace('\r\n', '').split('\t')
+                if len(cord) != 5:
                     raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' can only be three dimension!')
-                new_cord = list(float(i) for i in cord)
+                roi_id = int(cord[0])
+                new_cord = list(float(i) for i in cord[1:4])
                 new_cord = apply_affine(np.linalg.inv(image_affine), new_cord)
                 new_cord = list(int(i) for i in new_cord)
+                radius = int(cord[4])
+                all_roi_radius.append([int(radius * 1. / voxel_size[0]),
+                                      int(radius * 1. / voxel_size[1]),
+                                      int(radius * 1. / voxel_size[2])])
 
                 all_cords.append(new_cord)
                 if (new_cord[0] < 0 or new_cord[0] >= shape[0]) or \
@@ -68,14 +76,12 @@ def get_cord_from_file(data, cord_filepath, image_affine):
                    (new_cord[2] < 0 or new_cord[2] >= shape[2]):
                     raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' out of bounds.')
                 else:
-                    value = data[new_cord[0], new_cord[1], new_cord[2]]
-                    value_list.append(value)
-                    new_data[new_cord[0], new_cord[1], new_cord[2]] = value
+                    all_roi_id.append(roi_id)
             except:
                 raise ValueError('The cordinate ' + line.rstrip('\t\n') + ' error!')
             line = cord_file.readline()
 
         cord_file.close()
 
-        return all_cords, value_list, new_data
+        return all_cords, all_roi_radius, all_roi_id
 

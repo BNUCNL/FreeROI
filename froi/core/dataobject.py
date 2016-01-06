@@ -7,6 +7,7 @@ Dataset definition class for FreeROI GUI system.
 
 import re
 import os
+import sys
 
 import nibabel as nib
 import numpy as np
@@ -424,7 +425,46 @@ class VolumeDataset(object):
 
     def save2nifti(self, file_path):
         """Save to a nifti file."""
+        #Define nifti1 datatype codes
+        NIFTI_TYPE_UINT8 = 2  # unsigned char
+        NIFTI_TYPE_INT16 = 4  # signed short
+        NIFTI_TYPE_INT32 = 8  # signed int.
+        NIFTI_TYPE_FLOAT32 = 16  # 32 bit float.
+        NIFTI_TYPE_COMPLEX64 = 32  # 64 bit complex = 2 32 bit floats
+        NIFTI_TYPE_FLOAT64 = 64  # 64 bit float = double.
+        NIFTI_TYPE_RGB24 = 128  # 3 8 bit bytes.
+        NIFTI_TYPE_INT8 = 256  # signed char.
+        NIFTI_TYPE_UINT16 = 512  # unsigned short.
+        NIFTI_TYPE_UINT32 = 768  # unsigned int.
+        NIFTI_TYPE_INT64 = 1024  #signed long long.
+        NIFTI_TYPE_UINT64 = 1280  # unsigned long long.
+        NIFTI_TYPE_FLOAT128 = 1536  # 128 bit float = long double.
+        NIFTI_TYPE_COMPLEX128 = 1792  #128 bit complex = 2 64 bit floats.
+        NIFTI_TYPE_COMPLEX256 = 2048  # 256 bit complex = 2 128 bit floats
+        NIFTI_TYPE_RGBA32 = 2304  # 4 8 bit bytes.
+
+         #Detect the data type of the input data.
+        data_type = {
+            np.uint8: NIFTI_TYPE_UINT8,
+            np.uint16: NIFTI_TYPE_UINT16,
+            np.uint32: NIFTI_TYPE_UINT32,
+            np.float32: NIFTI_TYPE_FLOAT32,
+            np.int16: NIFTI_TYPE_INT16,
+            np.int32: NIFTI_TYPE_INT32,
+            np.int8: NIFTI_TYPE_INT8
+            }
+        if sys.maxint > 2 ** 32: # The platform is 64 bit
+            data_type[np.float128] = NIFTI_TYPE_FLOAT128
+            data_type[np.float64] = NIFTI_TYPE_FLOAT64
+            data_type[np.int64] = NIFTI_TYPE_INT64
+            data_type[np.uint64] = NIFTI_TYPE_UINT64
+            data_type[np.complex64] = NIFTI_TYPE_COMPLEX64
+            data_type[np.complex128] = NIFTI_TYPE_COMPLEX128
+            data_type[np.complex256] = NIFTI_TYPE_COMPLEX256
+
         data = np.rot90(self._data, 3)
+        if data_type.has_key(data.dtype.type):
+            self._header['datatype'] = data_type[data.dtype.type]
         self._header['cal_max'] = data.max()
         self._header['cal_min'] = 0
         image = nib.nifti1.Nifti1Image(data, None, self._header)
