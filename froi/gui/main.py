@@ -321,7 +321,7 @@ class BpMainWindow(QMainWindow):
 
         # Inversion action
         self._actions['inverse'] = QAction(QIcon(os.path.join(
-                                                 self._icon_dir, 'inverse.icon')),
+                                                 self._icon_dir, 'inverse.png')),
                                            self.tr("Inversion"),
                                            self)
         self._actions['inverse'].triggered.connect(self._inverse)
