@@ -75,7 +75,7 @@ class BasicWidget(QDialog):
         self.inverse_button = QPushButton()
         self.inverse_button.setFocusPolicy(Qt.NoFocus)
         self.inverse_button.setIcon(QIcon(os.path.join(self._icon_dir,
-                                                       'inverse.icon')))
+                                                       'inverse.png')))
         self.inverse_button.setEnabled(True)
         self.inverse_button.setToolTip("Inverse")
 
