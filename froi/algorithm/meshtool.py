@@ -1,6 +1,8 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
+import os
+import subprocess
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import cdist
@@ -340,10 +342,10 @@ def _get_subjects_dir(subjects_dir=None, raise_error=True):
 
 def has_fsaverage(subjects_dir=None):
     """Determine whether the user has a usable fsaverage"""
-    fs_dir = op.join(_get_subjects_dir(subjects_dir, False), 'fsaverage')
-    if not op.isdir(fs_dir):
+    fs_dir = os.path.join(_get_subjects_dir(subjects_dir, False), 'fsaverage')
+    if not os.path.isdir(fs_dir):
         return False
-    if not op.isdir(op.join(fs_dir, 'surf')):
+    if not os.path.isdir(os.path.join(fs_dir, 'surf')):
         return False
     return True
 
