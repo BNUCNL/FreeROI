@@ -42,7 +42,7 @@ def _fast_cross_3d(x, y):
     else:
         return np.cross(x, y)
 
-def _compute_normals(rr, tris):
+def compute_normals(rr, tris):
     """Efficiently compute vertex normals for triangulated surface"""
     # first, compute triangle normals
     r1 = rr[tris[:, 0], :]
@@ -76,7 +76,8 @@ def _compute_normals(rr, tris):
     return nn
 
 def find_closest_vertices(surface_coords, point_coords):
-    """Return the vertices on a surface mesh closest to some given coordinates.
+    """Return the vertices on a surface mesh closest to some 
+    given coordinates.
 
     The distance metric used is Euclidian distance.
 
@@ -349,6 +350,7 @@ def has_fsaverage(subjects_dir=None):
 requires_fsaverage = np.testing.dec.skipif(not has_fsaverage(),
                                            'Requires fsaverage subject data')
 
+#---  check ffmpeg
 def has_ffmpeg():
     """Test whether the FFmpeg is available in a subprocess
 

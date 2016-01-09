@@ -603,14 +603,8 @@ class SurfaceDataset(object):
 
     Attributes
     ----------
-    subject_id: string
-        Name of subject
-    hemi: {'lh', 'rh'}
-        Which hemisphere to load
-    surf: string
-        Name of the surface to load (eg. inflated, orig ...)
-    data_path: string
-        Path where to look for data
+    surf_path: string
+        Absolute path of surf file
     x: 1d array
         x coordinates of vertices
     y: 1d array
@@ -623,57 +617,46 @@ class SurfaceDataset(object):
         The faces ie. the triangles
     nn: 2d array
         Normalized surface normals for vertices
-    subjects_dir: str | None
-        If not None, this directory will be used as the subjects directory
-        instead of the value set using the SUBJECTS_DIR enviroment variable.
 
     """
 
-    def __init__(self, subject_id, hemi, surf, subjects_dir=None,
-                 offset=None):
+    def __init__(self, surf_path, offset=None):
         """Surface
         
         Parameters
         ----------
-        subject_id: string
-            Name of subject
-        hemi: {'lh', 'rh'}
-            Which hemisphere to load
-        surf: string
-            Name of the surface to load (eg. inflated, orig ...)
+        surf_path: absolute surf file path
         offset: float | None
             If 0.0, the surface will be offset such that medial wall
             is aligned with the origin. If None, no offset will be
             applied. If != 0.0, an additional offset will be used.
 
         """
-        if hemi not in ['lh', 'rh']:
-            raise ValueError('hemi must be "lh" or "rh"')
-        self.subject_id = subejct_id
-        self.hemi = hemi
-        self.surf = surf
+        if not os.path.exists(surf_path):
+            print 'Surf file does not exists!'
+            return None
+        self.surf_path = surf_path
+        (self.surf_dir, self.name) = os.path.split(file_path)
+        self.hemi = self.name.split('.')[0]
         self.offset = offset
 
-        subjects_dir = _get_subjects_dir(subjects_dir)
-        self.data_path = os.path.join(subjects_dir, subejct_id)
+        # load geometry
+        self.load_geometry()
 
     def load_geometry(self):
         """Load surface geometry."""
-        surf_path = os.path.join(self.data_path, 'surf',
-                                 '%s.%s'%(self.hemi, self.surf))
-        self.coords, self.faces = nib.freesurfer.read_geometry(surf_path)
+        self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
         if self.offset is not None:
             if self.hemi == 'lh':
                 self.coords[:, 0] -= (np.max(self.coords[:, 0]) + self.offset)
             else:
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
-        self.nn = _compute_normals(self.coords, self.faces)
+        self.nn = mshtool.compute_normals(self.coords, self.faces)
 
     def save_geometry(self):
         """Save geometry information."""
-        surf_path = os.path.join(self.data_path, 'surf',
-                                 '%s.%s'%(self.hemi, self.surf))
-        nib.freesurfer.write_geometry(surf_path, self.coords, self.faces)
+        nib.freesurfer.write_geometry(self.surf_path,
+                                      self.coords, self.faces)
 
     @property
     def x(self):
@@ -689,7 +672,7 @@ class SurfaceDataset(object):
 
     def load_curvature(self):
         """Load in curvature values from the ?h.curv file."""
-        curv_path = os.path.join(self.data_path, 'surf', '%s.curv' % self.hemi)
+        curv_path = os.path.join(self.surf_dir, '%s.curv' % self.hemi)
         self.curv = nib.freesurfer.read_morph_data(curv_path)
         self.bin_curv = np.array(self.curv > 0, np.int)
 
@@ -702,7 +685,8 @@ class SurfaceDataset(object):
         argument).
         
         """
-        label = nib.freesurfer.read_label(os.path.join(self.data_path, 'label',
+        label_dir = os.path.join(os.path.split(self.surf_dir)[0], 'label')
+        label = nib.freesurfer.read_label(os.path.join(label_dir,
                                           '%s.%s.label' % (self.hemi, name)))
         label_array = np.zeros(len(self.x), np.int)
         label_array[label] = 1
