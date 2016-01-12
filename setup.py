@@ -18,11 +18,13 @@ config = PyQt4.pyqtconfig.Configuration()
 # Replace the following with
 #  qt_inc_dir = "path/to/Qt/include"
 #  qt_lib_dir = "path/to/Qt/lib"
+qt_inc_dir = "/Users/sealhuang/miniconda2/include"
+qt_lib_dir = "/Users/sealhuang/miniconda2/lib"
 # when automatically extracted paths don't fit your installation.
 # (Note that you should use a compatible compiler and Qt version
 # as was used for building PyQt.)
-qt_inc_dir = config.qt_inc_dir
-qt_lib_dir = config.qt_lib_dir
+#qt_inc_dir = config.qt_inc_dir
+#qt_lib_dir = config.qt_lib_dir
 
 #--
 
@@ -41,15 +43,21 @@ qimageview = Extension('froi.algorithm.qimageview',
                                      qt_inc_dir,
                                      os.path.join(qt_inc_dir, 'QtCore'),
                                      os.path.join(qt_inc_dir, 'QtGui')])
-if sys.platform == 'darwin':
-    # Qt is distributed as 'framwork' on OS X
-    for lib in qt_libraries:
-        qimageview.extra_link_args.extend(['-framework', lib])
-    for d in qt_lib_dirs:
-        qimageview.extra_link_args.append('-F' + d)
-else:
-    qimageview.libraries.extend(qt_libraries)
-    qimageview.library_dirs.extend(qt_lib_dirs)
+
+qimageview.libraries.extend(qt_libraries)
+qimageview.library_dirs.extend(qt_lib_dirs)
+
+#if sys.platform == 'darwin':
+#    ## Qt is distributed as 'framwork' on OS X
+#    #for lib in qt_libraries:
+#    #    qimageview.extra_link_args.extend(['-framework', lib])
+#    #for d in qt_lib_dirs:
+#    #    qimageview.extra_link_args.append('-F' + d)
+#    qimageview.libraries.extend(qt_libraries)
+#    qimageview.library_dirs.extend(qt_lib_dirs)
+#else:
+#    qimageview.libraries.extend(qt_libraries)
+#    qimageview.library_dirs.extend(qt_lib_dirs)
 
 
 class build_ext(sipdistutils.build_ext):
