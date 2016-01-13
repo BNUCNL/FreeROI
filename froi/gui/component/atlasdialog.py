@@ -156,15 +156,7 @@ class AtlasDialog(QDialog):
         return self.status
 
 
-class signal():
-    """
-    A base class for setting dialog.
-    """
-    def __init__(self, signal):
-        self.signal = signal
-
-
-class SettingDialog(QDialog, signal):
+class SettingDialog(QDialog):
     """
     A dialog for setting button.
     """
@@ -222,13 +214,13 @@ class SettingDialog(QDialog, signal):
             self.stat.append(self.check[i].isChecked())
         self.close()
 
-    def _update_checkbox_status(self):
-        """Update checkbox status."""
-        for i in range(len(self.stat)):
-            if self.stat[i]:
-                self.check[i].setChecked(True)
-            else:
-                self.check[i].setChecked(False)
+    #def _update_checkbox_status(self):
+    #    """Update checkbox status."""
+    #    for i in range(len(self.stat)):
+    #        if self.stat[i]:
+    #            self.check[i].setChecked(True)
+    #        else:
+    #            self.check[i].setChecked(False)
 
     def _get_checkbox_status(self):
         """Get checkbox status."""
