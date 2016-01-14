@@ -14,6 +14,7 @@ import numpy as np
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+from ..algorithm import meshtool as mshtool
 from ..algorithm import array2qimage as aq
 from labelconfig import LabelConfig
 
@@ -598,8 +599,104 @@ class VolumeDataset(object):
         return dup_img
 
 class SurfaceDataset(object):
-    """Suface-based dataset in FreeROI GUI system."""
-    def __init__():
-        """Object initialization."""
-        pass
-    
+    """Container for surface object in FreeROI GUI system.
+
+    Attributes
+    ----------
+    surf_path: string
+        Absolute path of surf file
+    x: 1d array
+        x coordinates of vertices
+    y: 1d array
+        y coordinates of vertices
+    z: 1d array
+        z coordinates of vertices
+    coords: 2d array of shape [n_vertices, 3]
+        The vertices coordinates
+    faces: 2d array
+        The faces ie. the triangles
+    nn: 2d array
+        Normalized surface normals for vertices
+
+    """
+
+    def __init__(self, surf_path, offset=None):
+        """Surface
+        
+        Parameters
+        ----------
+        surf_path: absolute surf file path
+        offset: float | None
+            If 0.0, the surface will be offset such that medial wall
+            is aligned with the origin. If None, no offset will be
+            applied. If != 0.0, an additional offset will be used.
+
+        """
+        if not os.path.exists(surf_path):
+            print 'Surf file does not exists!'
+            return None
+        self.surf_path = surf_path
+        (self.surf_dir, self.name) = os.path.split(file_path)
+        self.hemi = self.name.split('.')[0]
+        self.offset = offset
+
+        # load geometry
+        self.load_geometry()
+
+    def load_geometry(self):
+        """Load surface geometry."""
+        self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
+        if self.offset is not None:
+            if self.hemi == 'lh':
+                self.coords[:, 0] -= (np.max(self.coords[:, 0]) + self.offset)
+            else:
+                self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
+        self.nn = mshtool.compute_normals(self.coords, self.faces)
+
+    def save_geometry(self):
+        """Save geometry information."""
+        nib.freesurfer.write_geometry(self.surf_path,
+                                      self.coords, self.faces)
+
+    @property
+    def x(self):
+        return self.coords[:, 0]
+
+    @property
+    def y(self):
+        return self.coords[:, 1]
+
+    @property
+    def z(self):
+        return self.coords[:, 2]
+
+    def load_curvature(self):
+        """Load in curvature values from the ?h.curv file."""
+        curv_path = os.path.join(self.surf_dir, '%s.curv' % self.hemi)
+        self.curv = nib.freesurfer.read_morph_data(curv_path)
+        self.bin_curv = np.array(self.curv > 0, np.int)
+
+    def load_label(self, name):
+        """Load in a FreeSurfer .label file.
+
+        Label files are just text files indicating the vertices included in
+        the label. Each Surface instance has a dictionary of labels, keyed
+        by the name (which is taken from the file name if not given as an
+        argument).
+        
+        """
+        label_dir = os.path.join(os.path.split(self.surf_dir)[0], 'label')
+        label = nib.freesurfer.read_label(os.path.join(label_dir,
+                                          '%s.%s.label' % (self.hemi, name)))
+        label_array = np.zeros(len(self.x), np.int)
+        label_array[label] = 1
+        try:
+            self.labels[name] = label_array
+        except AttributeError:
+            self.labels = {name: label_array}
+
+    def apply_xfm(self, mtx):
+        """Apply an affine transformation matrix to the x, y, z vectors."""
+        self.coords = np.dot(np.c_[self.coords, np.ones(len(self.coords))],
+                             mtx.T)[:, 3]
+

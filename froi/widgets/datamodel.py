@@ -308,7 +308,7 @@ class VolumeListModel(QAbstractListModel):
 
         """
         if data is None:
-            new_data = np.zeros(self._data[0].get_data_shape()[0:3], dtype=np.int_)
+            new_data = np.zeros(self._data[0].get_data_shape()[0:3], dtype=np.int16)
         else:
             new_data = data
         new_header = self._data[0].get_header().copy()

@@ -2,48 +2,41 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
-
 from PyQt4.QtGui import *
 
-from ..utils import get_file_names, get_data_dir
-from ..interface.xml_api import *
-from ..interface.atlas_api import *
+from froi.utils import get_data_dir
+from froi.utils import get_file_names
+from froi.interface.xml_api import get_info
+from froi.interface.atlas_api import *
 
 
-class AtlasDatamodel():
+def get_atlas_names():
     """
-    Atlas Data Model.
+    Get atlas name which is equal to xml names.
     """
-    parent_path = get_data_dir()
-    tar_path = os.path.join(parent_path, 'atlas')
+    tar_path = os.path.join(get_data_dir(), 'atlas')
+    xml_names = get_file_names(tar_path,'.xml')
+    return xml_names
 
-    def __init__(self):
-        super(AtlasDatamodel, self).__init__()
+def get_atlas_data(xml_name):
+    """
+    Get atlas nii data.
+    """
+    tar_path = os.path.join(get_data_dir(), 'atlas')
+    nii_name = get_info(os.path.join(tar_path, xml_name), 'imagefile')
+    nii_data = get_nii_data(tar_path, nii_name[0])
+    return nii_data
 
-    def get_atlas_names(self):
-        """
-        Get atlas name which is equal to xml names.
-        """
-        xml_names = get_file_names(self.tar_path,'.xml')
-        return xml_names
-
-    def get_atlas_data(self, xml_name):
-        """
-        Get atlas nii data.
-        """
-        nii_name = get_info(os.path.join(self.tar_path, xml_name), 'imagefile')
-        nii_data = get_nii_data(self.tar_path, nii_name[0])
-        return nii_data
-
-    def get_label_info(self, xml_name):
-        """
-        Get atlas label information.
-        """
-        label_list = get_info(os.path.join(self.tar_path, xml_name), 'label')
-        return label_list
+def get_label_info(xml_name):
+    """
+    Get atlas label information.
+    """
+    tar_path = os.path.join(get_data_dir(), 'atlas')
+    label_list = get_info(os.path.join(tar_path, xml_name), 'label')
+    return label_list
 
 
-class AtlasDialog(QDialog, AtlasDatamodel):
+class AtlasDialog(QDialog):
     """
     A dialog for action of Atlas.
     """
@@ -52,7 +45,7 @@ class AtlasDialog(QDialog, AtlasDatamodel):
     def __init__(self, model, parent=None):
         super(AtlasDialog, self).__init__(parent)
         self._model = model
-        self.xml_names = self.get_atlas_names()
+        self.xml_names = get_atlas_names()
         self.nii_data, self.label_list=[],[]
         self._init_gui()
         self._create_actions()
@@ -93,12 +86,11 @@ class AtlasDialog(QDialog, AtlasDatamodel):
             vbox_layout.addWidget(self.label[i])
             vbox_layout.addWidget(self.prob[i])
             if (self.xml_names[i] in self.default_atlas):
-                self.nii_data[i] = self.get_atlas_data(self.xml_names[i])
-                self.label_list[i] = self.get_label_info(self.xml_names[i])
+                self.nii_data[i] = get_atlas_data(self.xml_names[i])
+                self.label_list[i] = get_label_info(self.xml_names[i])
                 atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
                 self.prob[i].setText(atlas_prob)
             else:
-                self.prob[i].setText('None')
                 self.label[i].setVisible(False)
                 self.prob[i].setVisible(False)
 
@@ -140,23 +132,22 @@ class AtlasDialog(QDialog, AtlasDatamodel):
         self.stat=list()
         for i in range(len(self.xml_names)):
             self.stat.append(self.prob[i].isVisible())
-        if self.set_button.isEnabled():
-            new_dialog = SettingDialog(self.stat)
-            new_dialog.exec_()
-            self.status = new_dialog._get_checkbox_status()
-            if self.status != []:
-                for i in range(len(self.xml_names)):
-                    if (self.status[i]):
-                        self.label[i].setVisible(True)
-                        self.prob[i].setVisible(True)
-                        if (self.label_list[i]==0):
-                            self.nii_data[i] = self.get_atlas_data(self.xml_names[i])
-                            self.label_list[i] = self.get_label_info(self.xml_names[i])
-                            atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
-                            self.prob[i].setText(atlas_prob)
-                    else:
-                        self.label[i].setVisible(False)
-                        self.prob[i].setVisible(False)
+        new_dialog = SettingDialog(self.stat)
+        new_dialog.exec_()
+        self.status = new_dialog._get_checkbox_status()
+
+        for i in range(len(self.xml_names)):
+            if (self.status[i]):
+                self.label[i].setVisible(True)
+                self.prob[i].setVisible(True)
+                if not self.label_list[i]:
+                    self.nii_data[i] = get_atlas_data(self.xml_names[i])
+                    self.label_list[i] = get_label_info(self.xml_names[i])
+                    atlas_prob = self.atlas_display(self.nii_data[i], self.label_list[i])
+                    self.prob[i].setText(atlas_prob)
+            else:
+                self.label[i].setVisible(False)
+                self.prob[i].setVisible(False)
 
     def _get_setting_status(self):
         """
@@ -165,22 +156,14 @@ class AtlasDialog(QDialog, AtlasDatamodel):
         return self.status
 
 
-class signal():
-    """
-    A base class for setting dialog.
-    """
-    def __init__(self, signal):
-        self.signal = signal
-
-
-class SettingDialog(QDialog, signal, AtlasDatamodel):
+class SettingDialog(QDialog):
     """
     A dialog for setting button.
     """
     def __init__(self, stat, parent=None):
         super(SettingDialog, self).__init__(parent)
         self.stat= stat
-        self.xml_names = self.get_atlas_names()
+        self.xml_names = get_atlas_names()
         self._init_gui()
         self._create_actions()
 
@@ -231,13 +214,13 @@ class SettingDialog(QDialog, signal, AtlasDatamodel):
             self.stat.append(self.check[i].isChecked())
         self.close()
 
-    def _update_checkbox_status(self):
-        """Update checkbox status."""
-        for i in range(len(self.stat)):
-            if self.stat[i]:
-                self.check[i].setChecked(True)
-            else:
-                self.check[i].setChecked(False)
+    #def _update_checkbox_status(self):
+    #    """Update checkbox status."""
+    #    for i in range(len(self.stat)):
+    #        if self.stat[i]:
+    #            self.check[i].setChecked(True)
+    #        else:
+    #            self.check[i].setChecked(False)
 
     def _get_checkbox_status(self):
         """Get checkbox status."""
