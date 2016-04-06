@@ -741,7 +741,7 @@ class Hemisphere(object):
         """Load scalar data as an overlay."""
         (data_dir, data_name) = os.path.split(data_file)
         suffix = data_name.split('.')[-1]
-        if suffix == 'curv':
+        if suffix == 'curv' or suffix == 'thickness':
             data = nib.freesurfer.read_morph_data(data_file)
             if data.shape[0] == self.surf.get_vertices_num():
                 self.overlay_list.append(ScalarData(data_name, data))
@@ -757,9 +757,38 @@ class Hemisphere(object):
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
                 print 'Vertices number mismatch!'
-        elif suffix == 'thickness':
-            data = 
+        else:
+            print 'Unsupported data type.'
 
-    
+    def overlay_up(self, idx):
+        """Move the `idx` overlay layer up."""
+        if not self.is_top_layer(idx):
+            current_pos = self.overlay_idx.index(idx)
+            self.overlay_idx[current_pos], self.overlay_idx[current_pos+1] = \
+            self.overlay_idx[current_pos+1], self.overlay_idx[current_pos]
 
+    def overlay_down(self, idx):
+        """Move the `idx` overlay layer down."""
+        if not self.is_bottom_layer(idx):
+            current_pos = self.overlay_idx.index(idx)
+            self.overlay_idx[current_pos], self.overlay_idx[current_pos-1] = \
+            self.overlay_idx[current_pos-1], self.overlay_idx[current_pos]
+
+    def is_top_layer(self, idx):
+        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
+            if self.overlay_idx[-1] == idx:
+                return True
+            else:
+                return False
+        else:
+            print 'Invalid input!'
+
+    def is_bottom_layer(self, idx):
+        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
+            if self.overlay_idx[0] == idx:
+                return True
+            else:
+                return False
+        else:
+            print 'Invalid input!'
 
