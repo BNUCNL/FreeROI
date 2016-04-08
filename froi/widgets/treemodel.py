@@ -51,18 +51,22 @@ class TreeModel(QAbstractItemModel):
             return QModelIndex()
 
     def rowCount(self, parent):
-        """Return the number of hemispheres."""
-        return len(self._data)
+        """Return the number of rows for display."""
+        if parent.isValid():
+            return len(self._data[parent.row()].overlay_list)
+        else:
+            return len(self._data)
 
     def columnCount(self, parent):
         """Return the number of overlays in a hemispheres."""
-        if parent.isValid():
-            if not parent.column():
-                return len(self._data[parent.row()].overlay_list)
-            else:
-                return 0
-        else:
-            return 0
+        #if parent.isValid():
+        #    if not parent.column():
+        #        return len(self._data[parent.row()].overlay_list)
+        #    else:
+        #        return 1
+        #else:
+        #    return 1
+        return 1
         
     def data(self, index, role):
         """Return specific data."""
