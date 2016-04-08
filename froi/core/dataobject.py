@@ -636,7 +636,7 @@ class SurfaceDataset(object):
             print 'surf file does not exist!'
             return None
         self.surf_path = surf_path
-        (self.surf_dir, self.name) = os.path.split(file_path)
+        (self.surf_dir, self.name) = os.path.split(surf_path)
         self.hemi = self.name.split('.')[0]
         self.offset = offset
 
@@ -734,6 +734,7 @@ class Hemisphere(object):
 
         """
         self.surf = SurfaceDataset(surf_path, offset)
+        self.name = self.surf.name
         self.overlay_list = []
         self.overlay_idx = []
 
