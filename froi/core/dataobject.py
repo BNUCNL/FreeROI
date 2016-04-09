@@ -793,3 +793,5 @@ class Hemisphere(object):
         else:
             print 'Invalid input!'
 
+    def overlay_count(self):
+        return len(self.overlay_list)

@@ -21,6 +21,7 @@ if __name__ == '__main__':
     surf2 = os.path.join(db_dir, 'S0001', 'surf', 'rh.white')
     s1 = os.path.join(db_dir, 'S0001', 'surf', 'lh.thickness')
     s2 = os.path.join(db_dir, 'S0001', 'surf', 'lh.curv')
+    s3 = os.path.join(db_dir, 'S0001', 'surf', 'rh.curv')
     h1 = Hemisphere(surf1)
     h1.load_overlay(s1)
     h1.load_overlay(s2)
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     for ol in h1.overlay_list:
         print ol.name
     h2 = Hemisphere(surf2)
+    h2.load_overlay(s3)
     hemisphere_list.append(h1)
     hemisphere_list.append(h2)
     model = TreeModel(hemisphere_list)

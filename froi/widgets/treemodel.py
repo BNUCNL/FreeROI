@@ -17,81 +17,68 @@ class TreeModel(QAbstractItemModel):
         self._data = hemisphere_list
 
     def index(self, row, column, parent):
-        """Reture the index of item in the model."""
+        """Return the index of item in the model."""
         if not self.hasIndex(row, column, parent):
-            print 'index - not has index'
             return QModelIndex()
 
-        if not column:
+        if not parent.isValid():
             parentItem = self._data[row]
-            print 'index - create index'
-            return self.createIndex(row, 0, parentItem)
+            return self.createIndex(row, column, parentItem)
         else:
             parentItem = parent.internalPointer()
-            childItem_idx = parentItem.overlay_idx[column-1]
+            childItem_idx = parentItem.overlay_idx[
+                                parentItem.overlay_count()-1-row]
             childItem = parentItem.overlay_list[childItem_idx]
             if childItem:
-                print 'index - create index'
                 return self.createIndex(row, column, childItem)
             else:
-                print 'index - invalid childitem'
                 return QModelIndex()
 
     def parent(self, index):
         """Return the parent of the model item with the given index."""
         if not index.isValid():
-            print 'parent - invalid index'
             return QModelIndex()
 
-        if index.column() > 0:
-            print 'parent - find parent'
-            return self.createIndex(index.row(), 0, self._data[index.row()])
-        else:
-            print 'parent - no parent'
+        item = index.internalPointer()
+        if item in self._data:
             return QModelIndex()
+        else:
+            for hemi in self._data:
+                if item in hemi.overlay_list:
+                    return self.createIndex(self._data.index(hemi), 0, hemi)
 
     def rowCount(self, parent):
         """Return the number of rows for display."""
         if parent.isValid():
-            return len(self._data[parent.row()].overlay_list)
+            if parent.internalPointer() in self._data:
+                return self._data[parent.row()].overlay_count()
+            else:
+                return 0
         else:
             return len(self._data)
 
     def columnCount(self, parent):
         """Return the number of overlays in a hemispheres."""
-        #if parent.isValid():
-        #    if not parent.column():
-        #        return len(self._data[parent.row()].overlay_list)
-        #    else:
-        #        return 1
-        #else:
-        #    return 1
         return 1
         
     def data(self, index, role):
         """Return specific data."""
         if not index.isValid():
-            print 'data - invalid index'
             return None
 
         if role != Qt.DisplayRole:
-            print 'data - invalid role'
             return None
 
         item = index.internalPointer()
-        print item.name
         return item.name
 
     def flags(self, index):
         if not index.isValid():
-            print 'no flags'
             return Qt.NoItemFlags
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            print 'header data - ok'
             return 'Name'
-        print 'header data - None'
         return None
 
