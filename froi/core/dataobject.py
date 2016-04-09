@@ -633,10 +633,10 @@ class SurfaceDataset(object):
 
         """
         if not os.path.exists(surf_path):
-            print 'Surf file does not exists!'
+            print 'surf file does not exist!'
             return None
         self.surf_path = surf_path
-        (self.surf_dir, self.name) = os.path.split(file_path)
+        (self.surf_dir, self.name) = os.path.split(surf_path)
         self.hemi = self.name.split('.')[0]
         self.offset = offset
 
@@ -658,6 +658,10 @@ class SurfaceDataset(object):
         nib.freesurfer.write_geometry(self.surf_path,
                                       self.coords, self.faces)
 
+    def get_vertices_num(self):
+        """Get vertices number of the surface."""
+        return self.coords.shape[0]
+
     @property
     def x(self):
         return self.coords[:, 0]
@@ -670,33 +674,124 @@ class SurfaceDataset(object):
     def z(self):
         return self.coords[:, 2]
 
-    def load_curvature(self):
-        """Load in curvature values from the ?h.curv file."""
-        curv_path = os.path.join(self.surf_dir, '%s.curv' % self.hemi)
-        self.curv = nib.freesurfer.read_morph_data(curv_path)
-        self.bin_curv = np.array(self.curv > 0, np.int)
-
-    def load_label(self, name):
-        """Load in a FreeSurfer .label file.
-
-        Label files are just text files indicating the vertices included in
-        the label. Each Surface instance has a dictionary of labels, keyed
-        by the name (which is taken from the file name if not given as an
-        argument).
-        
-        """
-        label_dir = os.path.join(os.path.split(self.surf_dir)[0], 'label')
-        label = nib.freesurfer.read_label(os.path.join(label_dir,
-                                          '%s.%s.label' % (self.hemi, name)))
-        label_array = np.zeros(len(self.x), np.int)
-        label_array[label] = 1
-        try:
-            self.labels[name] = label_array
-        except AttributeError:
-            self.labels = {name: label_array}
-
     def apply_xfm(self, mtx):
         """Apply an affine transformation matrix to the x, y, z vectors."""
         self.coords = np.dot(np.c_[self.coords, np.ones(len(self.coords))],
                              mtx.T)[:, 3]
 
+class ScalarData(object):
+    """Container for Scalar data in Surface syetem.
+    A container for thickness, curv, sig, and label dataset.
+
+    """
+    def __init__(self, name, data, min=None, max=None):
+        """Initialization.
+        TODO: colormap configs should be added to the function.
+
+        """
+        self.name = name
+        self.data = data
+        if min and isinstance(min, float):
+            self.min = min
+        else:
+            self.min = np.min(data)
+        if max and isinstance(max, float):
+            self.max = max
+        else:
+            self.max = np.max(data)
+        self.visible = True
+
+        # TODO: colormap config
+        #self.colormap = 'xxx'
+
+    def get_data(self):
+        return self.data
+
+    def get_name(self):
+        return self.name
+    
+    def get_min(self):
+        return self.min
+
+    def get_max(self):
+        return self.max
+
+    def is_visible(self):
+        return self.visible
+
+class Hemisphere(object):
+    """Hemisphere: container for surface data and scalar data."""
+    def __init__(self, surf_path, offset=None):
+        """Hemisphere
+
+        Parameters
+        ----------
+        surf_path: absolute surf file path
+        offset: float | None
+            If 0.0, the surface will be offset such that medial wall
+            is aligned with the origin. If None, no offset will be 
+            applied. If != 0.0, an additional offset will be used.
+
+        """
+        self.surf = SurfaceDataset(surf_path, offset)
+        self.name = self.surf.name
+        self.overlay_list = []
+        self.overlay_idx = []
+
+    def load_overlay(self, data_file):
+        """Load scalar data as an overlay."""
+        (data_dir, data_name) = os.path.split(data_file)
+        suffix = data_name.split('.')[-1]
+        if suffix == 'curv' or suffix == 'thickness':
+            data = nib.freesurfer.read_morph_data(data_file)
+            if data.shape[0] == self.surf.get_vertices_num():
+                self.overlay_list.append(ScalarData(data_name, data))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                print 'Vertices number mismatch!'
+        elif suffix == 'label':
+            data = nib.freesurfer.read_label(data_file)
+            if np.max(data) <= self.surf.get_vertices_num():
+                label_array = np.zeros(self.surf.get_vertices_num(), np.int)
+                label_array[data] = 1
+                self.overlay_list.append(ScalarData(data_name, label_array))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                print 'Vertices number mismatch!'
+        else:
+            print 'Unsupported data type.'
+
+    def overlay_up(self, idx):
+        """Move the `idx` overlay layer up."""
+        if not self.is_top_layer(idx):
+            current_pos = self.overlay_idx.index(idx)
+            self.overlay_idx[current_pos], self.overlay_idx[current_pos+1] = \
+            self.overlay_idx[current_pos+1], self.overlay_idx[current_pos]
+
+    def overlay_down(self, idx):
+        """Move the `idx` overlay layer down."""
+        if not self.is_bottom_layer(idx):
+            current_pos = self.overlay_idx.index(idx)
+            self.overlay_idx[current_pos], self.overlay_idx[current_pos-1] = \
+            self.overlay_idx[current_pos-1], self.overlay_idx[current_pos]
+
+    def is_top_layer(self, idx):
+        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
+            if self.overlay_idx[-1] == idx:
+                return True
+            else:
+                return False
+        else:
+            print 'Invalid input!'
+
+    def is_bottom_layer(self, idx):
+        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
+            if self.overlay_idx[0] == idx:
+                return True
+            else:
+                return False
+        else:
+            print 'Invalid input!'
+
+    def overlay_count(self):
+        return len(self.overlay_list)
