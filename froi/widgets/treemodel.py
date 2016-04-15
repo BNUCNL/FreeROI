@@ -8,6 +8,7 @@
 import numpy as np
 from PyQt4.QtCore import *
 
+
 class TreeModel(QAbstractItemModel):
     """Definition of class TreeModel."""
     def __init__(self, hemisphere_list, parent=None):
@@ -26,11 +27,15 @@ class TreeModel(QAbstractItemModel):
             return self.createIndex(row, column, parentItem)
         else:
             parentItem = parent.internalPointer()
-            childItem_idx = parentItem.overlay_idx[
-                                parentItem.overlay_count()-1-row]
-            childItem = parentItem.overlay_list[childItem_idx]
-            if childItem:
-                return self.createIndex(row, column, childItem)
+            if parentItem in self._data:
+
+                childItem_idx = parentItem.overlay_idx[
+                                    parentItem.overlay_count()-1-row]
+                childItem = parentItem.overlay_list[childItem_idx]
+                if childItem:
+                    return self.createIndex(row, column, childItem)
+                else:
+                    return QModelIndex()
             else:
                 return QModelIndex()
 
@@ -81,4 +86,3 @@ class TreeModel(QAbstractItemModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return 'Name'
         return None
-
