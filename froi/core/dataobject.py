@@ -47,6 +47,7 @@ class DoStack(QObject):
         else:
             return False
 
+
 class VolumeDataset(object):
     """Base dataset in FreeROI GUI system."""
     def __init__(self, source, label_config_center, name=None, header=None, 
@@ -598,6 +599,7 @@ class VolumeDataset(object):
                                 colormap=self.get_colormap())
         return dup_img
 
+
 class SurfaceDataset(object):
     """Container for surface object in FreeROI GUI system.
 
@@ -679,6 +681,7 @@ class SurfaceDataset(object):
         self.coords = np.dot(np.c_[self.coords, np.ones(len(self.coords))],
                              mtx.T)[:, 3]
 
+
 class ScalarData(object):
     """Container for Scalar data in Surface syetem.
     A container for thickness, curv, sig, and label dataset.
@@ -702,7 +705,9 @@ class ScalarData(object):
         self.visible = True
 
         # TODO: colormap config
-        #self.colormap = 'xxx'
+        self.colormap = 'gray'
+
+        self.alpha = 1.0
 
     def get_data(self):
         return self.data
@@ -716,8 +721,50 @@ class ScalarData(object):
     def get_max(self):
         return self.max
 
+    def get_colormap(self):
+        return self.colormap
+
+    def get_alpha(self):
+        return self.alpha
+
     def is_visible(self):
         return self.visible
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_min(self, min):
+        try:
+            self.min = float(min)
+        except ValueError:
+            print "min must be a number."
+
+    def set_max(self, max):
+        try:
+            self.max = float(max)
+        except ValueError:
+            print "max must be a number."
+
+    def set_colormap(self, colormap_name):
+        self.colormap = colormap_name
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            if status:
+                self.visible = True
+            else:
+                self.visible = False
+        else:
+            raise ValueError("Input must a bool.")
+
+    def set_alpha(self, alpha):
+        if isinstance(alpha, int):
+            if alpha >= 0 and alpha <= 255:
+                if self.alpha != alpha:
+                    self.alpha = alpha
+        else:
+            raise ValueError("Value must be an integer between 0 and 255.")
+
 
 class Hemisphere(object):
     """Hemisphere: container for surface data and scalar data."""
@@ -737,6 +784,8 @@ class Hemisphere(object):
         self.name = self.surf.name
         self.overlay_list = []
         self.overlay_idx = []
+        self.alpha = 1.0
+        self.colormap = "gray"
 
     def load_overlay(self, data_file):
         """Load scalar data as an overlay."""
@@ -795,3 +844,20 @@ class Hemisphere(object):
 
     def overlay_count(self):
         return len(self.overlay_list)
+
+    def get_alpha(self):
+        return self.alpha
+
+    def get_colormap(self):
+        return self.colormap
+
+    def set_alpha(self, alpha):
+        if isinstance(alpha, int):
+            if alpha >= 0 and alpha <= 255:
+                if self.alpha != alpha:
+                    self.alpha = alpha
+        else:
+            raise ValueError("Value must be an integer between 0 and 255.")
+
+    def set_colormap(self, colormap_name):
+        self.colormap = colormap_name
