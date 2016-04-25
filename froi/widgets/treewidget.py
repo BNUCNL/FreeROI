@@ -149,7 +149,6 @@ class TreeView(QWidget):
                 self._down_button.setEnabled(True)
 
             # min/max value
-            # print str(self._model.data(index, Qt.UserRole))
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
             self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
 
@@ -168,8 +167,6 @@ class TreeView(QWidget):
 
             # Set current index
             self._model.setCurrentIndex(self._tree_view.currentIndex())
-            # self._model.setSelectedIndexes(self._tree_view.currentIndex())
-            # print "exe"
 
     def _set_view_min(self):
         """Set current selected item's view_min value."""
@@ -205,30 +202,12 @@ class TreeView(QWidget):
         """Move selected item up for one step."""
         index = self._tree_view.currentIndex()
         self._model.moveUp(index)
-        index = self._tree_view.currentIndex()
-        if index.row() == 0:
-            self._up_button.setEnabled(False)
-        else:
-            self._up_button.setEnabled(True)
-        if index.row() == (self._model.rowCount(index.parent()) - 1):
-            self._down_button.setEnabled(False)
-        else:
-            self._down_button.setEnabled(True)
         self._tree_view.setFocus()
 
     def _down_action(self):
         """Move selected item down for one step."""
         index = self._tree_view.currentIndex()
         self._model.moveDown(index)
-        index = self._tree_view.currentIndex()
-        if index.row() == 0:
-            self._up_button.setEnabled(False)
-        else:
-            self._up_button.setEnabled(True)
-        if index.row() == (self._model.rowCount(index.parent()) - 1):
-            self._down_button.setEnabled(False)
-        else:
-            self._down_button.setEnabled(True)
         self._tree_view.setFocus()
 
 
