@@ -75,12 +75,6 @@ class TreeModel(QAbstractItemModel):
             return None
 
         item = index.internalPointer()
-        # print "--------------"
-        # print item.get_name()
-        # print index.row(), index.column()
-        # if index.parent().internalPointer():
-        #     print index.parent().internalPointer().get_name()
-
 
         if item in self._data:
             if role == Qt.UserRole + 2:
