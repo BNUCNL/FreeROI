@@ -8,17 +8,17 @@
 import numpy as np
 from PyQt4.QtCore import *
 
+
 class TreeModel(QAbstractItemModel):
     """Definition of class TreeModel."""
-    # customizes signal
-    repaint_slices = pyqtSignal(int, name='repaint_slices')
-
     def __init__(self, hemisphere_list, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
         
         self._data = hemisphere_list
-        self.checkLisk = {}
+
+    def get_data(self):
+        return self._data
 
     def index(self, row, column, parent):
         """Return the index of item in the model."""
@@ -75,6 +75,12 @@ class TreeModel(QAbstractItemModel):
             return None
 
         item = index.internalPointer()
+        # print "--------------"
+        # print item.get_name()
+        # print index.row(), index.column()
+        # if index.parent().internalPointer():
+        #     print index.parent().internalPointer().get_name()
+
 
         if item in self._data:
             if role == Qt.UserRole + 2:
@@ -92,28 +98,29 @@ class TreeModel(QAbstractItemModel):
                 return item.get_colormap()
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
-           return item.name
+           return item.get_name()
 
         if role == Qt.CheckStateRole:
-            if index.column() == 0:
-                return self.checkState(index)
 
-    def checkState(self, index):
-        if index in self.checkLisk:
-            return self.checkLisk[index]
-        else:
-            return Qt.Unchecked
+            if index.column() == 0:
+                if item.is_visible():
+                    return Qt.Checked
+                else:
+                    return Qt.Unchecked
 
     def flags(self, index):
+        item = index.internalPointer()
         if not index.isValid():
             return Qt.NoItemFlags
         result = Qt.ItemIsEnabled | Qt.ItemIsSelectable
         if index.column() == 0:
             result |= Qt.ItemIsUserCheckable
+        if item in self._data:
+             result |= Qt.ItemIsTristate
 
         return result
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return 'Name'
         return None
@@ -133,7 +140,10 @@ class TreeModel(QAbstractItemModel):
             else:
                 return False
         elif role == Qt.CheckStateRole and index.column() == 0:
-            self.checkLisk[index] = value
+            if value == Qt.Unchecked:
+                item.set_visible(False)
+            else:
+                item.set_visible(True)
 
         if item in self._data:
             if role == Qt.UserRole + 2:
@@ -163,23 +173,31 @@ class TreeModel(QAbstractItemModel):
                     item.set_colormap(value)
                 else:
                     return False
+
         self.dataChanged.emit(index, index)
         return True
 
     def moveUp(self, index):
         item = index.internalPointer()
+        row = index.row()
+        parent = index.parent()
+        self.beginMoveRows(parent, row, row, parent, row-1)
         for hemi in self._data:
             if item in hemi.overlay_list:
                 idx = hemi.overlay_list.index(item)
                 hemi.overlay_up(idx)
-        # print "moveup"
+        self.endMoveRows()
 
     def moveDown(self, index):
         item = index.internalPointer()
+        row = index.row()
+        parent = index.parent()
+        self.beginMoveRows(parent, row+1, row+1, parent, row)
         for hemi in self._data:
             if item in hemi.overlay_list:
                 idx = hemi.overlay_list.index(item)
                 hemi.overlay_down(idx)
+        self.endMoveRows()
 
     def setCurrentIndex(self, index):
         """Set current row."""
