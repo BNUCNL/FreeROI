@@ -218,6 +218,7 @@ class LayerView(QWidget):
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
         self._volume_index_spinbox.valueChanged.connect(self._set_time_point)
+        self._volume_index_spinbox.setKeyboardTracking(False)
         # set voxel ijk position
         self._coord_x.valueChanged.connect(self.set_cross_pos)
         self._coord_y.valueChanged.connect(self.set_cross_pos)
