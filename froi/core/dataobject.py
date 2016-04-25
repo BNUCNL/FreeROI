@@ -786,6 +786,7 @@ class Hemisphere(object):
         self.overlay_idx = []
         self.alpha = 1.0
         self.colormap = "gray"
+        self.visible = True
 
     def load_overlay(self, data_file):
         """Load scalar data as an overlay."""
@@ -851,6 +852,9 @@ class Hemisphere(object):
     def get_colormap(self):
         return self.colormap
 
+    def is_visible(self):
+        return self.visible
+
     def set_alpha(self, alpha):
         if isinstance(alpha, int):
             if alpha >= 0 and alpha <= 255:
@@ -861,3 +865,15 @@ class Hemisphere(object):
 
     def set_colormap(self, colormap_name):
         self.colormap = colormap_name
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            if status:
+                self.visible = True
+            else:
+                self.visible = False
+        else:
+            raise ValueError("Input must a bool.")
+
+    def get_name(self):
+        return self.name
