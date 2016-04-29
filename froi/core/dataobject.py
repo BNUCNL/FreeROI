@@ -11,12 +11,14 @@ import sys
 
 import nibabel as nib
 import numpy as np
+import gzip
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from ..algorithm import meshtool as mshtool
-from ..algorithm import array2qimage as aq
+from froi.algorithm import meshtool as mshtool
+from froi.algorithm import array2qimage as aq
 from labelconfig import LabelConfig
+from nibabel.spatialimages import ImageFileError
 
 
 class DoStack(QObject):
@@ -46,6 +48,7 @@ class DoStack(QObject):
             return True
         else:
             return False
+
 
 class VolumeDataset(object):
     """Base dataset in FreeROI GUI system."""
@@ -598,6 +601,7 @@ class VolumeDataset(object):
                                 colormap=self.get_colormap())
         return dup_img
 
+
 class SurfaceDataset(object):
     """Container for surface object in FreeROI GUI system.
 
@@ -679,6 +683,7 @@ class SurfaceDataset(object):
         self.coords = np.dot(np.c_[self.coords, np.ones(len(self.coords))],
                              mtx.T)[:, 3]
 
+
 class ScalarData(object):
     """Container for Scalar data in Surface syetem.
     A container for thickness, curv, sig, and label dataset.
@@ -699,10 +704,11 @@ class ScalarData(object):
             self.max = max
         else:
             self.max = np.max(data)
-        self.visible = True
 
-        # TODO: colormap config
-        #self.colormap = 'xxx'
+        self.visible = True
+        self.colormap = "Reds"
+        self.alpha = 1.0
+        self.colorbar = True
 
     def get_data(self):
         return self.data
@@ -716,8 +722,55 @@ class ScalarData(object):
     def get_max(self):
         return self.max
 
+    def get_colormap(self):
+        return self.colormap
+
+    def get_alpha(self):
+        return self.alpha
+
     def is_visible(self):
         return self.visible
+
+    def is_colorbar(self):
+        return self.colorbar
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_min(self, min):
+        try:
+            self.min = float(min)
+        except ValueError:
+            print "min must be a number."
+
+    def set_max(self, max):
+        try:
+            self.max = float(max)
+        except ValueError:
+            print "max must be a number."
+
+    def set_colormap(self, colormap_name):
+        self.colormap = colormap_name
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            self.visible = status
+        else:
+            raise ValueError("Input must a bool.")
+
+    def set_colorbar(self, status):
+        if isinstance(status, bool):
+            self.colorbar = status
+        else:
+            raise ValueError("Input must a bool.")
+
+    def set_alpha(self, alpha):
+        if 0 <= alpha <= 1:
+            if self.alpha != alpha:
+                self.alpha = alpha
+        else:
+            raise ValueError("Value must be an integer between 0 and 1.")
+
 
 class Hemisphere(object):
     """Hemisphere: container for surface data and scalar data."""
@@ -737,6 +790,9 @@ class Hemisphere(object):
         self.name = self.surf.name
         self.overlay_list = []
         self.overlay_idx = []
+        self.alpha = 1.0
+        self.colormap = "gray"
+        self.visible = True
 
     def load_overlay(self, data_file):
         """Load scalar data as an overlay."""
@@ -744,20 +800,55 @@ class Hemisphere(object):
         suffix = data_name.split('.')[-1]
         if suffix == 'curv' or suffix == 'thickness':
             data = nib.freesurfer.read_morph_data(data_file)
+            data = data.astype(np.float64)
+            if data.dtype.byteorder == '>':
+                data.byteswap(True)
             if data.shape[0] == self.surf.get_vertices_num():
                 self.overlay_list.append(ScalarData(data_name, data))
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
                 print 'Vertices number mismatch!'
+
         elif suffix == 'label':
             data = nib.freesurfer.read_label(data_file)
             if np.max(data) <= self.surf.get_vertices_num():
+
+                data = data.astype(np.float64)
+                if data.dtype.byteorder == '>':
+                    data.byteswap(True)
+
                 label_array = np.zeros(self.surf.get_vertices_num(), np.int)
                 label_array[data] = 1
                 self.overlay_list.append(ScalarData(data_name, label_array))
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
                 print 'Vertices number mismatch!'
+
+        elif suffix == "nii" or suffix == "gz" or suffix == "mgz":
+            hemi = os.path.split(data_file)[1].split('.')[0]
+            basename = os.path.basename(data_file)
+            if basename.endswith(".nii.gz"):
+                basename = basename[:-7]
+            if basename.endswith(".gz"):
+                basename = basename[:-3]
+            if basename.startswith("%s." % hemi):
+                basename = basename[3:]
+            data_name = os.path.splitext(basename)[0]
+
+            # load act_data
+            # data = nib.load(data_file).get_data()
+            scalar_data_list = self._read_scalar_data(data_file)
+            for data in scalar_data_list:
+                # transform type of data into float64
+                data = data.astype(np.float64)
+                if data.dtype.byteorder == '>':
+                    data.byteswap(True)
+
+                if data.shape[0] == self.surf.get_vertices_num():
+                    self.overlay_list.append(ScalarData(data_name, data))
+                    self.overlay_idx.append(len(self.overlay_idx))
+                else:
+                    print 'vertices number mismatch!'
         else:
             print 'Unsupported data type.'
 
@@ -795,3 +886,99 @@ class Hemisphere(object):
 
     def overlay_count(self):
         return len(self.overlay_list)
+
+    def get_alpha(self):
+        return self.alpha
+
+    def get_colormap(self):
+        return self.colormap
+
+    def is_visible(self):
+        return self.visible
+
+    def set_alpha(self, alpha):
+        if 0 <= alpha <= 1:
+            if self.alpha != alpha:
+                self.alpha = alpha
+        else:
+            raise ValueError("Value must be an integer between 0 and 1.")
+
+    def set_colormap(self, colormap_name):
+        self.colormap = colormap_name
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            if status:
+                self.visible = True
+            else:
+                self.visible = False
+        else:
+            raise ValueError("Input must a bool.")
+
+    def get_name(self):
+        return self.name
+
+    def _read_scalar_data(self, filepath):
+        """Load in scalar data from an image.
+
+        Parameters
+        ----------
+        filepath : str
+            path to scalar data file
+
+        Returns
+        -------
+        scalar_data : numpy array
+            flat numpy array of scalar data
+        """
+        try:
+            scalar_data = nib.load(filepath).get_data()
+            shape = scalar_data.shape
+            if len(shape) == 4:
+                scalar_data_list = []
+                for index in range(shape[3]):
+                    scalar_data_list.append(np.ravel(scalar_data[:, :, :, index], order='F'))
+            else:
+                scalar_data_list = [np.ravel(scalar_data, order="F")]
+            return scalar_data_list
+
+        except ImageFileError:
+            ext = os.path.splitext(filepath)[1]
+            if ext == ".mgz":
+                openfile = gzip.open
+            elif ext == ".mgh":
+                openfile = open
+            else:
+                raise ValueError("Scalar file format must be readable "
+                                "by Nibabel or .mg{hz} format")
+
+        fobj = openfile(filepath, "rb")
+        # We have to use np.fromstring here as gzip fileobjects don't work
+        # with np.fromfile; same goes for try/finally instead of with statement
+        try:
+            v = np.fromstring(fobj.read(4), ">i4")[0]
+            if v != 1:
+                # I don't actually know what versions this code will read, so to be
+                # on the safe side, let's only let version 1 in for now.
+                # Scalar data might also be in curv format (e.g. lh.thickness)
+                # in which case the first item in the file is a magic number.
+                raise NotImplementedError("Scalar data file version not supported")
+            ndim1 = np.fromstring(fobj.read(4), ">i4")[0]
+            ndim2 = np.fromstring(fobj.read(4), ">i4")[0]
+            ndim3 = np.fromstring(fobj.read(4), ">i4")[0]
+            nframes = np.fromstring(fobj.read(4), ">i4")[0]
+            datatype = np.fromstring(fobj.read(4), ">i4")[0]
+            # Set the number of bytes per voxel and numpy data type according to
+            # FS codes
+            databytes, typecode = {0: (1, ">i1"), 1: (4, ">i4"), 3: (4, ">f4"),
+                                   4: (2, ">h")}[datatype]
+            # Ignore the rest of the header here, just seek to the data
+            fobj.seek(284)
+            nbytes = ndim1 * ndim2 * ndim3 * nframes * databytes
+            # Read in all the data, keep it in flat representation
+            # (is this ever a problem?)
+            scalar_data = np.fromstring(fobj.read(nbytes), typecode)
+        finally:
+            fobj.close()
+
+        return scalar_data

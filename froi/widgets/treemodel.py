@@ -5,17 +5,22 @@
 
 """
 
-import numpy as np
 from PyQt4.QtCore import *
 
 
 class TreeModel(QAbstractItemModel):
     """Definition of class TreeModel."""
+    # customized signals
+    repaint_surface = pyqtSignal()
+
     def __init__(self, hemisphere_list, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
         
         self._data = hemisphere_list
+
+    def get_data(self):
+        return self._data
 
     def index(self, row, column, parent):
         """Return the index of item in the model."""
@@ -71,18 +76,156 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role != Qt.DisplayRole:
-            return None
-
         item = index.internalPointer()
-        return item.name
+
+        if item in self._data:
+            if role == Qt.UserRole + 2:
+                return item.get_alpha()
+            elif role == Qt.UserRole + 3:
+                return item.get_colormap()
+        else:
+            if role == Qt.UserRole:
+                return item.get_min()
+            elif role == Qt.UserRole + 1:
+                return item.get_max()
+            elif role == Qt.UserRole + 2:
+                return item.get_alpha()
+            elif role == Qt.UserRole + 3:
+                return item.get_colormap()
+
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+           return item.get_name()
+
+        if role == Qt.CheckStateRole:
+
+            if index.column() == 0:
+                if item.is_visible():
+                    return Qt.Checked
+                else:
+                    return Qt.Unchecked
 
     def flags(self, index):
+        item = index.internalPointer()
         if not index.isValid():
             return Qt.NoItemFlags
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        result = Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        if index.column() == 0:
+            result |= Qt.ItemIsUserCheckable
+        if item in self._data:
+             result |= Qt.ItemIsTristate
 
-    def headerData(self, section, orientation, role):
+        return result
+
+    def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return 'Name'
         return None
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if not index.isValid():
+            return None
+
+        item = index.internalPointer()
+        if role == Qt.EditRole:
+            value_str = value.toPyObject()
+            if not value_str == '':
+                if not item.get_name() == value_str:
+                    item.set_name(str(value_str))
+                else:
+                    return False
+            else:
+                return False
+        elif role == Qt.CheckStateRole and index.column() == 0:
+            if value == Qt.Unchecked:
+                item.set_visible(False)
+            else:
+                item.set_visible(True)
+
+        if item in self._data:
+            if role == Qt.UserRole + 2:
+                if not item.get_alpha == value:
+                    item.set_alpha(value)
+            elif role == Qt.UserRole + 3:
+                if not item.get_colormap == value:
+                    item.set_colormap(value)
+        else:
+            if role == Qt.UserRole:
+                if not str(item.get_min()) == value:
+                    item.set_min(value)
+                else:
+                    return False
+            elif role == Qt.UserRole + 1:
+                if not str(item.get_max()) == value:
+                    item.set_max(value)
+                else:
+                    return False
+            elif role == Qt.UserRole + 2:
+                if not item.get_alpha() == value:
+                    item.set_alpha(value)
+                else:
+                    return False
+            elif role == Qt.UserRole + 3:
+                if not item.get_colormap() == value:
+                    item.set_colormap(value)
+                else:
+                    return False
+
+        self.dataChanged.emit(index, index)
+        self.repaint_surface.emit()
+        return True
+
+    def insertRow(self, row, item, parent):
+        self.beginInsertRows(parent, row, row)
+        try:
+            if item is not None:
+                self._data.append(item)  # insert(row, item)
+        except:
+            raise
+            print 'Insert new item failed!'
+            return False
+        self.endInsertRows()
+        return True
+
+    def removeRow(self, row, parent):
+        self.beginRemoveRows(parent, row, row)
+        item = self.index(row, 0, parent).internalPointer()
+        parent_item = parent.internalPointer()
+        if item in self._data:
+            self._data.pop(item)
+        else:
+            idx = parent_item.overlay_list.index(item)
+            parent_item.overlay_list.pop(item)
+            item.ovarlay_idx.pop(idx)
+        self.endMoveRows()
+        return True
+
+    def moveUp(self, index):
+        item = index.internalPointer()
+        row = index.row()
+        parent = index.parent()
+        self.beginMoveRows(parent, row, row, parent, row-1)
+        for hemi in self._data:
+            if item in hemi.overlay_list:
+                idx = hemi.overlay_list.index(item)
+                hemi.overlay_up(idx)
+        self.endMoveRows()
+        self.repaint_surface.emit()
+
+    def moveDown(self, index):
+        item = index.internalPointer()
+        row = index.row()
+        parent = index.parent()
+        self.beginMoveRows(parent, row+1, row+1, parent, row)
+        for hemi in self._data:
+            if item in hemi.overlay_list:
+                idx = hemi.overlay_list.index(item)
+                hemi.overlay_down(idx)
+        self.endMoveRows()
+        self.repaint_surface.emit()
+
+    def setCurrentIndex(self, index):
+        """Set current row."""
+        if index.row() >= 0 and index.row() <= self.rowCount(index.parent()):
+            self._current_index = index
+        else:
+            raise ValueError('Invalid value.')
