@@ -5,12 +5,14 @@
 
 """
 
-import numpy as np
 from PyQt4.QtCore import *
 
 
 class TreeModel(QAbstractItemModel):
     """Definition of class TreeModel."""
+    # customized signals
+    repaint_surface = pyqtSignal()
+
     def __init__(self, hemisphere_list, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
@@ -169,6 +171,32 @@ class TreeModel(QAbstractItemModel):
                     return False
 
         self.dataChanged.emit(index, index)
+        self.repaint_surface.emit()
+        return True
+
+    def insertRow(self, row, item, parent):
+        self.beginInsertRows(parent, row, row)
+        try:
+            if item is not None:
+                self._data.append(item)  # insert(row, item)
+        except:
+            raise
+            print 'Insert new item failed!'
+            return False
+        self.endInsertRows()
+        return True
+
+    def removeRow(self, row, parent):
+        self.beginRemoveRows(parent, row, row)
+        item = self.index(row, 0, parent).internalPointer()
+        parent_item = parent.internalPointer()
+        if item in self._data:
+            self._data.pop(item)
+        else:
+            idx = parent_item.overlay_list.index(item)
+            parent_item.overlay_list.pop(item)
+            item.ovarlay_idx.pop(idx)
+        self.endMoveRows()
         return True
 
     def moveUp(self, index):
@@ -181,6 +209,7 @@ class TreeModel(QAbstractItemModel):
                 idx = hemi.overlay_list.index(item)
                 hemi.overlay_up(idx)
         self.endMoveRows()
+        self.repaint_surface.emit()
 
     def moveDown(self, index):
         item = index.internalPointer()
@@ -192,6 +221,7 @@ class TreeModel(QAbstractItemModel):
                 idx = hemi.overlay_list.index(item)
                 hemi.overlay_down(idx)
         self.endMoveRows()
+        self.repaint_surface.emit()
 
     def setCurrentIndex(self, index):
         """Set current row."""
