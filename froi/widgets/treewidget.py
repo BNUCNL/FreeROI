@@ -17,14 +17,14 @@ class TreeView(QWidget):
     """
 
     current_changed = pyqtSignal()
-    builtin_colormap = ['gray',
-                        'red2yellow',
-                        'blue2cyanblue',
-                        'red',
-                        'green',
-                        'blue',
-                        'rainbow',
-                        'single ROI']
+    repaint_slices = pyqtSignal()
+    builtin_colormap = ["Reds", "Greens", "Blues",
+                        "Accent", "BrBG", "BuPu",
+                        "Dark2", "GnBu", "Greys",
+                        "OrRd", "Oranges", "PRGn",
+                        "PuBu", "PuBuGn", "Purples",
+                        "YlGn", "black-white", "blue-red",
+                        "bone", "gray"]
 
     def __init__(self, parent=None):
         super(TreeView, self).__init__(parent)
@@ -160,7 +160,7 @@ class TreeView(QWidget):
             self._colormap.setCurrentIndex(idx)
 
             # alpha slider setting
-            current_alpha = self._model.data(index, Qt.UserRole + 2) * 100 / 255
+            current_alpha = self._model.data(index, Qt.UserRole + 2) * 100
             self._visibility.setValue(current_alpha)
 
             self._tree_view.setFocus()
@@ -195,7 +195,7 @@ class TreeView(QWidget):
     def _set_alpha(self):
         """Set alpha value of current selected item."""
         index = self._tree_view.currentIndex()
-        value = self._visibility.value() * 255 / 100
+        value = self._visibility.value() / 100.
         self._model.setData(index, value, role=Qt.UserRole + 2)
 
     def _up_action(self):
@@ -210,8 +210,43 @@ class TreeView(QWidget):
         self._model.moveDown(index)
         self._tree_view.setFocus()
 
+    def _add_item(self, source):
+        index = self._tree_view.currentIndex()
+        if not index.isValid():
+            add_item = Hemisphere(source)
+            ok = self._model.insertRow(index.row(), add_item, index)
+
+        else:
+            parent = index.parent()
+            if not parent.isValid():
+                add_item = Hemisphere(source)
+            else:
+                parent_item = parent.internalPointer()
+                parent_item.load_overlay(source)
+                add_item = None
+            ok = self._model.insertRow(index.row(), add_item, parent)
+            
+        if ok:
+            self._model.repaint_surface.emit()
+            return True
+        else:
+            return False
+
+    def _del_item(self, row, parent):
+
+        index = self._tree_view.currentIndex()
+        if not index.isValid():
+            return False
+        ok = self._model.removeRow(index.row(), index.parent())
+        if ok:
+            self._model.repaint_surface.emit()
+            return True
+        else:
+            return False
+
 
 if __name__ == '__main__':
+
     db_dir = r'/nfs/t1/nsppara/corticalsurface'
 
     app = QApplication(sys.argv)
@@ -247,4 +282,5 @@ if __name__ == '__main__':
     view.setModel(model)
     view.setWindowTitle("Hemisphere Tree Model")
     view.show()
+
     sys.exit(app.exec_())
