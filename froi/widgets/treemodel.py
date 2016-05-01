@@ -16,7 +16,6 @@ class TreeModel(QAbstractItemModel):
     def __init__(self, hemisphere_list, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
-        
         self._data = hemisphere_list
 
     def get_data(self):
@@ -105,9 +104,10 @@ class TreeModel(QAbstractItemModel):
                     return Qt.Unchecked
 
     def flags(self, index):
-        item = index.internalPointer()
+        """Return the Qt flags for each data item."""
         if not index.isValid():
             return Qt.NoItemFlags
+        item = index.internalPointer()
         result = Qt.ItemIsEnabled | Qt.ItemIsSelectable
         if index.column() == 0:
             result |= Qt.ItemIsUserCheckable
@@ -229,3 +229,5 @@ class TreeModel(QAbstractItemModel):
             self._current_index = index
         else:
             raise ValueError('Invalid value.')
+
+

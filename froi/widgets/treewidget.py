@@ -246,7 +246,6 @@ class TreeView(QWidget):
 
 
 if __name__ == '__main__':
-
     db_dir = r'/nfs/t1/nsppara/corticalsurface'
 
     app = QApplication(sys.argv)
