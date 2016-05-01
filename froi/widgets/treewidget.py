@@ -11,13 +11,11 @@ from treemodel import TreeModel
 from froi.utils import *
 from froi.core.labelconfig import LabelConfig
 
-
 class TreeView(QWidget):
     """Implementation a widget for layer selection and parameters alternating.
     """
-
-    current_changed = pyqtSignal()
-    repaint_slices = pyqtSignal()
+    #current_changed = pyqtSignal()
+    repaint_surface = pyqtSignal()
     builtin_colormap = ["Reds", "Greens", "Blues",
                         "Accent", "BrBG", "BuPu",
                         "Dark2", "GnBu", "Greys",
@@ -27,58 +25,80 @@ class TreeView(QWidget):
                         "bone", "gray"]
 
     def __init__(self, parent=None):
+        """TreeView initialization."""
         super(TreeView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setMaximumWidth(280)
         self._icon_dir = get_icon_dir()
 
-        # initialize the model
+        # initialize the model variable
         self._model = None
 
     def _init_gui(self):
         """Initialize a GUI designation."""
-        # initialize QTreeView
+        # initialize QtreeView
         self._tree_view = QTreeView()
 
-        # initialize up/down push button
-        button_size = QSize(12, 12)
-        self._up_button = QPushButton()
-        self._up_button.setIcon(QIcon(os.path.join(self._icon_dir, 'arrow_up.png')))
-        self._up_button.setIconSize(button_size)
-        self._down_button = QPushButton()
-        self._down_button.setIcon(QIcon(os.path.join(self._icon_dir, 'arrow_down.png')))
-        self._down_button.setIconSize(button_size)
-
-        # layout config for tree_view panel
-        button_layout = QHBoxLayout()
-
-        # initialize parameter  selection widgets
+        # initialize visibility controller
         visibility_label = QLabel('Visibility')
         self._visibility = QSlider(Qt.Horizontal)
         self._visibility.setMinimum(0)
         self._visibility.setMaximum(100)
         self._visibility.setSingleStep(5)
 
+        #-- ScalarData settings panel
+        # initialize up/down push button
+        button_size = QSize(12, 12)
+        self._up_button = QPushButton()
+        self._up_button.setIcon(QIcon(os.path.join(self._icon_dir,
+                                                   'arrow_up.png')))
+        self._up_button.setIconSize(button_size)
+        self._down_button = QPushButton()
+        self._down_button.setIcon(QIcon(os.path.join(self._icon_dir,
+                                                     'arrow_down.png')))
+        self._down_button.setIconSize(button_size)
+
+        # initialize ScalarData displaying settings widgets
+        max_label = QLabel('Max:')
+        self._view_max = QLineEdit()
+        min_label = QLabel('Min:')
+        self._view_min = QLineEdit()
+        scalar_colormap_label = QLabel('Colormap:')
+        self._scalar_colormap = QComboBox()
+        colormaps = self.builtin_colormap
+        self._scalar_colormap.addItems(colormaps)
+
+        # layout for ScalarData settings
+        scalar_layout = QGridLayout()
+        scalar_layout.addWidget(max_label, 0, 0)
+        scalar_layout.addWidget(self._view_max, 0, 1)
+        scalar_layout.addWidget(self._up_button, 0, 2)
+        scalar_layout.addWidget(min_label, 1, 0)
+        scalar_layout.addWidget(self._view_min, 1, 1)
+        scalar_layout.addWidget(self._down_button, 1, 2)
+        scalar_layout.addWidget(scalar_colormap_label, 2, 0)
+        scalar_layout.addWidget(self._scalar_colormap, 2, 1, 1, 2)
+        scalar_group_box = QGroupBox('Overlay display settings')
+        scalar_group_box.setLayout(scalar_layout)
+
+        #-- Surface settings panel
+        # 
+
+        # layout config for tree_view panel
+        button_layout = QHBoxLayout()
+
         button_layout.addWidget(visibility_label)
         button_layout.addWidget(self._visibility)
         button_layout.addWidget(self._up_button)
         button_layout.addWidget(self._down_button)
 
-        max_label = QLabel('Max:')
-        self._view_max = QLineEdit()
-        min_label = QLabel('Min:')
-        self._view_min = QLineEdit()
-        colormap_label = QLabel('Colormap:')
-        self._colormap = QComboBox()
-        colormaps = self.builtin_colormap
-        self._colormap.addItems(colormaps)
 
-        # initialize parameter selection panel
-        grid_layout = QGridLayout()
-        grid_layout.addWidget(colormap_label, 1, 0)
-        grid_layout.addWidget(self._colormap, 1, 1, 1, 3)
+        ## initialize parameter selection panel
+        #grid_layout = QGridLayout()
+        #grid_layout.addWidget(colormap_label, 1, 0)
+        #grid_layout.addWidget(self._colormap, 1, 1, 1, 3)
 
-        # initialize parameter selection panel
+        # initialize parameter setting panel
         para_layout = QHBoxLayout()
         para_layout.addWidget(min_label)
         para_layout.addWidget(self._view_min)
@@ -108,10 +128,13 @@ class TreeView(QWidget):
     def _create_action(self):
         """Create several necessary actions."""
         # When select one item, display specific parameters
-        self._tree_view.selectionModel().currentChanged.connect(self._disp_current_para)
+        self._tree_view.selectionModel().currentChanged.connect(
+                self._disp_current_para)
 
-        # When select one item, display its undo/redo settings
-        self._tree_view.selectionModel().currentChanged.connect(self.current_changed)
+        # TODO: fulfill this function
+        ## When select one item, display its undo/redo settings
+        #self._tree_view.selectionModel().currentChanged.connect(
+        #        self.current_changed)
 
         # When dataset changed, refresh display.
         self._model.dataChanged.connect(self._disp_current_para)
@@ -134,7 +157,7 @@ class TreeView(QWidget):
         self._down_button.clicked.connect(self._down_action)
 
     def _disp_current_para(self):
-        """Display current model's paraters."""
+        """Display selected item's parameters."""
         index = self._tree_view.currentIndex()
 
         if index.row() != -1:
@@ -246,18 +269,18 @@ class TreeView(QWidget):
 
 
 if __name__ == '__main__':
-    db_dir = r'/nfs/t1/nsppara/corticalsurface'
+    db_dir = r'/Users/sealhuang/repo/FreeROI/froi/data'
 
     app = QApplication(sys.argv)
 
     # model init
     hemisphere_list = []
-    surf1 = os.path.join(db_dir, 'S0001', 'surf', 'lh.white')
-    surf2 = os.path.join(db_dir, 'S0001', 'surf', 'rh.white')
-    s1 = os.path.join(db_dir, 'S0001', 'surf', 'lh.thickness')
-    s2 = os.path.join(db_dir, 'S0001', 'surf', 'lh.curv')
-    s3 = os.path.join(db_dir, 'S0001', 'surf', 'rh.thickness')
-    s4 = os.path.join(db_dir, 'S0001', 'surf', 'rh.curv')
+    surf1 = os.path.join(db_dir, 'surf', 'lh.white')
+    surf2 = os.path.join(db_dir, 'surf', 'rh.white')
+    s1 = os.path.join(db_dir, 'surf', 'lh.thickness')
+    s2 = os.path.join(db_dir, 'surf', 'lh.curv')
+    s3 = os.path.join(db_dir, 'surf', 'rh.thickness')
+    s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
     h1 = Hemisphere(surf1)
     h1.load_overlay(s1)

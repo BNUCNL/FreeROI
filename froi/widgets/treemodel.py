@@ -107,12 +107,17 @@ class TreeModel(QAbstractItemModel):
         """Return the Qt flags for each data item."""
         if not index.isValid():
             return Qt.NoItemFlags
+        
+        result = Qt.ItemIsSelectable | Qt.ItemIsUserCheckable
         item = index.internalPointer()
-        result = Qt.ItemIsEnabled | Qt.ItemIsSelectable
-        if index.column() == 0:
-            result |= Qt.ItemIsUserCheckable
-        if item in self._data:
-             result |= Qt.ItemIsTristate
+        if not item in self._data:
+            for hemi in self._data:
+                if item in hemi.overlay_list:
+                    break
+            if hemi.is_visible():
+                result |= Qt.ItemIsEnabled
+        else:
+            result |= Qt.ItemIsEnabled
 
         return result
 
@@ -230,4 +235,14 @@ class TreeModel(QAbstractItemModel):
         else:
             raise ValueError('Invalid value.')
 
+    def is_hemisphere(self, index):
+        """Check whether the `index` item is an instance of Hemisphere."""
+        if not index.isValid():
+            return Qt.NoItemFlags
+        
+        item = index.internalPointer()
+        if item in self._data:
+            return True
+        else:
+            return False
 
