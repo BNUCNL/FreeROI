@@ -109,34 +109,6 @@ class TreeView(QWidget):
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
-    
-        #button_layout = QHBoxLayout()
-        #button_layout.addWidget(visibility_label)
-        #button_layout.addWidget(self._visibility)
-        #button_layout.addWidget(self._up_button)
-        #button_layout.addWidget(self._down_button)
-
-        ## initialize parameter selection panel
-        #grid_layout = QGridLayout()
-        #grid_layout.addWidget(colormap_label, 1, 0)
-        #grid_layout.addWidget(self._colormap, 1, 1, 1, 3)
-
-        ## initialize parameter setting panel
-        #para_layout = QHBoxLayout()
-        #para_layout.addWidget(min_label)
-        #para_layout.addWidget(self._view_min)
-        #para_layout.addWidget(max_label)
-        #para_layout.addWidget(self._view_max)
-
-        #tree_view_layout = QVBoxLayout()
-        #tree_view_layout.addWidget(self._tree_view)
-        #tree_view_layout.addLayout(button_layout)
-        #tree_view_layout.addLayout(para_layout)
-        #tree_view_layout.addLayout(grid_layout)
-
-        ## layout config of whole widget
-        #self.setLayout(QVBoxLayout())
-        #self.layout().addLayout(tree_view_layout)
 
     def setModel(self, model):
         """Set model of the viewer."""
@@ -279,7 +251,6 @@ class TreeView(QWidget):
             return False
 
     def _del_item(self, row, parent):
-
         index = self._tree_view.currentIndex()
         if not index.isValid():
             return False
