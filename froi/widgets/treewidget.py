@@ -45,8 +45,30 @@ class TreeView(QWidget):
         self._visibility.setMinimum(0)
         self._visibility.setMaximum(100)
         self._visibility.setSingleStep(5)
+        visibility_layout = QHBoxLayout()
+        visibility_layout.addWidget(visibility_label)
+        visibility_layout.addWidget(self._visibility)
 
-        #-- ScalarData settings panel
+        #-- Surface display settings panel
+        # initialize Surface display settings widgets
+        # TODO: to be refactorred
+        surface_name_label = QLabel('Hemisphere name:')
+        self._surface_name = QLineEdit()
+        surface_colormap_label = QLabel('Colormap:')
+        self._surface_colormap = QComboBox()
+        colormaps = self.builtin_colormap
+        self._surface_colormap.addItems(colormaps)
+
+        # layout for Surface settings
+        surface_layout = QGridLayout()
+        surface_layout.addWidget(surface_name_label, 0, 0)
+        surface_layout.addWidget(self._surface_name, 0, 1)
+        surface_layout.addWidget(surface_colormap_label, 1, 0)
+        surface_layout.addWidget(self._surface_colormap, 1, 1)
+        surface_group_box = QGroupBox('Surface display settings')
+        surface_group_box.setLayout(surface_layout)
+
+        #-- Overlay display settings panel
         # initialize up/down push button
         button_size = QSize(12, 12)
         self._up_button = QPushButton()
@@ -58,7 +80,7 @@ class TreeView(QWidget):
                                                      'arrow_down.png')))
         self._down_button.setIconSize(button_size)
 
-        # initialize ScalarData displaying settings widgets
+        # initialize ScalarData display settings widgets
         max_label = QLabel('Max:')
         self._view_max = QLineEdit()
         min_label = QLabel('Min:')
@@ -81,39 +103,40 @@ class TreeView(QWidget):
         scalar_group_box = QGroupBox('Overlay display settings')
         scalar_group_box.setLayout(scalar_layout)
 
-        #-- Surface settings panel
-        # 
-
-        # layout config for tree_view panel
-        button_layout = QHBoxLayout()
-
-        button_layout.addWidget(visibility_label)
-        button_layout.addWidget(self._visibility)
-        button_layout.addWidget(self._up_button)
-        button_layout.addWidget(self._down_button)
-
+        #-- layout config for whole TreeWidget
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self._tree_view)
+        self.layout().addLayout(visibility_layout)
+        self.layout().addWidget(surface_group_box)
+        self.layout().addWidget(scalar_group_box)
+    
+        #button_layout = QHBoxLayout()
+        #button_layout.addWidget(visibility_label)
+        #button_layout.addWidget(self._visibility)
+        #button_layout.addWidget(self._up_button)
+        #button_layout.addWidget(self._down_button)
 
         ## initialize parameter selection panel
         #grid_layout = QGridLayout()
         #grid_layout.addWidget(colormap_label, 1, 0)
         #grid_layout.addWidget(self._colormap, 1, 1, 1, 3)
 
-        # initialize parameter setting panel
-        para_layout = QHBoxLayout()
-        para_layout.addWidget(min_label)
-        para_layout.addWidget(self._view_min)
-        para_layout.addWidget(max_label)
-        para_layout.addWidget(self._view_max)
+        ## initialize parameter setting panel
+        #para_layout = QHBoxLayout()
+        #para_layout.addWidget(min_label)
+        #para_layout.addWidget(self._view_min)
+        #para_layout.addWidget(max_label)
+        #para_layout.addWidget(self._view_max)
 
-        tree_view_layout = QVBoxLayout()
-        tree_view_layout.addWidget(self._tree_view)
-        tree_view_layout.addLayout(button_layout)
-        tree_view_layout.addLayout(para_layout)
-        tree_view_layout.addLayout(grid_layout)
+        #tree_view_layout = QVBoxLayout()
+        #tree_view_layout.addWidget(self._tree_view)
+        #tree_view_layout.addLayout(button_layout)
+        #tree_view_layout.addLayout(para_layout)
+        #tree_view_layout.addLayout(grid_layout)
 
-        # layout config of whole widget
-        self.setLayout(QVBoxLayout())
-        self.layout().addLayout(tree_view_layout)
+        ## layout config of whole widget
+        #self.setLayout(QVBoxLayout())
+        #self.layout().addLayout(tree_view_layout)
 
     def setModel(self, model):
         """Set model of the viewer."""
@@ -151,7 +174,7 @@ class TreeView(QWidget):
         # Config setting actions
         self._view_min.editingFinished.connect(self._set_view_min)
         self._view_max.editingFinished.connect(self._set_view_max)
-        self._colormap.currentIndexChanged.connect(self._set_colormap)
+        self._scalar_colormap.currentIndexChanged.connect(self._set_colormap)
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
@@ -179,8 +202,8 @@ class TreeView(QWidget):
             cur_colormap = self._model.data(index, Qt.UserRole + 3)
             if isinstance(cur_colormap, LabelConfig):
                 cur_colormap = cur_colormap.get_name()
-            idx = self._colormap.findText(cur_colormap)
-            self._colormap.setCurrentIndex(idx)
+            idx = self._scalar_colormap.findText(cur_colormap)
+            self._scalar_colormap.setCurrentIndex(idx)
 
             # alpha slider setting
             current_alpha = self._model.data(index, Qt.UserRole + 2) * 100
@@ -212,7 +235,7 @@ class TreeView(QWidget):
     def _set_colormap(self):
         """Set colormap of current selected item."""
         index = self._tree_view.currentIndex()
-        value = self._colormap.currentText()
+        value = self._scalar_colormap.currentText()
         self._model.setData(index, value, role=Qt.UserRole + 3)
 
     def _set_alpha(self):
@@ -269,7 +292,8 @@ class TreeView(QWidget):
 
 
 if __name__ == '__main__':
-    db_dir = r'/Users/sealhuang/repo/FreeROI/froi/data'
+    #db_dir = r'/Users/sealhuang/repo/FreeROI/froi/data'
+    db_dir = r'/nfs/t3/workingshop/huanglijie/repo/FreeROI/froi/data'
 
     app = QApplication(sys.argv)
 
