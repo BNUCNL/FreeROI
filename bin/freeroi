@@ -8,6 +8,13 @@ import os
 import sys
 import argparse
 
+os.environ['ETS_TOOLKIT'] = 'qt4'
+os.environ['QT_API'] = 'pyqt'
+
+import sip
+sip.setapi('QString', 2)
+sip.setapi('QVariant', 2)
+
 from PyQt4.QtGui import QApplication
 
 from froi import utils as froi_utils
@@ -86,7 +93,8 @@ def main():
     args = parser.parse_args()
 
     # Start GUI
-    app = QApplication([])
+    # app = QApplication([])
+    app = QApplication.instance()
 
     win = BpMainWindow()
     win.config_extra_settings(data_dir)

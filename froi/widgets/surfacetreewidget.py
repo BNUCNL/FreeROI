@@ -11,7 +11,7 @@ from treemodel import TreeModel
 from froi.utils import *
 from froi.core.labelconfig import LabelConfig
 
-class TreeView(QWidget):
+class SurfaceTreeView(QWidget):
     """Implementation a widget for layer selection and parameters alternating.
     """
     #current_changed = pyqtSignal()
@@ -24,19 +24,26 @@ class TreeView(QWidget):
                         "YlGn", "black-white", "blue-red",
                         "bone", "gray"]
 
-    def __init__(self, parent=None):
+    def __init__(self, model, parent=None):
         """TreeView initialization."""
-        super(TreeView, self).__init__(parent)
+        super(SurfaceTreeView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setMaximumWidth(280)
         self._icon_dir = get_icon_dir()
 
-        # initialize the model variable
-        self._model = None
+        self._init_gui()
+
+        if isinstance(model, QAbstractItemModel):
+            self._model = model
+            self._tree_view.setModel(model)
+        else:
+            raise ValueError('Input must be a TreeModel!')
+
+        self._create_action()
 
     def _init_gui(self):
         """Initialize a GUI designation."""
-        # initialize QtreeView
+        # initialize QTreeView
         self._tree_view = QTreeView()
 
         # initialize visibility controller
@@ -109,16 +116,6 @@ class TreeView(QWidget):
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
-
-    def setModel(self, model):
-        """Set model of the viewer."""
-        if isinstance(model, QAbstractItemModel):
-            self._model = model
-            self._init_gui()
-            self._tree_view.setModel(model)
-            self._create_action()
-        else:
-            raise ValueError('Input must be a TreeModel!')
 
     def _create_action(self):
         """Create several necessary actions."""
@@ -228,46 +225,48 @@ class TreeView(QWidget):
         self._model.moveDown(index)
         self._tree_view.setFocus()
 
-    def _add_item(self, source):
-        index = self._tree_view.currentIndex()
-        if not index.isValid():
-            add_item = Hemisphere(source)
-            ok = self._model.insertRow(index.row(), add_item, index)
+    def get_treeview(self):
+        return self._tree_view
 
-        else:
-            parent = index.parent()
-            if not parent.isValid():
-                add_item = Hemisphere(source)
-            else:
-                parent_item = parent.internalPointer()
-                parent_item.load_overlay(source)
-                add_item = None
-            ok = self._model.insertRow(index.row(), add_item, parent)
-            
-        if ok:
-            self._model.repaint_surface.emit()
-            return True
-        else:
-            return False
-
-    def _del_item(self, row, parent):
-        index = self._tree_view.currentIndex()
-        if not index.isValid():
-            return False
-        ok = self._model.removeRow(index.row(), index.parent())
-        if ok:
-            self._model.repaint_surface.emit()
-            return True
-        else:
-            return False
+    # def _add_item(self, source):
+    #     index = self._tree_view.currentIndex()
+    #     if not index.isValid():
+    #         add_item = Hemisphere(source)
+    #         ok = self._model.insertRow(index.row(), add_item, index)
+    #
+    #     else:
+    #         parent = index.parent()
+    #         if not parent.isValid():
+    #             add_item = Hemisphere(source)
+    #         else:
+    #             parent_item = parent.internalPointer()
+    #             parent_item.load_overlay(source)
+    #             add_item = None
+    #         ok = self._model.insertRow(index.row(), add_item, parent)
+    #
+    #     if ok:
+    #         self._model.repaint_surface.emit()
+    #         return True
+    #     else:
+    #         return False
+    #
+    # def _del_item(self, row, parent):
+    #     index = self._tree_view.currentIndex()
+    #     if not index.isValid():
+    #         return False
+    #     ok = self._model.removeRow(index.row(), index.parent())
+    #     if ok:
+    #         self._model.repaint_surface.emit()
+    #         return True
+    #     else:
+    #         return False
 
 
 if __name__ == '__main__':
-    #db_dir = r'/Users/sealhuang/repo/FreeROI/froi/data'
-    db_dir = r'/nfs/t3/workingshop/huanglijie/repo/FreeROI/froi/data'
+    from froi import utils as froi_utils
 
     app = QApplication(sys.argv)
-
+    db_dir = froi_utils.get_data_dir()
     # model init
     hemisphere_list = []
     surf1 = os.path.join(db_dir, 'surf', 'lh.white')
@@ -295,8 +294,7 @@ if __name__ == '__main__':
     model = TreeModel(hemisphere_list)
 
     # View init
-    view = TreeView()
-    view.setModel(model)
+    view = SurfaceTreeView(model)
     view.setWindowTitle("Hemisphere Tree Model")
     view.show()
 

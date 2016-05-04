@@ -103,7 +103,9 @@ class ROIDialog(QDialog, DrawSettings):
         self._model.dataChanged.connect(self._fill_target_box)
         self.target_box.currentIndexChanged.connect(
                                 self._update_last_target_name)
-        self.action_box.currentIndexChanged[QString].connect(
+        # self.action_box.currentIndexChanged[QString].connect(
+        #                         self._update_target_box)
+        self.action_box.currentIndexChanged[str].connect(
                                 self._update_target_box)
         self.run_button.pressed.connect(self._run)
 
@@ -141,7 +143,8 @@ class ROIDialog(QDialog, DrawSettings):
         self.target_box.clear()
         vol_list = self._model.getItemList()
         self.target_box.addItem("New Volume")
-        self.target_box.addItems(QStringList(vol_list))
+        # self.target_box.addItems(QStringList(vol_list))
+        self.target_box.addItems(vol_list)
         last_target_idx = 0
         for idx, name in enumerate(vol_list):
             if name == ROIDialog.last_target_name:

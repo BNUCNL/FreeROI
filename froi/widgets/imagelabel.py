@@ -429,11 +429,18 @@ class SagittalImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[1][0])
+        # l_str = QString(self.axcodes[1][0])
+        # #l_str.resize(self.str_font_size)
+        # r_str = QString(self.axcodes[1][1])
+        # t_str = QString(self.axcodes[2][0])
+        # b_str = QString(self.axcodes[2][1])
+
+        l_str = self.axcodes[1][0]
         #l_str.resize(self.str_font_size)
-        r_str = QString(self.axcodes[1][1])
-        t_str = QString(self.axcodes[2][0])
-        b_str = QString(self.axcodes[2][1])
+        r_str = self.axcodes[1][1]
+        t_str = self.axcodes[2][0]
+        b_str = self.axcodes[2][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,
@@ -518,10 +525,16 @@ class SagittalImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[1][0])
-        r_str = QString(self.axcodes[1][1])
-        t_str = QString(self.axcodes[2][0])
-        b_str = QString(self.axcodes[2][1])
+        # l_str = QString(self.axcodes[1][0])
+        # r_str = QString(self.axcodes[1][1])
+        # t_str = QString(self.axcodes[2][0])
+        # b_str = QString(self.axcodes[2][1])
+
+        l_str = self.axcodes[1][0]
+        r_str = self.axcodes[1][1]
+        t_str = self.axcodes[2][0]
+        b_str = self.axcodes[2][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,
@@ -740,10 +753,16 @@ class AxialImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[0][1])
-        r_str = QString(self.axcodes[0][0])
-        t_str = QString(self.axcodes[1][0])
-        b_str = QString(self.axcodes[1][1])
+        # l_str = QString(self.axcodes[0][1])
+        # r_str = QString(self.axcodes[0][0])
+        # t_str = QString(self.axcodes[1][0])
+        # b_str = QString(self.axcodes[1][1])
+
+        l_str = self.axcodes[0][1]
+        r_str = self.axcodes[0][0]
+        t_str = self.axcodes[1][0]
+        b_str = self.axcodes[1][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,
@@ -829,10 +848,16 @@ class AxialImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[0][1])
-        r_str = QString(self.axcodes[0][0])
-        t_str = QString(self.axcodes[1][0])
-        b_str = QString(self.axcodes[1][1])
+        # l_str = QString(self.axcodes[0][1])
+        # r_str = QString(self.axcodes[0][0])
+        # t_str = QString(self.axcodes[1][0])
+        # b_str = QString(self.axcodes[1][1])
+
+        l_str = self.axcodes[0][1]
+        r_str = self.axcodes[0][0]
+        t_str = self.axcodes[1][0]
+        b_str = self.axcodes[1][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,
@@ -1047,10 +1072,16 @@ class CoronalImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[0][1])
-        r_str = QString(self.axcodes[0][0])
-        t_str = QString(self.axcodes[2][0])
-        b_str = QString(self.axcodes[2][1])
+        # l_str = QString(self.axcodes[0][1])
+        # r_str = QString(self.axcodes[0][0])
+        # t_str = QString(self.axcodes[2][0])
+        # b_str = QString(self.axcodes[2][1])
+
+        l_str = self.axcodes[0][1]
+        r_str = self.axcodes[0][0]
+        t_str = self.axcodes[2][0]
+        b_str = self.axcodes[2][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,
@@ -1132,10 +1163,16 @@ class CoronalImageLabel(ImageLabel3d):
                                        self.size().height()-self.margin_size,
                                        b_margin)
         # draw orientation label
-        l_str = QString(self.axcodes[0][1])
-        r_str = QString(self.axcodes[0][0])
-        t_str = QString(self.axcodes[2][0])
-        b_str = QString(self.axcodes[2][1])
+        # l_str = QString(self.axcodes[0][1])
+        # r_str = QString(self.axcodes[0][0])
+        # t_str = QString(self.axcodes[2][0])
+        # b_str = QString(self.axcodes[2][1])
+
+        l_str = self.axcodes[0][1]
+        r_str = self.axcodes[0][0]
+        t_str = self.axcodes[2][0]
+        b_str = self.axcodes[2][1]
+
         self.voxels_painter.setPen(QColor(255, 255, 255, 255))
         self.voxels_painter.drawText(7, self.size().height()/2+5, l_str)
         self.voxels_painter.drawText(self.size().width()-12,

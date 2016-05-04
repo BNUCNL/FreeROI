@@ -4,24 +4,11 @@ import sip
 
 from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
-from PyQt4 import QtGui
+from PyQt4.QtGui import *
 from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
 
 from treemodel import TreeModel
-
-# First, and before importing any Enthought packages, set the ETS_TOOLKIT
-# environment variable to qt4, to tell Traits that we will use Qt.
-os.environ["ETS_TOOLKIT"] = 'qt4'
-
-# By default, the PySide binding will be used. If you want the PyQt bindings
-# to be used, you need to set the QT_API environment variable to 'pyqt'
-os.environ["QT_API"] = "pyqt"
-
-# Also, as Traits runs with PyQt and PySide, if you use PyQt, you must make sure that you swith
-# its binding in a mode that is compatible with PySide (internal string representation mode),
-# before you import any PyQt code:
-sip.setapi("QString", 2)
 
 
 # Helpers
@@ -69,20 +56,20 @@ class Visualization(HasTraits):
                 resizable=True)
 
 
-class SurfaceView(QtGui.QWidget):
+class SurfaceView(QWidget):
 
     def __init__(self, parent=None):
         super(SurfaceView, self).__init__(parent)
 
         # initialize GUI
-        # self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Expanding)
-        self.resize(400, 450)
+        self.setMinimumSize(800, 850)
+        self.setBackgroundRole(QPalette.Dark)
 
         # get mayavi scene
         # The edit_traits call will generate the widget to embed.
         self.visualization = Visualization()
-        self.ui = self.visualization.edit_traits(parent=self, kind="subpanel").control
-        self.ui.setParent(self)
+        surface_view = self.visualization.edit_traits(parent=self, kind="subpanel").control
+        # self.ui.setParent(self)
         # get rid of the toolbar
         figure = mlab.gcf()
         _toggle_toolbar(figure, False)
@@ -93,6 +80,10 @@ class SurfaceView(QtGui.QWidget):
         self.old_cbar = []
         self.not_first_flag = False
         self.cbar = None
+
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(surface_view)
+        self.setLayout(hlayout)
 
     @staticmethod
     def _get_start_render_index(hemisphere):
@@ -188,8 +179,8 @@ if __name__ == "__main__":
 
     surface_view = SurfaceView()
     surface_view.setWindowTitle("surface view")
-    surface_view.setWindowIcon(QtGui.QIcon("/nfs/j3/userhome/chenxiayu/workingdir/icon/QAli.png"))
+    surface_view.setWindowIcon(QIcon("/nfs/j3/userhome/chenxiayu/workingdir/icon/QAli.png"))
     surface_view.show()
 
-    QtGui.qApp.exec_()
+    qApp.exec_()
     sys.exit()
