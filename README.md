@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.51123.svg)](http://dx.doi.org/10.5281/zenodo.51123)
+
 ![Logo](/froi/icon/logo_131.png)
 
 FreeROI is a versatile image processing software developed for neuroimaging
