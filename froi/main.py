@@ -13,7 +13,8 @@ from PyQt4.QtGui import *
 
 from version import __version__
 from core.labelconfig import LabelConfig
-from utils import get_icon_dir
+from core.dataobject import Hemisphere
+from utils import get_icon_dir, get_data_dir
 from widgets.listwidget import LayerView
 from widgets.gridwidget import GridView
 from widgets.orthwidget import OrthView
@@ -45,7 +46,9 @@ from widgets.greyerosiondialog import GreyerosionDialog
 from widgets.meants import MeanTSDialog
 from widgets.voxelstatsdialog import VoxelStatsDialog
 from widgets.registervolume import RegisterVolumeDialog
-
+from widgets.treemodel import TreeModel
+from widgets.surfacetreewidget import SurfaceTreeView
+from widgets.surfaceview import SurfaceView
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -80,6 +83,12 @@ class BpMainWindow(QMainWindow):
 
         # pre-define a model variable
         self.model = None
+        self.surface_model = None
+
+        self.tabWidget = None
+        self.toolbar_status = {}
+        self.image_view = None
+        self.surface_view = None
 
     def config_extra_settings(self, data_dir):
         """Set data directory and update some configurations."""
@@ -131,9 +140,24 @@ class BpMainWindow(QMainWindow):
             self.default_orth_scale_factor = float(self.orth_scale_factor) / 100
             self.default_grid_scale_factor = float(self.grid_scale_factor) / 100
         else:
-            self.setWindowState(Qt.WindowMaximized)
+            # self.setWindowState(Qt.WindowMaximized)
+            self.setMinimumSize(1000, 800)
             self.default_orth_scale_factor = 1.0
             self.default_grid_scale_factor = 2.0
+
+    def _init_tab_widget(self):
+        self.tabWidget = QTabWidget()
+        self.tabWidget.setTabShape(QTabWidget.Rounded)
+        self.tabWidget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+        self.tabWidget.setMaximumWidth(280)
+        self.tabWidget.currentChanged.connect(self._tabwidget_index_changed)
+
+        central_widget = QWidget()
+        layout = QHBoxLayout()
+        central_widget.setLayout(layout)
+        central_widget.layout().addWidget(self.tabWidget)
+        # central_widget.layout().addWidget(self.image_view)
+        self.setCentralWidget(central_widget)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -186,11 +210,20 @@ class BpMainWindow(QMainWindow):
         # Add a new image action
         self._actions['add_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
-                                             self.tr("&Add file ... "),
+                                             self.tr("&Add volume file ... "),
                                              self)
         self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
         self._actions['add_image'].triggered.connect(self._add_image)
         self._actions['add_image'].setEnabled(True)
+
+        # Add a new surface image action
+        self._actions['add_surface_image'] = QAction(QIcon(os.path.join(
+                                                   self._icon_dir, 'add.png')),
+                                             self.tr("&Add surface file ... "),
+                                             self)
+        self._actions['add_surface_image'].setShortcut(self.tr("Ctrl+A"))
+        self._actions['add_surface_image'].triggered.connect(self._add_surface_image)
+        self._actions['add_surface_image'].setEnabled(True)
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
@@ -505,7 +538,6 @@ class BpMainWindow(QMainWindow):
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
 
-
     def _add_toolbar(self):
         """Add toolbar."""
         # Initialize a spinbox for zoom-scale selection
@@ -558,7 +590,7 @@ class BpMainWindow(QMainWindow):
             'Open standard file',
             template_dir,
             'Nifti files (*.nii.gz *.nii)')
-        if not template_name.isEmpty():
+        if not template_name == '':
             if sys.platform == 'win32':
                 template_path = unicode(template_name).encode('gb2312')
             else:
@@ -572,15 +604,32 @@ class BpMainWindow(QMainWindow):
         else:
             temp_dir = self._temp_dir
         file_name = QFileDialog.getOpenFileName(self,
-                                                'Add new file',
+                                                'Add new volume file',
                                                 temp_dir,
                                                 "Nifti files (*.nii *.nii.gz)")
-        if not file_name.isEmpty():
+        if not file_name == '':
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
             else:
                 file_path = str(file_name)
             self._add_img(file_path)
+
+    def _add_surface_image(self):
+        """Add new surface image."""
+        if self._temp_dir == None:
+            temp_dir = QDir.currentPath()
+        else:
+            temp_dir = self._temp_dir
+        file_name = QFileDialog.getOpenFileName(self,
+                                                'Add new surface file',
+                                                temp_dir,
+                                                "Suface files (*.white *.thickness *.curv)")
+        if not file_name == '':
+            if sys.platform == 'win32':
+                file_path = unicode(file_name).encode('gb2312')
+            else:
+                file_path = str(file_name)
+            self._add_surface_img(file_path)
 
     def _duplicate_image(self):
         """Duplicate image."""
@@ -626,13 +675,7 @@ class BpMainWindow(QMainWindow):
                 self.list_view.setModel(self.model)
                 self._init_roi_dialog()
                 self.image_view = GridView(self.model, self.painter_status)
-                # initialize display layout
-                central_widget = QWidget()
-                layout = QHBoxLayout()
-                central_widget.setLayout(layout)
-                central_widget.layout().addWidget(self.list_view)
-                central_widget.layout().addWidget(self.image_view)
-                self.setCentralWidget(central_widget)
+
                 # add a toolbar
                 self._add_toolbar()
                 #self.setUnifiedTitleAndToolBarOnMac(True)
@@ -666,10 +709,31 @@ class BpMainWindow(QMainWindow):
                 ## Enable cursor tracking
                 # self.list_view._list_view.selectionModel().currentChanged.connect(
                 #                self._switch_cursor_status)
+                self._save_toolbar_status()
             elif self.model.rowCount() > 1:
                 self._actions['remove_image'].setEnabled(True)
                 # set current volume index
                 self.list_view.setCurrentIndex(self.model.index(0))
+
+            if not self.tabWidget:
+                self._init_tab_widget()
+
+            if self.tabWidget.count() == 0:
+                self.tabWidget.addTab(self.list_view, "Volume")
+            elif self.tabWidget.count() == 1 and self.tabWidget.currentWidget() != self.list_view:
+                self.tabWidget.addTab(self.list_view, "Volume")
+            elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.list_view:
+                self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
+
+
+            if self.centralWidget().layout().indexOf(self.image_view) == -1: #Could not find the self.image_view
+                if self.centralWidget().layout().indexOf(self.surface_view) != -1:
+                    self.centralWidget().layout().removeWidget(self.surface_view)
+                    self.surface_view.setParent(None)
+                self.centralWidget().layout().addWidget(self.image_view)
+
+            self._restore_toolbar_status()
+
             self.is_save_configure = True
         else:
             ret = QMessageBox.question(self,
@@ -680,6 +744,129 @@ class BpMainWindow(QMainWindow):
             if ret == QMessageBox.Yes:
                 register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
                 register_volume_dialog.exec_()
+
+    def _add_surface_img(self, source, offset=None):
+        """ Add surface image."""
+        # If model is NULL, then re-initialize it.
+        if not self.surface_model:
+            self.surface_model = TreeModel([])
+            self.surface_tree_view = SurfaceTreeView(self.surface_model)
+            self.surface_tree_view_control = self.surface_tree_view.get_treeview()
+
+        # Save previous opened directory (except `standard` directory)
+        file_path = source
+        if sys.platform == 'win32':
+            temp_dir = os.path.dirname(unicode(file_path, 'gb2312'))
+            if not os.stat(temp_dir) == os.stat(os.path.join(self.label_path,
+                                                             'standard')):
+                self._temp_dir = temp_dir
+        else:
+            temp_dir = os.path.dirname(file_path)
+            if not os.path.samefile(temp_dir, os.path.join(self.label_path,
+                                                           'standard')):
+                self._temp_dir = temp_dir
+
+        if len(self.surface_model.get_data()) == 0 and not file_path.endswith('.white'):
+            QMessageBox.warning(self,
+                                'Warning',
+                                'You must choose the *.white file first!',
+                                QMessageBox.Yes)
+        elif self.surface_model._add_item(self.surface_tree_view_control.currentIndex(), file_path):
+            #Initial the tabwidget.
+            if not self.tabWidget:
+                self._init_tab_widget()
+
+            if self.tabWidget.count() == 0:
+                self.tabWidget.addTab(self.surface_tree_view, "Surface")
+            elif self.tabWidget.count() == 1 and self.tabWidget.currentWidget() != self.surface_tree_view:
+                self.tabWidget.addTab(self.surface_tree_view, "Surface")
+            elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.surface_tree_view:
+                self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
+
+            #Initial surface_view
+            if not self.surface_view:
+                self.surface_view = SurfaceView()
+                self.surface_view.set_model(self.surface_model)
+
+            if self.centralWidget().layout().indexOf(self.surface_view) == -1: #Could not find the self.image_view
+                if self.centralWidget().layout().indexOf(self.image_view) != -1:
+                    self.centralWidget().layout().removeWidget(self.image_view)
+                    self.image_view.setParent(None)
+                self.centralWidget().layout().addWidget(self.surface_view)
+
+            self._disable_toolbar()
+        else:
+            QMessageBox.question(self,
+                                'FreeROI',
+                                'Cannot load ' + file_path + ' !',
+                                QMessageBox.Yes)
+
+    def _save_toolbar_status(self):
+        #Save the status
+        self.toolbar_status['grid_view'] = self._actions['grid_view'].isEnabled()
+        self.toolbar_status['hand'] = self._actions['hand'].isEnabled()
+        self.toolbar_status['snapshot'] = self._actions['snapshot'].isEnabled()
+
+        self.toolbar_status['save_image'] = self._actions['save_image'].isEnabled()
+        self.toolbar_status['duplicate_image'] = self._actions['duplicate_image'].isEnabled()
+        self.toolbar_status['new_image'] = self._actions['new_image'].isEnabled()
+        self.toolbar_status['close'] = self._actions['close'].isEnabled()
+        self.toolbar_status['orth_view'] = self._actions['orth_view'].isEnabled()
+        self.toolbar_status['cross_hover_view'] = self._actions['cross_hover_view'].isEnabled()
+        self.toolbar_status['original_view'] = self._actions['original_view'].isEnabled()
+        self.toolbar_status['undo'] = self._actions['undo'].isEnabled()
+        self.toolbar_status['redo'] = self._actions['redo'].isEnabled()
+        self.toolbar_status['functional_module_set_enabled'] = self._actions['binarization'].isEnabled()
+        self.toolbar_status['atlas'] = self._actions['atlas'].isEnabled()
+
+    def _disable_toolbar(self):
+        #Disable all toolbar controls
+        self._actions['grid_view'].setEnabled(False)
+        self._actions['orth_view'].setEnabled(False)
+        self._actions['hand'].setEnabled(False)
+        self._actions['snapshot'].setEnabled(False)
+        self._actions['save_image'].setEnabled(False)
+        self._actions['duplicate_image'].setEnabled(False)
+        self._actions['new_image'].setEnabled(False)
+        self._actions['close'].setEnabled(False)
+        self._actions['orth_view'].setEnabled(False)
+        self._actions['cross_hover_view'].setEnabled(False)
+        self._actions['original_view'].setEnabled(False)
+        self._actions['undo'].setEnabled(False)
+        self._actions['redo'].setEnabled(False)
+        self._functional_module_set_enabled(False)
+
+    def _restore_toolbar_status(self):
+        #Restore all toolbar controls
+        self._actions['grid_view'].setEnabled(self.toolbar_status['grid_view'])
+        self._actions['hand'].setEnabled(self.toolbar_status['hand'])
+        self._actions['snapshot'].setEnabled(self.toolbar_status['snapshot'])
+
+        self._actions['save_image'].setEnabled(self.toolbar_status['save_image'])
+        self._actions['duplicate_image'].setEnabled(self.toolbar_status['duplicate_image'])
+        self._actions['new_image'].setEnabled(self.toolbar_status['new_image'])
+        self._actions['close'].setEnabled(self.toolbar_status['close'])
+        self._actions['orth_view'].setEnabled(self.toolbar_status['orth_view'])
+        self._actions['cross_hover_view'].setEnabled(self.toolbar_status['cross_hover_view'])
+        self._actions['original_view'].setEnabled(self.toolbar_status['original_view'])
+        self._actions['undo'].setEnabled(self.toolbar_status['undo'])
+        self._actions['redo'].setEnabled(self.toolbar_status['redo'])
+        self._functional_module_set_enabled(self.toolbar_status['functional_module_set_enabled'])
+        if not self.model.is_mni_space():
+            self._actions['atlas'].setEnabled(self.toolbar_status['atlas'])
+
+    def _tabwidget_index_changed(self):
+        if self.tabWidget.count() == 2:
+            if self.tabWidget.currentWidget() == self.list_view:
+                self.centralWidget().layout().removeWidget(self.surface_view)
+                self.surface_view.setParent(None)
+                self.centralWidget().layout().addWidget(self.image_view)
+                self._restore_toolbar_status()
+            else:
+                self.centralWidget().layout().removeWidget(self.image_view)
+                self.image_view.setParent(None)
+                self.centralWidget().layout().addWidget(self.surface_view)
+                self._disable_toolbar()
 
     def __new_image(self):
         """Create new image."""
@@ -749,6 +936,7 @@ class BpMainWindow(QMainWindow):
         self.model = None
         self._actions['add_template'].setEnabled(True)
         self._actions['add_image'].setEnabled(True)
+        self._actions['add_surface_image'].setEnabled(True)
         self._actions['remove_image'].setEnabled(False)
         self._actions['new_image'].setEnabled(False)
         self._actions['save_image'].setEnabled(False)
@@ -793,6 +981,8 @@ class BpMainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu(self.tr("File"))
         self.file_menu.addAction(self._actions['add_image'])
         self.file_menu.addAction(self._actions['add_template'])
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self._actions['add_surface_image'])
         self.file_menu.addSeparator()
         self.file_menu.addAction(self._actions['new_image'])
         self.file_menu.addAction(self._actions['remove_image'])

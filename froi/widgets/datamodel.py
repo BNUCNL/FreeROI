@@ -145,7 +145,8 @@ class VolumeListModel(QAbstractListModel):
         elif role == Qt.UserRole + 11:
             return self._data[0].get_header()
 
-        return QVariant()
+        # return QVariant()
+        return None
 
     def setData(self, index, value, role):
         """Set data according to the data role and item index."""

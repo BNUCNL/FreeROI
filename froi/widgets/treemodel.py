@@ -6,6 +6,7 @@
 """
 
 from PyQt4.QtCore import *
+from froi.core.dataobject import Hemisphere
 
 
 class TreeModel(QAbstractItemModel):
@@ -242,6 +243,37 @@ class TreeModel(QAbstractItemModel):
         
         item = index.internalPointer()
         if item in self._data:
+            return True
+        else:
+            return False
+
+    def _add_item(self, index, source):
+        if not index.isValid():
+            add_item = Hemisphere(source)
+            ok = self.insertRow(index.row(), add_item, index)
+
+        else:
+            parent = index.parent()
+            if not parent.isValid():
+                add_item = Hemisphere(source)
+            else:
+                parent_item = parent.internalPointer()
+                parent_item.load_overlay(source)
+                add_item = None
+            ok = self.insertRow(index.row(), add_item, parent)
+
+        if ok:
+            self.repaint_surface.emit()
+            return True
+        else:
+            return False
+
+    def _del_item(self, index, parent):
+        if not index.isValid():
+            return False
+        ok = self.removeRow(index.row(), index.parent())
+        if ok:
+            self.repaint_surface.emit()
             return True
         else:
             return False
