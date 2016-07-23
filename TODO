@@ -5,6 +5,12 @@ Aims for long term evolution
 TO DO LIST
 ----------
 
+** Version: 0.2.4
+
+1. Integrate Volume and Surface Dataset
+2. Multiple-layers display for Surface dataset
+3. GUI-based action support
+
 ** Version: 0.2.3
 
 1. Add support for saving files as NIFTI file (nii)
