@@ -4,6 +4,13 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+try:
+    from PyQt4.QtCore import QString
+except ImportError:
+    QString = type("")
+    def QStringList(l):
+        return l
+
 from ..algorithm import segment
 
 
