@@ -532,7 +532,7 @@ class VolumeDataset(object):
         """Return whole data which low-thresholded."""
         # FIXME one time point or whole data
         temp = self._data.copy()
-        temp[temp <= self._view_min] = 0
+        temp[temp < self._view_min] = 0
         return temp
 
     def get_lthr_raw_data(self):
@@ -540,7 +540,7 @@ class VolumeDataset(object):
         Return the low threshold of the raw data.
         """
         temp = self._data.copy()
-        temp[temp <= self._view_min] = 0
+        temp[temp < self._view_min] = 0
         return np.rot90(temp, 3)
 
     def get_raw_data(self):
