@@ -4,14 +4,21 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+<<<<<<< HEAD
 '''
+=======
+>>>>>>> 699f47fec79cad7c1a68b105a9c143bca5355b51
 try:
     from PyQt4.QtCore import QString
 except ImportError:
     QString = type("")
     def QStringList(l):
         return l
+<<<<<<< HEAD
 '''
+=======
+
+>>>>>>> 699f47fec79cad7c1a68b105a9c143bca5355b51
 from ..algorithm import segment
 
 
