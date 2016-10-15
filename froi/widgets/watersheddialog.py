@@ -4,6 +4,14 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+'''
+try:
+    from PyQt4.QtCore import QString
+except ImportError:
+    QString = type("")
+    def QStringList(l):
+        return l
+'''
 from ..algorithm import segment
 
 
@@ -25,11 +33,13 @@ class WatershedDialog(QDialog):
         seed_label = QLabel("Seed")
         self.seed_combo = QComboBox()
         vol_list = self._model.getItemList()
-        self.vol_combo.addItems(QStringList(vol_list))
+        self.vol_combo.addItems(vol_list)
+        # self.vol_combo.addItems(QStringList(vol_list))
         row = self._model.currentIndex().row()
         self.vol_combo.setCurrentIndex(row)
         vol_list.append('Local Maxima')
-        self.seed_combo.addItems(QStringList(vol_list))
+        self.seed_combo.addItems(vol_list)
+        # self.seed_combo.addItems(QStringList(vol_list))
         self.seed_combo.setCurrentIndex(self.seed_combo.count() - 1)
         sigma_label = QLabel("Sigma")
         self.sigma_edit = QLineEdit()

@@ -29,10 +29,12 @@ class MeanTSDialog(QDialog):
         mask_label = QLabel("Mask")
         self.mask_combo = QComboBox()
         vol_list = self._model.getItemList()
-        self.source_combo.addItems(QStringList(vol_list))
+        # self.source_combo.addItems(QStringList(vol_list))
+        self.source_combo.addItems(vol_list)
         row = self._model.currentIndex().row()
         self.source_combo.setCurrentIndex(row)
-        self.mask_combo.addItems(QStringList(vol_list))
+        # self.mask_combo.addItems(QStringList(vol_list))
+        self.mask_combo.addItems(vol_list)
 
         # layout config
         grid_layout = QGridLayout()

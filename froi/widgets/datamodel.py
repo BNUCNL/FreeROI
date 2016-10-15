@@ -79,7 +79,6 @@ class VolumeListModel(QAbstractListModel):
 
     def get_axcodes(self):
         """Get codes for voxel axis derived from affine.
-
         i.e., ('R', 'A', 'S')
         """
         if isinstance(self._affine, np.ndarray):
