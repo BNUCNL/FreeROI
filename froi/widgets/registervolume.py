@@ -31,7 +31,8 @@ class RegisterVolumeDialog(QDialog):
         target_image_label = QLabel("Target Image :")
         self._target_image_combo = QComboBox()
         vol_list = self._model.getItemList()
-        self._target_image_combo.addItems(QStringList(vol_list))
+        # self._target_image_combo.addItems(QStringList(vol_list))
+        self._target_image_combo.addItems(vol_list)
 
         source_image = QLabel('Source Image :')
         self._source_image_dir = QLabel('')
