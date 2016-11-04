@@ -17,7 +17,6 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
-# from froi.algorithm import surface_data2rgb as s2rgb
 from labelconfig import LabelConfig
 from nibabel.spatialimages import ImageFileError
 
@@ -941,7 +940,7 @@ class Hemisphere(object):
         for idx in self.overlay_idx[start_render_index:]:
             rgba_list.append(self.get_rgba(idx))
 
-        # automatically add the first zero array
+        # automatically add the background array
         background = np.ones(rgba_list[0].shape) * 0.5  # simulate the geometry_data color
         rgba_list.insert(0, background)
 
