@@ -47,7 +47,6 @@ class SurfaceTreeView(QWidget):
         self._tree_view = QTreeView()
 
         # initialize surface option push button
-        surface_button_size = QSize(40, 12)
         self._white_button = QPushButton('white')
         self._piers_button = QPushButton('piers')
         self._inflatted_button = QPushButton('inflatted')
@@ -305,16 +304,17 @@ if __name__ == '__main__':
     db_dir = froi_utils.get_data_dir()
     # model init
     hemisphere_list = []
-    surf1 = os.path.join(db_dir, 'surf', 'lh.white')
+    sub1 = os.path.join(db_dir, 'surf', 'lh.white')
     surf2 = os.path.join(db_dir, 'surf', 'rh.white')
-    s1 = os.path.join(db_dir, 'surf', 'lh.thickness')
-    s2 = os.path.join(db_dir, 'surf', 'lh.curv')
+    s1 = os.path.join(db_dir, 'surf', 'white')
+    s2 = os.path.join(db_dir, 'surf', 'piers')
     s3 = os.path.join(db_dir, 'surf', 'rh.thickness')
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
-    h1 = Hemisphere(surf1)
-    h1.load_overlay(s1)
-    h1.load_overlay(s2)
+    h1 = Hemisphere(sub1)
+    h1.add_surfs(sub1, 'white')
+    h1.load_overlays(s1, 'white')
+    h1.load_overlays(s2, 'piers')
     h2 = Hemisphere(surf2)
     h2.load_overlay(s3)
     h2.load_overlay(s4)

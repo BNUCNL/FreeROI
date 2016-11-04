@@ -788,11 +788,34 @@ class Hemisphere(object):
         """
         self.surf = SurfaceDataset(surf_path, offset)
         self.name = self.surf.name
+        self.surfs = {}  # not change surf so far.
         self.overlay_list = []
         self.overlay_idx = []
         self.alpha = 1.0
         self.colormap = "gray"
         self.visible = True
+
+    def _add_surface(self, surf_path, type, offset=None):
+        '''Add surface data into the surfs'''
+        self.surfs[type] = SurfaceDataset(surf_path, offset)
+
+    def del_surfs(self, type):
+        '''Del surface data'''
+        if self.surfs[type]:
+            del self.surfs[type]
+
+    def add_surfs(self, surf_path, type, offset=None):
+        try:
+            self.surfs[type]
+        except KeyError:
+            return self._add_surface(surf_path, type, offset)
+
+    def update_surfs(self, type, surf_path, offset=None):
+        try:
+            self.surfs[type]
+        except KeyError:
+            return self._add_surface(surf_path, type, offset)
+        return
 
     def load_overlay(self, data_file):
         """Load scalar data as an overlay."""
@@ -845,6 +868,64 @@ class Hemisphere(object):
                     data.byteswap(True)
 
                 if data.shape[0] == self.surf.get_vertices_num():
+                    self.overlay_list.append(ScalarData(data_name, data))
+                    self.overlay_idx.append(len(self.overlay_idx))
+                else:
+                    print 'vertices number mismatch!'
+        else:
+            print 'Unsupported data type.'
+
+    def load_overlays(self, data_file, type):
+        """Load scalar data as an overlay. Append from load_overlay()."""
+        (data_dir, data_name) = os.path.split(data_file)
+        suffix = data_name.split('.')[-1]
+        if suffix == 'curv' or suffix == 'thickness':
+            data = nib.freesurfer.read_morph_data(data_file)
+            data = data.astype(np.float64)
+            if data.dtype.byteorder == '>':
+                data.byteswap(True)
+            if data.shape[0] == self.surfs[type].get_vertices_num():
+                self.overlay_list.append(ScalarData(data_name, data))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                print 'Vertices number mismatch!'
+
+        elif suffix == 'label':
+            data = nib.freesurfer.read_label(data_file)
+            if np.max(data) <= self.surfs[type].get_vertices_num():
+
+                data = data.astype(np.float64)
+                if data.dtype.byteorder == '>':
+                    data.byteswap(True)
+
+                label_array = np.zeros(self.surfs[type].get_vertices_num(), np.int)
+                label_array[data] = 1
+                self.overlay_list.append(ScalarData(data_name, label_array))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                print 'Vertices number mismatch!'
+
+        elif suffix == "nii" or suffix == "gz" or suffix == "mgz":
+            hemi = os.path.split(data_file)[1].split('.')[0]
+            basename = os.path.basename(data_file)
+            if basename.endswith(".nii.gz"):
+                basename = basename[:-7]
+            if basename.endswith(".gz"):
+                basename = basename[:-3]
+            if basename.startswith("%s." % hemi):
+                basename = basename[3:]
+            data_name = os.path.splitext(basename)[0]
+
+            # load act_data
+            # data = nib.load(data_file).get_data()
+            scalar_data_list = self._read_scalar_data(data_file)
+            for data in scalar_data_list:
+                # transform type of data into float64
+                data = data.astype(np.float64)
+                if data.dtype.byteorder == '>':
+                    data.byteswap(True)
+
+                if data.shape[0] == self.surfs[type].get_vertices_num():
                     self.overlay_list.append(ScalarData(data_name, data))
                     self.overlay_idx.append(len(self.overlay_idx))
                 else:
