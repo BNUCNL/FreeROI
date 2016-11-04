@@ -46,6 +46,21 @@ class SurfaceTreeView(QWidget):
         # initialize QTreeView
         self._tree_view = QTreeView()
 
+        # initialize surface option push button
+        surface_button_size = QSize(40, 12)
+        self._white_button = QPushButton('white')
+        self._piers_button = QPushButton('piers')
+        self._inflatted_button = QPushButton('inflatted')
+        self._flatted_button = QPushButton('flatted')
+        # self._surface_button.setIconSize(surface_button_size)
+        surface_type_layout = QHBoxLayout()
+        surface_type_layout.addWidget(self._white_button)
+        surface_type_layout.addWidget(self._piers_button)
+        surface_type_layout.addWidget(self._inflatted_button)
+        surface_type_layout.addWidget(self._flatted_button)
+        surface_type_group_box = QGroupBox('Surface type option')
+        surface_type_group_box.setLayout(surface_type_layout)
+
         # initialize visibility controller
         visibility_label = QLabel('Visibility')
         self._visibility = QSlider(Qt.Horizontal)
@@ -113,6 +128,7 @@ class SurfaceTreeView(QWidget):
         #-- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
+        self.layout().addWidget(surface_type_group_box)
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
@@ -147,6 +163,10 @@ class SurfaceTreeView(QWidget):
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
+        self._white_button.clicked.connect(self._white_action)
+        self._piers_button.clicked.connect(self._piers_action)
+        self._inflatted_button.clicked.connect(self._inflatted_action)
+        self._flatted_button.clicked.connect(self._flatted_action)
 
     def _disp_current_para(self):
         """Display selected item's parameters."""
@@ -224,6 +244,22 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         self._model.moveDown(index)
         self._tree_view.setFocus()
+
+    def _white_action(self):
+        """Show white surface."""
+        pass
+
+    def _piers_action(self):
+        """Show piers surface."""
+        pass
+
+    def _inflatted_action(self):
+        """Show inflatted surface."""
+        pass
+
+    def _flatted_action(self):
+        """Show flatted surface."""
+        pass
 
     def get_treeview(self):
         return self._tree_view
