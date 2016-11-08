@@ -48,14 +48,15 @@ class SurfaceTreeView(QWidget):
 
         # initialize surface option push button
         self._white_button = QPushButton('white')
-        self._piers_button = QPushButton('piers')
-        self._inflatted_button = QPushButton('inflatted')
+        self._pial_button = QPushButton('pial')
+        self._inflated_button = QPushButton('inflated')
         self._flatted_button = QPushButton('flatted')
+
         # self._surface_button.setIconSize(surface_button_size)
         surface_type_layout = QHBoxLayout()
         surface_type_layout.addWidget(self._white_button)
-        surface_type_layout.addWidget(self._piers_button)
-        surface_type_layout.addWidget(self._inflatted_button)
+        surface_type_layout.addWidget(self._pial_button)
+        surface_type_layout.addWidget(self._inflated_button)
         surface_type_layout.addWidget(self._flatted_button)
         surface_type_group_box = QGroupBox('Surface type option')
         surface_type_group_box.setLayout(surface_type_layout)
@@ -132,6 +133,16 @@ class SurfaceTreeView(QWidget):
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
 
+        #-- right click context show
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.contextMenu = QMenu(self)
+
+    def showContextMenu(self):
+        '''Show right click context menu'''
+        self.contextMenu.move(QCursor.pos())
+        self.contextMenu.show()
+
     def _create_action(self):
         """Create several necessary actions."""
         # When select one item, display specific parameters
@@ -163,9 +174,16 @@ class SurfaceTreeView(QWidget):
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
         self._white_button.clicked.connect(self._white_action)
-        self._piers_button.clicked.connect(self._piers_action)
-        self._inflatted_button.clicked.connect(self._inflatted_action)
+        self._pial_button.clicked.connect(self._pial_action)
+        self._inflated_button.clicked.connect(self._inflated_action)
         self._flatted_button.clicked.connect(self._flatted_action)
+
+        self.actionA = self.contextMenu.addAction(u'Add')
+        self.actionB = self.contextMenu.addAction(u'Edit')
+        self.actionC = self.contextMenu.addAction(u'Delete')
+        self.actionA.triggered.connect(self.actionHandler)
+        self.actionB.triggered.connect(self.actionHandler)
+        self.actionB.triggered.connect(self.actionHandler)
 
     def _disp_current_para(self):
         """Display selected item's parameters."""
@@ -248,12 +266,12 @@ class SurfaceTreeView(QWidget):
         """Show white surface."""
         pass
 
-    def _piers_action(self):
-        """Show piers surface."""
+    def _pial_action(self):
+        """Show pial surface."""
         pass
 
-    def _inflatted_action(self):
-        """Show inflatted surface."""
+    def _inflated_action(self):
+        """Show inflated surface."""
         pass
 
     def _flatted_action(self):
@@ -262,6 +280,10 @@ class SurfaceTreeView(QWidget):
 
     def get_treeview(self):
         return self._tree_view
+
+    def actionHandler(self):
+        print 'action handler'
+
 
     # def _add_item(self, source):
     #     index = self._tree_view.currentIndex()
@@ -307,14 +329,14 @@ if __name__ == '__main__':
     sub1 = os.path.join(db_dir, 'surf', 'lh.white')
     surf2 = os.path.join(db_dir, 'surf', 'rh.white')
     s1 = os.path.join(db_dir, 'surf', 'white')
-    s2 = os.path.join(db_dir, 'surf', 'piers')
+    s2 = os.path.join(db_dir, 'surf', 'pial')
     s3 = os.path.join(db_dir, 'surf', 'rh.thickness')
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
     h1 = Hemisphere(sub1)
     h1.add_surfs(sub1, 'white')
     h1.load_overlays(s1, 'white')
-    h1.load_overlays(s2, 'piers')
+    h1.load_overlays(s2, 'pial')
     h2 = Hemisphere(surf2)
     h2.load_overlay(s3)
     h2.load_overlay(s4)

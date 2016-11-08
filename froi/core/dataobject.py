@@ -815,6 +815,7 @@ class Hemisphere(object):
             self.surfs[type]
         except KeyError:
             return self._add_surface(surf_path, type, offset)
+        # Dialog for verify, whether adding data or not
         return
 
     def load_overlay(self, data_file):
