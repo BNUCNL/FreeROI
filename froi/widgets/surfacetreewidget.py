@@ -29,6 +29,7 @@ class SurfaceTreeView(QWidget):
         super(SurfaceTreeView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setMaximumWidth(280)
+        self._temp_dir = None
         self._icon_dir = get_icon_dir()
 
         self._init_gui()
@@ -178,16 +179,17 @@ class SurfaceTreeView(QWidget):
         self._inflated_button.clicked.connect(self._inflated_action)
         self._flatted_button.clicked.connect(self._flatted_action)
 
-        self.actionA = self.contextMenu.addAction(u'Add')
-        self.actionB = self.contextMenu.addAction(u'Edit')
-        self.actionC = self.contextMenu.addAction(u'Delete')
-        self.actionA.triggered.connect(self.actionHandler)
-        self.actionB.triggered.connect(self.actionHandler)
-        self.actionB.triggered.connect(self.actionHandler)
+        self._rightclick_Add = self.contextMenu.addAction(u'Add')
+        self._rightclick_Edit = self.contextMenu.addAction(u'Edit')
+        self._rightclick_Del = self.contextMenu.addAction(u'Delete')
+        self._rightclick_Add.triggered.connect(self._rightclick_Add_action)
+        self._rightclick_Edit.triggered.connect(self._rightclick_Edit_action)
+        self._rightclick_Del.triggered.connect(self._rightclick_Del_action)
 
-    def _disp_current_para(self):
+    def _disp_current_para(self, index = -1):
         """Display selected item's parameters."""
-        index = self._tree_view.currentIndex()
+        if index == -1:
+            index = self._tree_view.currentIndex()
 
         if index.row() != -1:
             # set up status of up/down button
@@ -264,26 +266,51 @@ class SurfaceTreeView(QWidget):
 
     def _white_action(self):
         """Show white surface."""
-        pass
+        # index = self._tree_view.currentIndex()
+        # max_index = self._model.rowCount(index.parent()) - 1
+        index = self._get_surface_index('white')
+        if not index == -1:
+            self._disp_current_para(index)
 
     def _pial_action(self):
         """Show pial surface."""
-        pass
+        index = self._get_surface_index('pial')
+        if not index == -1:
+            self._disp_current_para(index)
 
     def _inflated_action(self):
         """Show inflated surface."""
-        pass
+        index = self._get_surface_index('inflated')
+        if not index == -1:
+            self._disp_current_para(index)
 
     def _flatted_action(self):
         """Show flatted surface."""
-        pass
+        index = self._get_surface_index('flatted')
+        if not index == -1:
+            self._disp_current_para(index)
+
+    def _get_surface_index(self, type):
+        '''Check different type of surface exist or not.'''
+        for index in self._tree_view.selectedIndexes():
+            if index.data().endswith(type):
+                return index
+        return -1
 
     def get_treeview(self):
         return self._tree_view
 
-    def actionHandler(self):
-        print 'action handler'
+    def _rightclick_Add_action(self):
+        '''Add, use method: main.py BpMainWindow._add_surface_image()'''
+        print 'Add'
 
+    def _rightclick_Edit_action(self):
+        '''Edit'''
+        print 'Edit'
+
+    def _rightclick_Del_action(self):
+        '''Del'''
+        print 'Del'
 
     # def _add_item(self, source):
     #     index = self._tree_view.currentIndex()

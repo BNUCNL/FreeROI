@@ -81,8 +81,7 @@ class BpMainWindow(QMainWindow):
         self._temp_dir = None
         self.is_save_configure = False
 
-        # pre-define model variables, one for volume dataset, another
-        # for suface dataset
+        # pre-define a model variable
         self.model = None
         self.surface_model = None
 
@@ -624,7 +623,7 @@ class BpMainWindow(QMainWindow):
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Add new surface file',
                                                 temp_dir,
-                                                "Suface files (*.white *.pial *.inflated)")
+                                                "Suface files (*.white *.thickness *.curv)")
         if not file_name == '':
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
@@ -770,7 +769,7 @@ class BpMainWindow(QMainWindow):
         if len(self.surface_model.get_data()) == 0 and not file_path.endswith('.white'):
             QMessageBox.warning(self,
                                 'Warning',
-                                'You must choose the brain surface file first!',
+                                'You must choose the *.white file first!',
                                 QMessageBox.Yes)
         elif self.surface_model._add_item(self.surface_tree_view_control.currentIndex(), file_path):
             #Initial the tabwidget.
@@ -1423,4 +1422,3 @@ class BpMainWindow(QMainWindow):
     def _snapshot(self):
         """Capture images from OrthView."""
         self.image_view.save_image()
-

@@ -197,14 +197,12 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
     def get_current_index_label(self, value):
         if not self.is_drawing_valid():
-            # return QString()
-            return str()
+            return QString()
         return self.get_current_label_config().get_index_label(value)
 
     def get_current_label_index(self, label):
         if not self.is_drawing_valid():
-            # return QString()
-            return str()
+            return QString()
         return self.get_current_label_config().get_label_index(label)
 
     def has_current_label(self, label):

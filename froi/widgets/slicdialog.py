@@ -19,8 +19,7 @@ class SLICDialog(QDialog):
     def _init_gui(self):
         self.setWindowTitle("SLIC")
         self.vol_combo = QComboBox()
-        # self.vol_combo.addItems(QStringList(self._model.getItemList()))
-        self.vol_combo.addItems(self._model.getItemList())
+        self.vol_combo.addItems(QStringList(self._model.getItemList()))
         row = self._model.currentIndex().row()
         self.vol_combo.setCurrentIndex(row)
 
