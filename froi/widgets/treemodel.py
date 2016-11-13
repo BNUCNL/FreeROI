@@ -197,12 +197,12 @@ class TreeModel(QAbstractItemModel):
         item = self.index(row, 0, parent).internalPointer()
         parent_item = parent.internalPointer()
         if item in self._data:
-            self._data.pop(item)
+            self._data.remove(item)
         else:
             idx = parent_item.overlay_list.index(item)
             parent_item.overlay_list.pop(item)
             item.ovarlay_idx.pop(idx)
-        self.endMoveRows()
+        self.endRemoveRows()
         return True
 
     def moveUp(self, index):
