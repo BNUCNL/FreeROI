@@ -179,14 +179,14 @@ class SurfaceTreeView(QWidget):
         self._inflated_button.clicked.connect(self._inflated_action)
         self._flatted_button.clicked.connect(self._flatted_action)
 
-        self._rightclick_Add = self.contextMenu.addAction(u'Add')
-        self._rightclick_Edit = self.contextMenu.addAction(u'Edit')
-        self._rightclick_Del = self.contextMenu.addAction(u'Delete')
-        self._rightclick_Add.triggered.connect(self._rightclick_Add_action)
-        self._rightclick_Edit.triggered.connect(self._rightclick_Edit_action)
-        self._rightclick_Del.triggered.connect(self._rightclick_Del_action)
+        self._rightclick_add = self.contextMenu.addAction(u'Add')
+        self._rightclick_edit = self.contextMenu.addAction(u'Edit')
+        self._rightclick_del = self.contextMenu.addAction(u'Delete')
+        self._rightclick_add.triggered.connect(self._rightclick_add_action)
+        self._rightclick_edit.triggered.connect(self._rightclick_edit_action)
+        self._rightclick_del.triggered.connect(self._rightclick_del_action)
 
-    def _disp_current_para(self, index = -1):
+    def _disp_current_para(self, index=-1):
         """Display selected item's parameters."""
         if index == -1:
             index = self._tree_view.currentIndex()
@@ -291,7 +291,7 @@ class SurfaceTreeView(QWidget):
             self._disp_current_para(index)
 
     def _get_surface_index(self, type):
-        '''Check different type of surface exist or not.'''
+        """Check different type of surface exist or not."""
         for index in self._tree_view.selectedIndexes():
             if index.data().endswith(type):
                 return index
@@ -300,17 +300,21 @@ class SurfaceTreeView(QWidget):
     def get_treeview(self):
         return self._tree_view
 
-    def _rightclick_Add_action(self):
-        '''Add, use method: main.py BpMainWindow._add_surface_image()'''
+    def _rightclick_add_action(self):
+        """Add, use method: main.py BpMainWindow._add_surface_image()"""
         print 'Add'
 
-    def _rightclick_Edit_action(self):
-        '''Edit'''
+    def _rightclick_edit_action(self):
+        """Edit"""
         print 'Edit'
 
-    def _rightclick_Del_action(self):
-        '''Del'''
-        print 'Del'
+    def _rightclick_del_action(self):
+        """Del"""
+        index = self._tree_view.currentIndex()
+        parent = self._model.parent(index)
+        print index.row()
+        self._model.removeRow(index.row(), parent)
+        self._disp_current_para()
 
     # def _add_item(self, source):
     #     index = self._tree_view.currentIndex()
