@@ -23,12 +23,23 @@ class LabelConfig(object):
 
     def load(self, filepath):
         """Load label data from the filepath."""
-        with open(filepath, 'r+') as f:
+        try:
+            f = open(filepath, 'r+')
+        except IOError, e:
+            if e.errno == 13:
+                f = open(filepath, 'r')
+            else:
+                f = None
+                print e
+        if f:
             for line in f:
                 line = line.split()
                 if line:
                     self.label_index[line[1]] = int(line[0])
-                    self.label_color[line[1]] = QColor(int(line[2]), int(line[3]), int(line[4]))
+                    self.label_color[line[1]] = QColor(int(line[2]),
+                                                       int(line[3]),
+                                                       int(line[4]))
+            f.close()
 
     def dump(self):
         """Dump the label config info to the disk."""
