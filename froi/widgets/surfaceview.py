@@ -4,9 +4,11 @@ import sip
 
 from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
+from tvtk.api import tvtk
 from PyQt4.QtGui import *
 from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
+import numpy as np
 
 from treemodel import TreeModel
 
@@ -76,34 +78,16 @@ class SurfaceView(QWidget):
 
         # Initialize some fields
         self.surface_model = None
-        self.old_surf = []
-        self.old_cbar = []
-        self.not_first_flag = False
+        self.surf = None
+        self.coords = None
         self.cbar = None
+        self.rgba_lut = None
+        self.gcf_flag = True
+        self.not_first_flag = False
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
         self.setLayout(hlayout)
-
-    @staticmethod
-    def _get_start_render_index(hemisphere):
-        """
-        If an overlay's opacity is 1.0(i.e. completely opaque) and need to cover a whole
-        hemisphere, other overlays that below it are no need to be rendered.
-
-        :param hemisphere: Hemisphere
-            the instance of the class Hemisphere
-        :return: int
-            The index that the render starts at.
-        """
-
-        for index in hemisphere.overlay_idx[-1::-1]:
-            scalar = hemisphere.overlay_list[index]
-            if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible():
-                return hemisphere.overlay_idx.index(index)
-
-        # -1 means that the render will start with the geometry surface.
-        return -1
 
     def _show_surface(self):
         """
@@ -112,54 +96,87 @@ class SurfaceView(QWidget):
 
         hemisphere_list = self.surface_model.get_data()
 
-        # clear the old surfaces
-        for surf in self.old_surf:
-            surf.remove()
-            self.old_surf.remove(surf)
+        # clear the old surface
+        if self.surf is not None:
+            self.surf.remove()
 
-        # hide the old color_bars
-        for cbar in self.old_cbar:
-            cbar.visible = False
-            self.old_cbar.remove(cbar)
+        # hide the old color_bar
+        if self.cbar is not None:
+            self.cbar.visible = False
 
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
                 # get geometry's information
                 geo = hemisphere.surf
                 x, y, z, f, nn = geo.x, geo.y, geo.z, geo.faces, geo.nn
+                self.coords = geo.coords
 
-                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(x, y, z, f)
+                # get the rgba_lut and create corresponding scalars
+                rgb_array = hemisphere.get_composite_rgb()
+                vertex_number = rgb_array.shape[0]
+                alpha_channel = np.ones((vertex_number, 1), dtype=np.uint8)*255
+                self.rgba_lut = np.c_[rgb_array, alpha_channel]
+                scalars = np.array(range(vertex_number))
+
+                # generate the triangular mesh
+                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(x, y, z, f,
+                                                                                     scalars=scalars)
                 mesh.data.point_data.normals = nn
                 mesh.data.cell_data.normals = None
 
-                start_render_index = self._get_start_render_index(hemisphere)
-                if start_render_index == -1:
-                    geo_surf = self.visualization.scene.mlab.pipeline.surface(mesh, color=(.5, .5, .5))
-                    self.old_surf.append(geo_surf)
-                    start_render_index += 1
+                # generate the surface
+                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
 
-                for index in hemisphere.overlay_idx[start_render_index:]:
-                    scalar = hemisphere.overlay_list[index]
-                    if scalar.is_visible():
-                        mesh.mlab_source.scalars = scalar.get_data()
-                        surf = self.visualization.scene.mlab.pipeline.surface(mesh, vmin=scalar.get_min(),
-                                                                              vmax=scalar.get_max(),
-                                                                              colormap=scalar.get_colormap(),
-                                                                              opacity=scalar.get_alpha(),
-                                                                              transparent=True)
-                        self.old_surf.append(surf)
+                # add point picker observer
+                if self.gcf_flag:
+                    self.gcf_flag = False
+                    fig = mlab.gcf()
+                    fig.on_mouse_pick(self._picker_callback_left)
+                    fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
-                        if scalar.is_colorbar():
-                            if self.not_first_flag:
-                                '''
-                                only show the topside overlay's colorbar
-                                '''
-                                self.cbar.visible = False
-                                self.old_cbar.remove(self.cbar)
-                            self.cbar = mlab.scalarbar(surf)
-                            self.old_cbar.append(self.cbar)
-                            self.not_first_flag = True
-                self.not_first_flag = False
+                self.cbar = mlab.scalarbar(self.surf)
+
+    def _picker_callback(self, picker_obj, evt):
+
+        picker_obj = tvtk.to_tvtk(picker_obj)
+        temp_pos = picker_obj.picked_positions.to_array()
+
+        if len(temp_pos):
+
+            # get the nearest vertex's id
+            distance = np.sum(np.abs(self.coords - temp_pos[0]), axis=1)
+            picked_id = np.argmin(distance)
+
+            # change the LUT
+            temp_lut = self.rgba_lut.copy()
+            self._toggle_color(temp_lut[picked_id])
+            self.surf.module_manager.scalar_lut_manager.lut.table = temp_lut
+
+    @staticmethod
+    def _toggle_color(color):
+        """
+        make the color look differently
+
+        :param color: a alterable variable
+            rgb or rgba
+        :return:
+        """
+
+        green_max = 255
+        red_max = 255
+        blue_max = 255
+        if green_max-color[1] >= green_max / 2.0:
+            color[:3] = np.array((0, 255, 0))
+        elif red_max - color[0] >= red_max / 2.0:
+            color[:3] = np.array((255, 0, 0))
+        elif blue_max-color[2] >= blue_max / 2.0:
+            color[:3] = np.array((0, 0, 255))
+        else:
+            color[:3] = np.array((0, 0, 255))
+
+    def _picker_callback_left(self, picker_obj):
+        pass
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
