@@ -124,7 +124,6 @@ class SurfaceView(QWidget):
                 mesh.data.point_data.normals = nn
                 mesh.data.cell_data.normals = None
 
-<<<<<<< HEAD
                 start_render_index = self._get_start_render_index(hemisphere)
                 if start_render_index == -1:
                     geo_surf = self.visualization.scene.mlab.pipeline.surface(mesh, color=(.5, .5, .5))
@@ -153,7 +152,7 @@ class SurfaceView(QWidget):
                             self.old_cbar.append(self.cbar)
                             self.not_first_flag = True
                 self.not_first_flag = False
-=======
+
                 # generate the surface
                 self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
@@ -207,7 +206,6 @@ class SurfaceView(QWidget):
 
     def _picker_callback_left(self, picker_obj):
         pass
->>>>>>> 2092ae8c21156a8f889ce2100e63d6432b7ad484
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
