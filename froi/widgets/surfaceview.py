@@ -124,36 +124,6 @@ class SurfaceView(QWidget):
                 mesh.data.point_data.normals = nn
                 mesh.data.cell_data.normals = None
 
-<<<<<<< HEAD
-                start_render_index = self._get_start_render_index(hemisphere)
-                if start_render_index == -1:
-                    geo_surf = self.visualization.scene.mlab.pipeline.surface(mesh, color=(.5, .5, .5))
-                    self.old_surf.append(geo_surf)
-                    start_render_index += 1
-
-                for index in hemisphere.overlay_idx[start_render_index:]:
-                    scalar = hemisphere.overlay_list[index]
-                    if scalar.is_visible():
-                        mesh.mlab_source.scalars = scalar.get_data()
-                        surf = self.visualization.scene.mlab.pipeline.surface(mesh, vmin=scalar.get_min(),
-                                                                              vmax=scalar.get_max(),
-                                                                              colormap=scalar.get_colormap(),
-                                                                              opacity=scalar.get_alpha(),
-                                                                              transparent=True)
-                        self.old_surf.append(surf)
-
-                        if scalar.is_colorbar():
-                            if self.not_first_flag:
-                                '''
-                                only show the topside overlay's colorbar
-                                '''
-                                self.cbar.visible = False
-                                self.old_cbar.remove(self.cbar)
-                            self.cbar = mlab.scalarbar(surf)
-                            self.old_cbar.append(self.cbar)
-                            self.not_first_flag = True
-                self.not_first_flag = False
-=======
                 # generate the surface
                 self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
@@ -207,7 +177,6 @@ class SurfaceView(QWidget):
 
     def _picker_callback_left(self, picker_obj):
         pass
->>>>>>> 2092ae8c21156a8f889ce2100e63d6432b7ad484
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
