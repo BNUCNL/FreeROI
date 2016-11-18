@@ -1025,7 +1025,7 @@ class Hemisphere(object):
             rgba_list.append(self.get_rgba(idx))
 
         # automatically add the background array
-        background = np.ones(rgba_list[0].shape) * 0.5  # simulate the geometry_data color
+        background = np.ones((len(self.surf.x), 4)) * 127.5  # simulate the geometry_data color
         rgba_list.insert(0, background)
 
         return aq.qcomposition(rgba_list)
