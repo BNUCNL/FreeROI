@@ -125,7 +125,7 @@ class SurfaceView(QWidget):
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
                 # get geometry's information
-                geo = hemisphere.surf
+                geo = hemisphere.surf['white']
                 x, y, z, f, nn = geo.x, geo.y, geo.z, geo.faces, geo.nn
 
                 mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(x, y, z, f)
@@ -147,7 +147,7 @@ class SurfaceView(QWidget):
                                                                               colormap=scalar.get_colormap(),
                                                                               opacity=scalar.get_alpha(),
                                                                               transparent=True)
-                        self.old_surf.append(surf)
+                        self.old_surf.append(surf['white'])
 
                         if scalar.is_colorbar():
                             if self.not_first_flag:
@@ -156,7 +156,7 @@ class SurfaceView(QWidget):
                                 '''
                                 self.cbar.visible = False
                                 self.old_cbar.remove(self.cbar)
-                            self.cbar = mlab.scalarbar(surf)
+                            self.cbar = mlab.scalarbar(surf['white'])
                             self.old_cbar.append(self.cbar)
                             self.not_first_flag = True
                 self.not_first_flag = False

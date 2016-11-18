@@ -786,9 +786,11 @@ class Hemisphere(object):
             applied. If != 0.0, an additional offset will be used.
 
         """
-        self.surf = SurfaceDataset(surf_path, offset)
-        self.name = self.surf.name
-        self.surfs = {}  # not change surf so far.
+        # self.surf = SurfaceDataset(surf_path, offset)
+        type = 'white'
+        self.surf = {}  # not change surf so far.
+        self.add_surfs(surf_path, type)
+        self.name = self.surf[type].name
         self.overlay_list = []
         self.overlay_idx = []
         self.alpha = 1.0
@@ -796,28 +798,28 @@ class Hemisphere(object):
         self.visible = True
 
     def _add_surface(self, surf_path, type, offset=None):
-        '''Add surface data into the surfs'''
-        self.surfs[type] = SurfaceDataset(surf_path, offset)
+        """Add surface data into the surfs"""
+        self.surf[type] = SurfaceDataset(surf_path, offset)
 
     def del_surfs(self, type):
-        '''Del surface data'''
-        if self.surfs[type]:
-            del self.surfs[type]
+        """Del surface data"""
+        if self.surf[type]:
+            del self.surf[type]
 
     def add_surfs(self, surf_path, type, offset=None):
         try:
-            self.surfs[type]
+            self.surf[type]
         except KeyError:
             return self._add_surface(surf_path, type, offset)
 
     def update_surfs(self, type, surf_path, offset=None):
         try:
-            self.surfs[type]
+            self.surf[type]
         except KeyError:
             return self._add_surface(surf_path, type, offset)
         # Dialog for verify, whether adding data or not
-        return
 
+    '''
     def load_overlay(self, data_file):
         """Load scalar data as an overlay."""
         (data_dir, data_name) = os.path.split(data_file)
@@ -875,8 +877,8 @@ class Hemisphere(object):
                     print 'vertices number mismatch!'
         else:
             print 'Unsupported data type.'
-
-    def load_overlays(self, data_file, type):
+    '''
+    def load_overlay(self, data_file, type):
         """Load scalar data as an overlay. Append from load_overlay()."""
         (data_dir, data_name) = os.path.split(data_file)
         suffix = data_name.split('.')[-1]
@@ -885,7 +887,7 @@ class Hemisphere(object):
             data = data.astype(np.float64)
             if data.dtype.byteorder == '>':
                 data.byteswap(True)
-            if data.shape[0] == self.surfs[type].get_vertices_num():
+            if data.shape[0] == self.surf[type].get_vertices_num():
                 self.overlay_list.append(ScalarData(data_name, data))
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
@@ -893,13 +895,13 @@ class Hemisphere(object):
 
         elif suffix == 'label':
             data = nib.freesurfer.read_label(data_file)
-            if np.max(data) <= self.surfs[type].get_vertices_num():
+            if np.max(data) <= self.surf[type].get_vertices_num():
 
                 data = data.astype(np.float64)
                 if data.dtype.byteorder == '>':
                     data.byteswap(True)
 
-                label_array = np.zeros(self.surfs[type].get_vertices_num(), np.int)
+                label_array = np.zeros(self.surf[type].get_vertices_num(), np.int)
                 label_array[data] = 1
                 self.overlay_list.append(ScalarData(data_name, label_array))
                 self.overlay_idx.append(len(self.overlay_idx))
@@ -926,7 +928,7 @@ class Hemisphere(object):
                 if data.dtype.byteorder == '>':
                     data.byteswap(True)
 
-                if data.shape[0] == self.surfs[type].get_vertices_num():
+                if data.shape[0] == self.surf[type].get_vertices_num():
                     self.overlay_list.append(ScalarData(data_name, data))
                     self.overlay_idx.append(len(self.overlay_idx))
                 else:
