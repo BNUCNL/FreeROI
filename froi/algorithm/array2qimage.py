@@ -118,6 +118,8 @@ def single_roi(array, alpha, roi):
 
 def _normalize255(array, normalize, scale_length=255.0):
     """Normalize the array."""
+
+    # If normalize is in (None, False, 0), return the original array.
     if not normalize:
         return array
 
@@ -133,6 +135,7 @@ def _normalize255(array, normalize, scale_length=255.0):
         array = array - nmin
 
     if nmax == nmin:
+        # If the original array's elements are same, return zero array.
         return _np.round(array)
     else:
         scale = scale_length / (nmax - nmin)
@@ -365,3 +368,13 @@ def null_image(h, w):
     new_array = _np.zeros((h, w, 4), dtype=_np.uint8)
     new_array[..., 3] = 255
     return new_array
+
+
+if __name__ == '__main__':
+    import numpy as np
+
+    a = np.array([[1, 2, 3], [3, 2, 1]])
+    colormap = {1: (1, 2, 3), 2: (4, 5, 6), 3: (7, 8, 9)}
+
+    b = array2qrgba(a, 125, colormap, 4)
+    raw_input()
