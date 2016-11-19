@@ -118,6 +118,8 @@ def single_roi(array, alpha, roi):
 
 def _normalize255(array, normalize, scale_length=255.0):
     """Normalize the array."""
+
+    # If normalize is in (None, False, 0), return the original array.
     if not normalize:
         return array
 
@@ -133,6 +135,7 @@ def _normalize255(array, normalize, scale_length=255.0):
         array = array - nmin
 
     if nmax == nmin:
+        # If the original array's elements are same, return zero array.
         return _np.round(array)
     else:
         scale = scale_length / (nmax - nmin)

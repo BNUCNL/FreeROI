@@ -78,10 +78,9 @@ class SurfaceView(QWidget):
 
         # Initialize some fields
         self.surface_model = None
-        self.surf = None
-        self.coords = None
-        self.cbar = None
-        self.rgba_lut = None
+        self.surf = []
+        self.coords = []
+        self.rgba_lut = []
         self.gcf_flag = True
         self.not_first_flag = False
 
@@ -97,36 +96,39 @@ class SurfaceView(QWidget):
         hemisphere_list = self.surface_model.get_data()
 
         # clear the old surface
-        if self.surf is not None:
-            self.surf.remove()
+        for s in self.surf:
+            s.remove()
+            self.surf.remove(s)
 
-        # hide the old color_bar
-        if self.cbar is not None:
-            self.cbar.visible = False
+        # reset
+        self.coords = []
+        self.rgba_lut = []
 
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
                 # get geometry's information
-                geo = hemisphere.surf['white'] # 'white' should be replaced with var: surf_type
+                geo = hemisphere.surf['white']  # 'white' should be replaced with var: surf_type
                 x, y, z, f, nn = geo.x, geo.y, geo.z, geo.faces, geo.nn
-                self.coords = geo.coords
+                self.coords.append(np.c_[x, y, z])
 
                 # get the rgba_lut and create corresponding scalars
                 rgb_array = hemisphere.get_composite_rgb()
                 vertex_number = rgb_array.shape[0]
                 alpha_channel = np.ones((vertex_number, 1), dtype=np.uint8)*255
-                self.rgba_lut = np.c_[rgb_array, alpha_channel]
-                scalars = np.array(range(vertex_number))
+                current_lut = np.c_[rgb_array, alpha_channel]
+                self.rgba_lut.append(current_lut)
 
                 # generate the triangular mesh
+                scalars = np.array(range(vertex_number))
                 mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(x, y, z, f,
                                                                                      scalars=scalars)
                 mesh.data.point_data.normals = nn
                 mesh.data.cell_data.normals = None
 
                 # generate the surface
-                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
-                self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
+                surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                surf.module_manager.scalar_lut_manager.lut.table = current_lut
+                self.surf.append(surf)
 
                 # add point picker observer
                 if self.gcf_flag:
@@ -135,23 +137,39 @@ class SurfaceView(QWidget):
                     fig.on_mouse_pick(self._picker_callback_left)
                     fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
-                self.cbar = mlab.scalarbar(self.surf)
-
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
         temp_pos = picker_obj.picked_positions.to_array()
 
         if len(temp_pos):
+            old_min = np.inf
+            index = None
+            picked_id = None
+            # get the best pos
+            for pos in temp_pos:
+                hemi_id_list = []  # store hemispheres' minimum's id respectively
+                hemi_min_list = []  # store hemispheres' minimum respectively
+                # get the nearest vertex's id for the pos
+                for coords in self.coords:
+                    distance = np.sum(np.abs(coords - pos), axis=1)
+                    hemi_id = np.argmin(distance)
+                    hemi_min = distance[hemi_id]
+                    # add to list
+                    hemi_id_list.append(hemi_id)
+                    hemi_min_list.append(hemi_min)
 
-            # get the nearest vertex's id
-            distance = np.sum(np.abs(self.coords - temp_pos[0]), axis=1)
-            picked_id = np.argmin(distance)
-
+                if min(hemi_min_list) < old_min:
+                    index = np.argmin(hemi_min_list)  # get the nearest hemi's index
+                    picked_id = hemi_id_list[index]
             # change the LUT
-            temp_lut = self.rgba_lut.copy()
+            temp_lut = self.rgba_lut[index].copy()
             self._toggle_color(temp_lut[picked_id])
-            self.surf.module_manager.scalar_lut_manager.lut.table = temp_lut
+            for (i, surf) in enumerate(self.surf):
+                if i == index:
+                    surf.module_manager.scalar_lut_manager.lut.table = temp_lut
+                else:
+                    surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut[i]
 
     @staticmethod
     def _toggle_color(color):
