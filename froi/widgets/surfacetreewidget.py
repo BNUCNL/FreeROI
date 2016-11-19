@@ -290,10 +290,10 @@ class SurfaceTreeView(QWidget):
         if not index == -1:
             self._disp_current_para(index)
 
-    def _get_surface_index(self, type):
+    def _get_surface_index(self, surf_type):
         """Check different type of surface exist or not."""
         for index in self._tree_view.selectedIndexes():
-            if index.data().endswith(type):
+            if index.data().endswith(surf_type):
                 return index
         return -1
 
