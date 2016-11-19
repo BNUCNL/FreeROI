@@ -29,6 +29,7 @@ class SurfaceTreeView(QWidget):
         super(SurfaceTreeView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setMaximumWidth(280)
+        self._temp_dir = None
         self._icon_dir = get_icon_dir()
 
         self._init_gui()
@@ -45,6 +46,21 @@ class SurfaceTreeView(QWidget):
         """Initialize a GUI designation."""
         # initialize QTreeView
         self._tree_view = QTreeView()
+
+        # initialize surface option push button
+        self._white_button = QPushButton('white')
+        self._pial_button = QPushButton('pial')
+        self._inflated_button = QPushButton('inflated')
+        self._flatted_button = QPushButton('flatted')
+
+        # self._surface_button.setIconSize(surface_button_size)
+        surface_type_layout = QHBoxLayout()
+        surface_type_layout.addWidget(self._white_button)
+        surface_type_layout.addWidget(self._pial_button)
+        surface_type_layout.addWidget(self._inflated_button)
+        surface_type_layout.addWidget(self._flatted_button)
+        surface_type_group_box = QGroupBox('Surface type option')
+        surface_type_group_box.setLayout(surface_type_layout)
 
         # initialize visibility controller
         visibility_label = QLabel('Visibility')
@@ -113,9 +129,20 @@ class SurfaceTreeView(QWidget):
         #-- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
+        self.layout().addWidget(surface_type_group_box)
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
+
+        #-- right click context show
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.contextMenu = QMenu(self)
+
+    def showContextMenu(self):
+        '''Show right click context menu'''
+        self.contextMenu.move(QCursor.pos())
+        self.contextMenu.show()
 
     def _create_action(self):
         """Create several necessary actions."""
@@ -147,10 +174,22 @@ class SurfaceTreeView(QWidget):
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
+        self._white_button.clicked.connect(self._white_action)
+        self._pial_button.clicked.connect(self._pial_action)
+        self._inflated_button.clicked.connect(self._inflated_action)
+        self._flatted_button.clicked.connect(self._flatted_action)
 
-    def _disp_current_para(self):
+        self._rightclick_add = self.contextMenu.addAction(u'Add')
+        self._rightclick_edit = self.contextMenu.addAction(u'Edit')
+        self._rightclick_del = self.contextMenu.addAction(u'Delete')
+        self._rightclick_add.triggered.connect(self._rightclick_add_action)
+        self._rightclick_edit.triggered.connect(self._rightclick_edit_action)
+        self._rightclick_del.triggered.connect(self._rightclick_del_action)
+
+    def _disp_current_para(self, index=-1):
         """Display selected item's parameters."""
-        index = self._tree_view.currentIndex()
+        if index == -1:
+            index = self._tree_view.currentIndex()
 
         if index.row() != -1:
             # set up status of up/down button
@@ -225,8 +264,57 @@ class SurfaceTreeView(QWidget):
         self._model.moveDown(index)
         self._tree_view.setFocus()
 
+    def _white_action(self):
+        """Show white surface."""
+        # index = self._tree_view.currentIndex()
+        # max_index = self._model.rowCount(index.parent()) - 1
+        index = self._get_surface_index('white')
+        if not index == -1:
+            self._disp_current_para(index)
+
+    def _pial_action(self):
+        """Show pial surface."""
+        index = self._get_surface_index('pial')
+        if not index == -1:
+            self._disp_current_para(index)
+
+    def _inflated_action(self):
+        """Show inflated surface."""
+        index = self._get_surface_index('inflated')
+        if not index == -1:
+            self._disp_current_para(index)
+
+    def _flatted_action(self):
+        """Show flatted surface."""
+        index = self._get_surface_index('flatted')
+        if not index == -1:
+            self._disp_current_para(index)
+
+    def _get_surface_index(self, surf_type):
+        """Check different type of surface exist or not."""
+        for index in self._tree_view.selectedIndexes():
+            if index.data().endswith(surf_type):
+                return index
+        return -1
+
     def get_treeview(self):
         return self._tree_view
+
+    def _rightclick_add_action(self):
+        """Add, use method: main.py BpMainWindow._add_surface_image()"""
+        print 'Add'
+
+    def _rightclick_edit_action(self):
+        """Edit"""
+        print 'Edit'
+
+    def _rightclick_del_action(self):
+        """Del"""
+        index = self._tree_view.currentIndex()
+        parent = self._model.parent(index)
+        print index.row()
+        self._model.removeRow(index.row(), parent)
+        self._disp_current_para()
 
     # def _add_item(self, source):
     #     index = self._tree_view.currentIndex()
@@ -269,16 +357,17 @@ if __name__ == '__main__':
     db_dir = froi_utils.get_data_dir()
     # model init
     hemisphere_list = []
-    surf1 = os.path.join(db_dir, 'surf', 'lh.white')
+    sub1 = os.path.join(db_dir, 'surf', 'lh.white')
     surf2 = os.path.join(db_dir, 'surf', 'rh.white')
-    s1 = os.path.join(db_dir, 'surf', 'lh.thickness')
-    s2 = os.path.join(db_dir, 'surf', 'lh.curv')
+    s1 = os.path.join(db_dir, 'surf', 'white')
+    s2 = os.path.join(db_dir, 'surf', 'pial')
     s3 = os.path.join(db_dir, 'surf', 'rh.thickness')
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
-    h1 = Hemisphere(surf1)
-    h1.load_overlay(s1)
-    h1.load_overlay(s2)
+    h1 = Hemisphere(sub1)
+    h1.add_surfs(sub1, 'white')
+    h1.load_overlays(s1, 'white')
+    h1.load_overlays(s2, 'pial')
     h2 = Hemisphere(surf2)
     h2.load_overlay(s3)
     h2.load_overlay(s4)

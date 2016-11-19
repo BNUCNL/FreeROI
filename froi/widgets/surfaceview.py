@@ -107,7 +107,7 @@ class SurfaceView(QWidget):
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
                 # get geometry's information
-                geo = hemisphere.surf
+                geo = hemisphere.surf['white'] # 'white' should be replaced with var: surf_type
                 x, y, z, f, nn = geo.x, geo.y, geo.z, geo.faces, geo.nn
                 self.coords = geo.coords
 
