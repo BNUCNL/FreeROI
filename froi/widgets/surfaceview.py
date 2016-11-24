@@ -78,11 +78,10 @@ class SurfaceView(QWidget):
 
         # Initialize some fields
         self.surface_model = None
-        self.surf = []
-        self.coords = []
-        self.rgba_lut = []
+        self.surf = None
+        self.coords = None
+        self.rgba_lut = None
         self.gcf_flag = True
-        self.not_first_flag = False
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -96,80 +95,77 @@ class SurfaceView(QWidget):
         hemisphere_list = self.surface_model.get_data()
 
         # clear the old surface
-        for s in self.surf:
-            s.remove()
-            self.surf.remove(s)
+        if self.surf is not None:
+            self.surf.remove()
 
         # reset
-        self.coords = []
-        self.rgba_lut = []
+        first_hemi_flag = True
+        faces = None
+        nn = None
+        self.rgba_lut = None
+        vertex_number = 0
 
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
                 # get geometry's information
                 geo = hemisphere.surf['white']  # 'white' should be replaced with var: surf_type
-                x, y, z, f, nn = geo.x, geo.y, geo.z, geo.faces, geo.nn
-                self.coords.append(np.c_[x, y, z])
+                hemi_coords = geo.get_coords()
+                hemi_faces = geo.get_faces()
+                hemi_nn = geo.get_nn()
 
-                # get the rgba_lut and create corresponding scalars
+                # get the rgba_lut
                 rgb_array = hemisphere.get_composite_rgb()
-                vertex_number = rgb_array.shape[0]
-                alpha_channel = np.ones((vertex_number, 1), dtype=np.uint8)*255
-                current_lut = np.c_[rgb_array, alpha_channel]
-                self.rgba_lut.append(current_lut)
+                hemi_vertex_number = rgb_array.shape[0]
+                alpha_channel = np.ones((hemi_vertex_number, 1), dtype=np.uint8)*255
+                hemi_lut = np.c_[rgb_array, alpha_channel]
 
-                # generate the triangular mesh
-                scalars = np.array(range(vertex_number))
-                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(x, y, z, f,
-                                                                                     scalars=scalars)
-                mesh.data.point_data.normals = nn
-                mesh.data.cell_data.normals = None
+                if first_hemi_flag:
+                    first_hemi_flag = False
+                    self.coords = hemi_coords
+                    faces = hemi_faces
+                    nn = hemi_nn
+                    self.rgba_lut = hemi_lut
+                else:
+                    self.coords = np.r_[self.coords, hemi_coords]
+                    hemi_faces += vertex_number
+                    faces = np.r_[faces, hemi_faces]
+                    nn = np.r_[nn, hemi_nn]
+                    self.rgba_lut = np.r_[self.rgba_lut, hemi_lut]
+                vertex_number += hemi_vertex_number
 
-                # generate the surface
-                surf = self.visualization.scene.mlab.pipeline.surface(mesh)
-                surf.module_manager.scalar_lut_manager.lut.table = current_lut
-                self.surf.append(surf)
+        # generate the triangular mesh
+        scalars = np.array(range(vertex_number))
+        mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
+                                                                             self.coords[:, 1],
+                                                                             self.coords[:, 2],
+                                                                             faces,
+                                                                             scalars=scalars)
+        mesh.data.point_data.normals = nn
+        mesh.data.cell_data.normals = None
 
-                # add point picker observer
-                if self.gcf_flag:
-                    self.gcf_flag = False
-                    fig = mlab.gcf()
-                    fig.on_mouse_pick(self._picker_callback_left)
-                    fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
+        # generate the surface
+        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+        self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
+
+        # add point picker observer
+        if self.gcf_flag:
+            self.gcf_flag = False
+            fig = mlab.gcf()
+            fig.on_mouse_pick(self._picker_callback_left)
+            fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
-        temp_pos = picker_obj.picked_positions.to_array()
+        tmp_pos = picker_obj.picked_positions.to_array()
 
-        if len(temp_pos):
-            old_min = np.inf
-            index = None
-            picked_id = None
-            # get the best pos
-            for pos in temp_pos:
-                hemi_id_list = []  # store hemispheres' minimum's id respectively
-                hemi_min_list = []  # store hemispheres' minimum respectively
-                # get the nearest vertex's id for the pos
-                for coords in self.coords:
-                    distance = np.sum(np.abs(coords - pos), axis=1)
-                    hemi_id = np.argmin(distance)
-                    hemi_min = distance[hemi_id]
-                    # add to list
-                    hemi_id_list.append(hemi_id)
-                    hemi_min_list.append(hemi_min)
+        if len(tmp_pos):
+            distance = np.sum(np.abs(self.coords - tmp_pos[0]), axis=1)
+            picked_id = np.argmin(distance)
 
-                if min(hemi_min_list) < old_min:
-                    index = np.argmin(hemi_min_list)  # get the nearest hemi's index
-                    picked_id = hemi_id_list[index]
-            # change the LUT
-            temp_lut = self.rgba_lut[index].copy()
-            self._toggle_color(temp_lut[picked_id])
-            for (i, surf) in enumerate(self.surf):
-                if i == index:
-                    surf.module_manager.scalar_lut_manager.lut.table = temp_lut
-                else:
-                    surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut[i]
+            tmp_lut = self.rgba_lut.copy()
+            self._toggle_color(tmp_lut[picked_id])
+            self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
 
     @staticmethod
     def _toggle_color(color):
