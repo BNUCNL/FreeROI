@@ -666,6 +666,15 @@ class SurfaceDataset(object):
         """Get vertices number of the surface."""
         return self.coords.shape[0]
 
+    def get_coords(self):
+        return self.coords
+
+    def get_faces(self):
+        return self.faces
+
+    def get_nn(self):
+        return self.nn
+
     @property
     def x(self):
         return self.coords[:, 0]
