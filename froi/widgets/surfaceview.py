@@ -8,6 +8,7 @@ from tvtk.api import tvtk
 from PyQt4.QtGui import *
 from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
+from scipy.spatial.distance import cdist
 import numpy as np
 
 from treemodel import TreeModel
@@ -160,8 +161,9 @@ class SurfaceView(QWidget):
         tmp_pos = picker_obj.picked_positions.to_array()
 
         if len(tmp_pos):
-            distance = np.sum(np.abs(self.coords - tmp_pos[0]), axis=1)
-            picked_id = np.argmin(distance)
+            picked_pos = np.atleast_2d(tmp_pos[0])
+            distance = cdist(self.coords, picked_pos)
+            picked_id = np.argmin(distance, axis=0)[0]
 
             tmp_lut = self.rgba_lut.copy()
             self._toggle_color(tmp_lut[picked_id])
