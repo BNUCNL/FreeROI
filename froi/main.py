@@ -757,17 +757,18 @@ class BpMainWindow(QMainWindow):
         # Save previous opened directory (except `standard` directory)
         file_path = source
         if sys.platform == 'win32':
-            temp_dir = os.path.dirname(unicode(file_path, 'gb2312'))
+            temp_dir, basename = os.path.split(unicode(file_path, 'gb2312'))
             if not os.stat(temp_dir) == os.stat(os.path.join(self.label_path,
                                                              'standard')):
                 self._temp_dir = temp_dir
         else:
-            temp_dir = os.path.dirname(file_path)
+            temp_dir, basename = os.path.split(file_path)
             if not os.path.samefile(temp_dir, os.path.join(self.label_path,
                                                            'standard')):
                 self._temp_dir = temp_dir
 
-        if len(self.surface_model.get_data()) == 0 and not file_path.endswith('.white'):
+        ends = basename.split('.')[-1]
+        if len(self.surface_model.get_data()) == 0 and ends not in ('pial', 'white', 'inflated'):
             QMessageBox.warning(self,
                                 'Warning',
                                 'You must choose the brain surface file first!',
