@@ -236,3 +236,44 @@ def _get_out_file_path(in_file_path, hemi):
 
     out_file_path = os.path.join(dir_name, "%s_%s.nii.gz" % (hemi, name))
     return out_file_path
+
+
+def bfs(graph, start, end):
+    """
+    Return a one of the shortest paths between a pair of start and end vertex in the graph.
+    The shortest path means a route that goes through the fewest vertices.
+    There may be more than one shortest path between start and end.
+    But the function just return one of them according to the first find.
+    The function takes advantage of the Breadth First Search.
+
+    :param graph: Directory
+        The keys are vertices of the graph. One key's value is a list of vertices which can be
+        got from the key.
+    :param start:
+        path's start vertex
+    :param end:
+        path's end vertex
+    :return: List
+        one of the shortest paths
+    """
+
+    if start == end:
+        return [start]
+
+    tmp_path = [start]
+    path_queue = [tmp_path]  # a queue used to load temporal paths
+
+    while path_queue:
+
+        tmp_path = path_queue.pop(0)
+        last_node = tmp_path[-1]
+
+        for link_node in graph[last_node]:
+            if link_node == end:
+                # find one of the shortest path
+                return tmp_path + [link_node]
+            elif link_node not in tmp_path:
+                # ready for deeper search
+                path_queue.append(tmp_path + [link_node])
+
+    return 0  # There is no path between start and end
