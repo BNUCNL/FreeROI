@@ -277,3 +277,12 @@ def bfs(graph, start, end):
                 path_queue.append(tmp_path + [link_node])
 
     return 0  # There is no path between start and end
+
+
+def surface_plot(graph, start, end, coords):
+
+    path = bfs(graph, start, end)
+    path_coords = coords[path]
+    x, y, z = path_coords[:, 0], path_coords[:, 1], path_coords[:, 2]
+
+    mlab.plot3d(x, y, z)

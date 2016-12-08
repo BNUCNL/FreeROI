@@ -12,6 +12,7 @@ from scipy.spatial.distance import cdist
 import numpy as np
 
 from treemodel import TreeModel
+from my_tools import surface_plot
 
 
 # Helpers
@@ -84,6 +85,7 @@ class SurfaceView(QWidget):
         self.faces = None
         self.rgba_lut = None
         self.gcf_flag = True
+        self.plot_start = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -167,9 +169,17 @@ class SurfaceView(QWidget):
             distance = cdist(self.coords, picked_pos)
             picked_id = np.argmin(distance, axis=0)[0]
 
+            # plot point
             tmp_lut = self.rgba_lut.copy()
             self._toggle_color(tmp_lut[picked_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
+
+            # plot line
+            if self.plot_start is None:
+                self.plot_start = picked_id
+            else:
+                surface_plot(self.graph, self.plot_start, picked_id, self.coords)
+                self.plot_start = picked_id
 
     @staticmethod
     def _toggle_color(color):
