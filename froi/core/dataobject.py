@@ -657,6 +657,18 @@ class SurfaceDataset(object):
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
         self.nn = mshtool.compute_normals(self.coords, self.faces)
 
+    def find_1_ring_neighbor(self):
+
+        n_vtx = self.coords.shape[0]
+        self.one_ring_neighbor = [set() for i in range(n_vtx)]
+
+        for face in self.faces:
+            for v_id in face:
+                self.one_ring_neighbor[v_id].update(set(face))
+
+        for v_id in range(n_vtx):
+            self.one_ring_neighbor[v_id].remove(v_id)
+
     def save_geometry(self):
         """Save geometry information."""
         nib.freesurfer.write_geometry(self.surf_path,
