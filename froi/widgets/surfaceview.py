@@ -222,20 +222,18 @@ class SurfaceView(QWidget):
     def create_graph(self):
 
         n_vtx = self.coords.shape[0]
-        self.graph = dict()
+        one_ring_neighbor = [set() for i in range(n_vtx)]
 
-        for v_id in range(n_vtx):
-            self.graph[v_id] = set()
-
-        # find neighbor according to the face matrix
         for face in self.faces:
             for v_id in face:
-                self.graph[v_id].update(set(face))
+                one_ring_neighbor[v_id].update(set(face))
 
-        # remove oneself from its neighbors
         for v_id in range(n_vtx):
-            self.graph[v_id].remove(v_id)
-            self.graph[v_id] = list(self.graph[v_id])
+            one_ring_neighbor[v_id].remove(v_id)
+
+        self.graph = dict()
+        for k, v in enumerate(one_ring_neighbor):
+            self.graph[k] = list(v)
 
 
 if __name__ == "__main__":
