@@ -12,6 +12,7 @@ from scipy.spatial.distance import cdist
 import numpy as np
 
 from treemodel import TreeModel
+from my_tools import surface_plot
 
 
 # Helpers
@@ -81,8 +82,10 @@ class SurfaceView(QWidget):
         self.surface_model = None
         self.surf = None
         self.coords = None
+        self.faces = None
         self.rgba_lut = None
         self.gcf_flag = True
+        self.plot_start = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -101,7 +104,6 @@ class SurfaceView(QWidget):
 
         # reset
         first_hemi_flag = True
-        faces = None
         nn = None
         self.rgba_lut = None
         vertex_number = 0
@@ -123,13 +125,13 @@ class SurfaceView(QWidget):
                 if first_hemi_flag:
                     first_hemi_flag = False
                     self.coords = hemi_coords
-                    faces = hemi_faces
+                    self.faces = hemi_faces
                     nn = hemi_nn
                     self.rgba_lut = hemi_lut
                 else:
                     self.coords = np.r_[self.coords, hemi_coords]
                     hemi_faces += vertex_number
-                    faces = np.r_[faces, hemi_faces]
+                    self.faces = np.r_[self.faces, hemi_faces]
                     nn = np.r_[nn, hemi_nn]
                     self.rgba_lut = np.r_[self.rgba_lut, hemi_lut]
                 vertex_number += hemi_vertex_number
@@ -139,7 +141,7 @@ class SurfaceView(QWidget):
         mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                              self.coords[:, 1],
                                                                              self.coords[:, 2],
-                                                                             faces,
+                                                                             self.faces,
                                                                              scalars=scalars)
         mesh.data.point_data.normals = nn
         mesh.data.cell_data.normals = None
@@ -155,6 +157,8 @@ class SurfaceView(QWidget):
             fig.on_mouse_pick(self._picker_callback_left)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
+        self.create_graph()
+
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
@@ -165,9 +169,17 @@ class SurfaceView(QWidget):
             distance = cdist(self.coords, picked_pos)
             picked_id = np.argmin(distance, axis=0)[0]
 
+            # plot point
             tmp_lut = self.rgba_lut.copy()
             self._toggle_color(tmp_lut[picked_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
+
+            # plot line
+            if self.plot_start is None:
+                self.plot_start = picked_id
+            else:
+                surface_plot(self.graph, self.plot_start, picked_id, self.coords)
+                self.plot_start = picked_id
 
     @staticmethod
     def _toggle_color(color):
@@ -206,6 +218,22 @@ class SurfaceView(QWidget):
             self._create_connections()
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
+
+    def create_graph(self):
+
+        n_vtx = self.coords.shape[0]
+        one_ring_neighbor = [set() for i in range(n_vtx)]
+
+        for face in self.faces:
+            for v_id in face:
+                one_ring_neighbor[v_id].update(set(face))
+
+        for v_id in range(n_vtx):
+            one_ring_neighbor[v_id].remove(v_id)
+
+        self.graph = dict()
+        for k, v in enumerate(one_ring_neighbor):
+            self.graph[k] = list(v)
 
 
 if __name__ == "__main__":
