@@ -262,6 +262,7 @@ def bfs(graph, start, end):
 
     tmp_path = [start]
     path_queue = [tmp_path]  # a queue used to load temporal paths
+    old_nodes = [start]
 
     while path_queue:
 
@@ -269,6 +270,13 @@ def bfs(graph, start, end):
         last_node = tmp_path[-1]
 
         for link_node in graph[last_node]:
+
+            # avoid repetitive detection for a node
+            if link_node in old_nodes:
+                continue
+            else:
+                old_nodes.append(link_node)
+
             if link_node == end:
                 # find one of the shortest path
                 return tmp_path + [link_node]
@@ -285,4 +293,4 @@ def surface_plot(graph, start, end, coords):
     path_coords = coords[path]
     x, y, z = path_coords[:, 0], path_coords[:, 1], path_coords[:, 2]
 
-    mlab.plot3d(x, y, z)
+    mlab.plot3d(x, y, z, line_width=100.0)
