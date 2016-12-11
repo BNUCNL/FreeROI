@@ -392,6 +392,17 @@ class VolumeDataset(object):
         try:
             if isinstance(y, list):
                 y_trans = [self._y_shift - item for item in y]
+            # check coordinate validation
+            coord_list = [(x[i], y_trans[i], z[i]) for i in range(len(x))]
+            coord_list = [c for c in coord_list if c[0]>=0 and 
+                                        c[0]<self.get_data_shape()[0] and
+                                        c[1]>=0 and
+                                        c[1]<self.get_data_shape()[1] and
+                                        c[2]>=0 and
+                                        c[2]<self.get_data_shape()[2]]
+            x = [c[0] for c in coord_list]
+            y_trans = [c[1] for c in coord_list]
+            z = [c[2] for c in coord_list]
             if self.is_4d():
                 orig_data = self._data[y_trans, x, z, self._time_point]
             else:
