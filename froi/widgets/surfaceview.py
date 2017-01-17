@@ -12,7 +12,7 @@ from scipy.spatial.distance import cdist
 import numpy as np
 
 from treemodel import TreeModel
-from my_tools import surface_plot
+from my_tools import bfs, toggle_color
 
 
 # Helpers
@@ -86,6 +86,8 @@ class SurfaceView(QWidget):
         self.rgba_lut = None
         self.gcf_flag = True
         self.plot_start = None
+        self.path = []
+        self.graph = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -101,6 +103,7 @@ class SurfaceView(QWidget):
         # clear the old surface
         if self.surf is not None:
             self.surf.remove()
+            self.surf = None
 
         # reset
         first_hemi_flag = True
@@ -147,7 +150,7 @@ class SurfaceView(QWidget):
         mesh.data.cell_data.normals = None
 
         # generate the surface
-        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh, representation='wireframe')
         self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
 
         # add point picker observer
@@ -156,8 +159,6 @@ class SurfaceView(QWidget):
             fig = mlab.gcf()
             fig.on_mouse_pick(self._picker_callback_left)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
-
-        self.create_graph()
 
     def _picker_callback(self, picker_obj, evt):
 
@@ -169,39 +170,18 @@ class SurfaceView(QWidget):
             distance = cdist(self.coords, picked_pos)
             picked_id = np.argmin(distance, axis=0)[0]
 
+            # plot line
+            if self.graph is not None:
+                if self.plot_start is None:
+                    self.plot_start = picked_id
+                else:
+                    self.path.extend(bfs(self.graph, self.plot_start, picked_id))
+                    self.plot_start = picked_id
+
             # plot point
             tmp_lut = self.rgba_lut.copy()
-            self._toggle_color(tmp_lut[picked_id])
+            toggle_color(tmp_lut[picked_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
-
-            # plot line
-            if self.plot_start is None:
-                self.plot_start = picked_id
-            else:
-                surface_plot(self.graph, self.plot_start, picked_id, self.coords)
-                self.plot_start = picked_id
-
-    @staticmethod
-    def _toggle_color(color):
-        """
-        make the color look differently
-
-        :param color: a alterable variable
-            rgb or rgba
-        :return:
-        """
-
-        green_max = 255
-        red_max = 255
-        blue_max = 255
-        if green_max-color[1] >= green_max / 2.0:
-            color[:3] = np.array((0, 255, 0))
-        elif red_max - color[0] >= red_max / 2.0:
-            color[:3] = np.array((255, 0, 0))
-        elif blue_max-color[2] >= blue_max / 2.0:
-            color[:3] = np.array((0, 0, 255))
-        else:
-            color[:3] = np.array((0, 0, 255))
 
     def _picker_callback_left(self, picker_obj):
         pass
@@ -219,21 +199,14 @@ class SurfaceView(QWidget):
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
 
-    def create_graph(self):
+    def set_graph(self, graph):
+        self.graph = graph
 
-        n_vtx = self.coords.shape[0]
-        one_ring_neighbor = [set() for i in range(n_vtx)]
+    def get_coords(self):
+        return self.coords
 
-        for face in self.faces:
-            for v_id in face:
-                one_ring_neighbor[v_id].update(set(face))
-
-        for v_id in range(n_vtx):
-            one_ring_neighbor[v_id].remove(v_id)
-
-        self.graph = dict()
-        for k, v in enumerate(one_ring_neighbor):
-            self.graph[k] = list(v)
+    def get_faces(self):
+        return self.faces
 
 
 if __name__ == "__main__":

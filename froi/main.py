@@ -49,6 +49,8 @@ from widgets.registervolume import RegisterVolumeDialog
 from widgets.treemodel import TreeModel
 from widgets.surfacetreewidget import SurfaceTreeView
 from widgets.surfaceview import SurfaceView
+from widgets.scribingdialog import ScribingDialog
+
 
 class BpMainWindow(QMainWindow):
     """Class BpMainWindow provides UI interface of FreeROI.
@@ -539,6 +541,15 @@ class BpMainWindow(QMainWindow):
         self._actions['roi_merge'].triggered.connect(self._roi_merge)
         self._actions['roi_merge'].setEnabled(False)
 
+        # ROI scribing
+        self._actions['scribing'] = QAction(self.tr("scribing"), self)
+        self._actions['scribing'].triggered.connect(self._roi_scribing)
+        self._actions['scribing'].setEnabled(False)
+
+    def _roi_scribing(self):
+        new_dialog = ScribingDialog(self.surface_view, self)
+        new_dialog.show()
+
     def _add_toolbar(self):
         """Add toolbar."""
         # Initialize a spinbox for zoom-scale selection
@@ -774,7 +785,7 @@ class BpMainWindow(QMainWindow):
                                 'You must choose the brain surface file first!',
                                 QMessageBox.Yes)
         elif self.surface_model._add_item(self.surface_tree_view_control.currentIndex(), file_path):
-            #Initial the tabwidget.
+            # Initial the tabwidget.
             if not self.tabWidget:
                 self._init_tab_widget()
 
@@ -785,18 +796,19 @@ class BpMainWindow(QMainWindow):
             elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.surface_tree_view:
                 self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
 
-            #Initial surface_view
+            # Initial surface_view
             if not self.surface_view:
                 self.surface_view = SurfaceView()
                 self.surface_view.set_model(self.surface_model)
 
-            if self.centralWidget().layout().indexOf(self.surface_view) == -1: #Could not find the self.image_view
+            if self.centralWidget().layout().indexOf(self.surface_view) == -1:  # Could not find the self.image_view
                 if self.centralWidget().layout().indexOf(self.image_view) != -1:
                     self.centralWidget().layout().removeWidget(self.image_view)
                     self.image_view.setParent(None)
                 self.centralWidget().layout().addWidget(self.surface_view)
 
             self._disable_toolbar()
+            self._actions['scribing'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',
@@ -1030,6 +1042,7 @@ class BpMainWindow(QMainWindow):
         roi_tools.addAction(self._actions['regular_roi'])
         roi_tools.addAction(self._actions['regular_roi_from_csv'])
         roi_tools.addAction(self._actions['r2i'])
+        roi_tools.addAction(self._actions['scribing'])
 
         # Morphological tools
         morphological_tools = self.tool_menu.addMenu(

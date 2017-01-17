@@ -294,3 +294,25 @@ def surface_plot(graph, start, end, coords):
     x, y, z = path_coords[:, 0], path_coords[:, 1], path_coords[:, 2]
 
     mlab.plot3d(x, y, z, line_width=100.0)
+
+
+def toggle_color(color):
+    """
+    make the color look differently
+
+    :param color: a alterable variable
+        rgb or rgba
+    :return:
+    """
+
+    green_max = 255
+    red_max = 255
+    blue_max = 255
+    if green_max-color[1] >= green_max / 2.0:
+        color[:3] = np.array((0, 255, 0))
+    elif red_max - color[0] >= red_max / 2.0:
+        color[:3] = np.array((255, 0, 0))
+    elif blue_max-color[2] >= blue_max / 2.0:
+        color[:3] = np.array((0, 0, 255))
+    else:
+        color[:3] = np.array((0, 0, 255))
