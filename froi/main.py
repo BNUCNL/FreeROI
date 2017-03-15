@@ -50,6 +50,7 @@ from widgets.treemodel import TreeModel
 from widgets.surfacetreewidget import SurfaceTreeView
 from widgets.surfaceview import SurfaceView
 from widgets.scribingdialog import ScribingDialog
+from widgets.surfaceRGdialog import SurfaceRGDialog
 
 
 class BpMainWindow(QMainWindow):
@@ -546,6 +547,15 @@ class BpMainWindow(QMainWindow):
         self._actions['scribing'].triggered.connect(self._roi_scribing)
         self._actions['scribing'].setEnabled(False)
 
+        # surface region grow
+        self._actions['surf_region_grow'] = QAction(self.tr("surf_RG"), self)
+        self._actions['surf_region_grow'].triggered.connect(self._surf_rg)
+        self._actions['surf_region_grow'].setEnabled(False)
+
+    def _surf_rg(self):
+        new_dialog = SurfaceRGDialog(self.surface_view, self)
+        new_dialog.show()
+
     def _roi_scribing(self):
         new_dialog = ScribingDialog(self.surface_view, self)
         new_dialog.show()
@@ -809,6 +819,7 @@ class BpMainWindow(QMainWindow):
 
             self._disable_toolbar()
             self._actions['scribing'].setEnabled(True)
+            self._actions['surf_region_grow'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',
@@ -1035,6 +1046,7 @@ class BpMainWindow(QMainWindow):
         segment_tools.addAction(self._actions['watershed'])
         segment_tools.addAction(self._actions['slic'])
         segment_tools.addAction(self._actions['cluster'])
+        segment_tools.addAction(self._actions['surf_region_grow'])
         # ROI tools
         roi_tools = self.tool_menu.addMenu(self.tr("ROI Tools"))
         roi_tools.addAction(self._actions['edge_dete'])

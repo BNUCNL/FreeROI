@@ -316,3 +316,14 @@ def toggle_color(color):
         color[:3] = np.array((0, 0, 255))
     else:
         color[:3] = np.array((0, 0, 255))
+
+
+class ConstVariable(object):
+
+    class ConstError(TypeError):
+        pass
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__:
+            raise self.ConstError, "Can't rebind const ({})".format(name)
+        self.__dict__[name] = value

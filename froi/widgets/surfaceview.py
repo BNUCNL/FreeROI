@@ -6,6 +6,7 @@ from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
 from tvtk.api import tvtk
 from PyQt4.QtGui import *
+from PyQt4 import QtCore
 from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
 from scipy.spatial.distance import cdist
@@ -62,6 +63,11 @@ class Visualization(HasTraits):
 
 class SurfaceView(QWidget):
 
+    # Signals
+    class SeedPicked(QtCore.QObject):
+        seed_picked = QtCore.pyqtSignal()
+    seed_picked = SeedPicked()
+
     def __init__(self, parent=None):
         super(SurfaceView, self).__init__(parent)
 
@@ -88,6 +94,8 @@ class SurfaceView(QWidget):
         self.plot_start = None
         self.path = []
         self.graph = None
+        self.surfRG_flag = False
+        self.seed_pos = []
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -170,13 +178,15 @@ class SurfaceView(QWidget):
             distance = cdist(self.coords, picked_pos)
             picked_id = np.argmin(distance, axis=0)[0]
 
-            # plot line
-            if self.graph is not None:
+            if self.graph is not None:  # plot line
                 if self.plot_start is None:
                     self.plot_start = picked_id
                 else:
                     self.path.extend(bfs(self.graph, self.plot_start, picked_id))
                     self.plot_start = picked_id
+            elif self.surfRG_flag:  # get seed position
+                self.seed_pos.append(picked_pos)
+                self.seed_picked.seed_picked.emit()
 
             # plot point
             tmp_lut = self.rgba_lut.copy()
