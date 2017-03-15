@@ -248,7 +248,7 @@ class SurfaceTreeView(QWidget):
         """Set colormap of current selected item."""
         index = self._tree_view.currentIndex()
         value = self._scalar_colormap.currentText()
-        self._model.setData(index, value, role=Qt.UserRole + 3)
+        self._model.setData(index, str(value), role=Qt.UserRole + 3)
 
     def _set_alpha(self):
         """Set alpha value of current selected item."""

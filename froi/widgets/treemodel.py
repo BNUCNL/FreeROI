@@ -255,10 +255,13 @@ class TreeModel(QAbstractItemModel):
         else:
             parent = index.parent()
             if not parent.isValid():
-                add_item = Hemisphere(source)
+                # add_item = Hemisphere(source)
+                item = index.internalPointer()
+                item.load_overlay(source, 'white')  # FIXME 'white' should be replaced with surf_type
+                add_item = None
             else:
                 parent_item = parent.internalPointer()
-                parent_item.load_overlay(source)
+                parent_item.load_overlay(source, 'white')  # FIXME 'white' should be replaced with surf_type
                 add_item = None
             ok = self.insertRow(index.row(), add_item, parent)
 

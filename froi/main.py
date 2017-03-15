@@ -638,14 +638,13 @@ class BpMainWindow(QMainWindow):
 
     def _add_surface_image(self):
         """Add new surface image."""
-        if self._temp_dir == None:
+        if self._temp_dir is None:
             temp_dir = QDir.currentPath()
         else:
             temp_dir = self._temp_dir
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Add new surface file',
-                                                temp_dir,
-                                                "Suface files (*.white *.pial *.inflated)")
+                                                temp_dir)
         if not file_name == '':
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')

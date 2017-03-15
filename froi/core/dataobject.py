@@ -721,7 +721,7 @@ class ScalarData(object):
     A container for thickness, curv, sig, and label dataset.
 
     """
-    def __init__(self, name, data, min=None, max=None):
+    def __init__(self, name, data, min=None, max=None, colormap='red2yellow'):
         """Initialization.
         TODO: colormap configs should be added to the function.
 
@@ -738,7 +738,7 @@ class ScalarData(object):
             self.max = np.max(data)
 
         self.visible = True
-        self.colormap = "Reds"
+        self.colormap = colormap
         self.alpha = 1.0
         self.colorbar = True
 
@@ -880,13 +880,12 @@ class Hemisphere(object):
             data = nib.freesurfer.read_label(data_file)
             if np.max(data) <= self.surf[surf_type].get_vertices_num():
 
-                data = data.astype(np.float64)
                 if data.dtype.byteorder == '>':
                     data.byteswap(True)
 
                 label_array = np.zeros(self.surf[surf_type].get_vertices_num(), np.int)
                 label_array[data] = 1
-                self.overlay_list.append(ScalarData(data_name, label_array))
+                self.overlay_list.append(ScalarData(data_name, label_array, colormap='blue'))
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
                 print 'Vertices number mismatch!'
