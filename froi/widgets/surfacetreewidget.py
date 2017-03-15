@@ -11,18 +11,21 @@ from treemodel import TreeModel
 from froi.utils import *
 from froi.core.labelconfig import LabelConfig
 
+
 class SurfaceTreeView(QWidget):
-    """Implementation a widget for layer selection and parameters alternating.
     """
-    #current_changed = pyqtSignal()
+    Implementation a widget for layer selection and parameters alternating.
+    """
+    # current_changed = pyqtSignal()
     repaint_surface = pyqtSignal()
-    builtin_colormap = ["Reds", "Greens", "Blues",
-                        "Accent", "BrBG", "BuPu",
-                        "Dark2", "GnBu", "Greys",
-                        "OrRd", "Oranges", "PRGn",
-                        "PuBu", "PuBuGn", "Purples",
-                        "YlGn", "black-white", "blue-red",
-                        "bone", "gray"]
+    builtin_colormap = ['gray',
+                        'red2yellow',
+                        'blue2cyanblue',
+                        'red',
+                        'green',
+                        'blue',
+                        'rainbow',
+                        'single ROI']
 
     def __init__(self, model, parent=None):
         """TreeView initialization."""
@@ -72,7 +75,7 @@ class SurfaceTreeView(QWidget):
         visibility_layout.addWidget(visibility_label)
         visibility_layout.addWidget(self._visibility)
 
-        #-- Surface display settings panel
+        # -- Surface display settings panel
         # initialize Surface display settings widgets
         # TODO: to be refactorred
         surface_name_label = QLabel('Hemisphere name:')
@@ -91,7 +94,7 @@ class SurfaceTreeView(QWidget):
         surface_group_box = QGroupBox('Surface display settings')
         surface_group_box.setLayout(surface_layout)
 
-        #-- Overlay display settings panel
+        # -- Overlay display settings panel
         # initialize up/down push button
         button_size = QSize(12, 12)
         self._up_button = QPushButton()
@@ -126,7 +129,7 @@ class SurfaceTreeView(QWidget):
         scalar_group_box = QGroupBox('Overlay display settings')
         scalar_group_box.setLayout(scalar_layout)
 
-        #-- layout config for whole TreeWidget
+        # -- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
         self.layout().addWidget(surface_type_group_box)
@@ -134,7 +137,7 @@ class SurfaceTreeView(QWidget):
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
 
-        #-- right click context show
+        # -- right click context show
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.contextMenu = QMenu(self)
@@ -151,8 +154,8 @@ class SurfaceTreeView(QWidget):
                 self._disp_current_para)
 
         # TODO: fulfill this function
-        ## When select one item, display its undo/redo settings
-        #self._tree_view.selectionModel().currentChanged.connect(
+        # # When select one item, display its undo/redo settings
+        # self._tree_view.selectionModel().currentChanged.connect(
         #        self.current_changed)
 
         # When dataset changed, refresh display.
@@ -170,6 +173,7 @@ class SurfaceTreeView(QWidget):
         # Config setting actions
         self._view_min.editingFinished.connect(self._set_view_min)
         self._view_max.editingFinished.connect(self._set_view_max)
+        self._surface_colormap.currentIndexChanged.connect(self._set_colormap)
         self._scalar_colormap.currentIndexChanged.connect(self._set_colormap)
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
