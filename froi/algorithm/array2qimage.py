@@ -239,6 +239,8 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
                     new_array = green(array, alpha)
                 elif colormap == 'blue':
                     new_array = blue(array, alpha)
+                else:
+                    raise RuntimeError("There is no colormap about '{}'.".format(colormap))
             else:
                 new_array = single_roi(array, alpha, roi)
         else:
