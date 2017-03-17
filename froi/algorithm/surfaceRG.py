@@ -2,10 +2,12 @@ from ..core.dataobject import SurfaceDataset
 from ..widgets.my_tools import ConstVariable
 
 import matplotlib.pyplot as plt
+from scipy.spatial.distance import cdist
 import numpy as np
 import copy
 
 const = ConstVariable()
+const.CONTRAST_STEP = 10
 
 
 class Region(object):
@@ -128,9 +130,10 @@ class Region(object):
         """
 
         measures = np.array([region.mean_feat() for region in self.neighbor])
-        self_measure = self.mean_feat()
+        self_measure = np.atleast_2d(self.mean_feat())
 
-        dist = np.sqrt(np.sum((measures - self_measure)**2, 1))
+        # dist = np.sqrt(np.sum((measures - self_measure)**2, 1))  # could be replaced by the following sentence
+        dist = cdist(measures, self_measure)
 
         index = np.argmin(np.array(dist))
 
@@ -332,7 +335,6 @@ class AdaptiveRegionGrowing(object):
 
         # initialize the region contrast
         region_contrast = [[] for i in range(n_seed)]
-        const.CONTRAST_STEP = 10
 
         dist = np.empty(n_seed)
         dist.fill(np.inf)  # fill with 'Inf'(infinite), similar to 'NaN'
