@@ -10,7 +10,7 @@ from ..algorithm.surfaceRG import SurfaceToRegions, AdaptiveRegionGrowing, Seede
 
 class SurfaceRGDialog(QtGui.QDialog):
 
-    def __init__(self, surf_view, parent=None, mask=None):
+    def __init__(self, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
         self.setWindowTitle("surfRG")
         self._surf_view = surf_view
@@ -32,6 +32,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         rg_type_edit = QtGui.QLineEdit()
 
         scalar_button = QtGui.QPushButton("add scalar")
+        mask_button = QtGui.QPushButton('add mask')
 
         ok_button = QtGui.QPushButton("OK")
         cancel_button = QtGui.QPushButton("Cancel")
@@ -47,6 +48,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         grid_layout.addWidget(rg_type_label, 3, 0)
         grid_layout.addWidget(rg_type_edit, 3, 1)
         grid_layout.addWidget(scalar_button, 4, 0)
+        grid_layout.addWidget(mask_button, 4, 1)
         grid_layout.addWidget(ok_button, 5, 0)
         grid_layout.addWidget(cancel_button, 5, 1)
         self.setLayout(grid_layout)
@@ -57,7 +59,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
         self.connect(ring_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_n_ring)
         self.connect(rg_type_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_rg_type)
-        self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._open_dialog)
+        self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
+        self.connect(mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
         self._surf_view.seed_picked.seed_picked.connect(self._set_count_edit_text)
 
         # fields
@@ -72,43 +75,51 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.ring_edit = ring_edit
         self.count_edit = count_edit
         self.rg_type_edit = rg_type_edit
-        self.mask = mask
         self.rg_type = 'arg'
         self.scalars = []
+        self.mask = None
 
-    def _open_dialog(self):
+    def _mask_dialog(self):
 
-        fpath = QtGui.QFileDialog().getOpenFileName(self, "Open file", "./")
-
+        fpath = QtGui.QFileDialog().getOpenFileName(self, 'Open mask file', './',
+                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh)')
         if not fpath:
             return
+        self.mask = read_scalar_data(fpath)[0]
 
-        fname = os.path.basename(fpath)
-        suffix = fname.split('.')[-1]
-        if suffix == 'curv' or suffix == 'thickness':
-            data = nib.freesurfer.read_morph_data(fpath)
-            data = data.astype(np.float64)
-            if data.dtype.byteorder == '>':
-                data.byteswap(True)
-            if data.shape[0] == self.hemi_vtx_number:
-                self.scalars.append(data)
-            else:
-                print 'Vertices number mismatch!'
+    def _scalar_dialog(self):
 
-        elif suffix == "nii" or suffix == "gz" or suffix == "mgz":
-            scalar_data_list = read_scalar_data(fpath)
-            for data in scalar_data_list:
-                # transform type of data into float64
+        fpaths = QtGui.QFileDialog().getOpenFileNames(self, "Open scalar file", "./")
+
+        if not fpaths:
+            return
+        for fpath in fpaths:
+            fname = os.path.basename(fpath)
+            suffix = fname.split('.')[-1]
+            if suffix in ('curv', 'thickness'):
+                data = nib.freesurfer.read_morph_data(fpath)
                 data = data.astype(np.float64)
                 if data.dtype.byteorder == '>':
                     data.byteswap(True)
-
                 if data.shape[0] == self.hemi_vtx_number:
                     self.scalars.append(data)
                 else:
-                    print 'vertices number mismatch!'
-        else:
-            print 'Unsupported data type.'
+                    print 'Vertices number mismatch!'
+
+            elif suffix in ("nii", "gz", "mgz", 'mgh'):
+                scalar_data_list = read_scalar_data(fpath)
+                for data in scalar_data_list:
+                    # transform type of data into float64
+                    data = data.astype(np.float64)
+                    if data.dtype.byteorder == '>':
+                        data.byteswap(True)
+
+                    if data.shape[0] == self.hemi_vtx_number:
+                        self.scalars.append(data)
+                    else:
+                        print 'vertices number mismatch!'
+            else:
+                print 'Unsupported data type.'
 
     def _set_rg_type(self):
 
