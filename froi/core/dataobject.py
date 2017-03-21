@@ -668,6 +668,18 @@ class SurfaceDataset(object):
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
         self.nn = mshtool.compute_normals(self.coords, self.faces)
 
+    def get_curv_bin(self):
+
+        curv_name = '{}.curv'.format(self.hemi)
+        curv_path = os.path.join(self.surf_dir, curv_name)
+        if not os.path.exists(curv_path):
+            return None, None
+        curv_bin = nib.freesurfer.read_morph_data(curv_path) > 0
+        curv_bin = curv_bin.astype(np.int)
+        curv_bin_name = curv_name + '_bin'
+
+        return curv_bin, curv_bin_name
+
     def find_1_ring_neighbor(self):
 
         n_vtx = self.coords.shape[0]
@@ -821,17 +833,25 @@ class Hemisphere(object):
         # self.surf = SurfaceDataset(surf_path, offset)
         surf_type = 'white'
         self.surf = {}
-        self.add_surfs(surf_path, surf_type)
-        self.name = self.surf[surf_type].name
         self.overlay_list = []
         self.overlay_idx = []
         self.alpha = 1.0
         self.colormap = "gray"
         self.visible = True
 
+        self.add_surfs(surf_path, surf_type)
+        self.name = self.surf[surf_type].name
+
     def _add_surface(self, surf_path, surf_type, offset=None):
         """Add surface data"""
         self.surf[surf_type] = SurfaceDataset(surf_path, offset)
+        curv_bin, curv_bin_name = self.surf[surf_type].get_curv_bin()
+        if curv_bin_name is not None:
+            if curv_bin.shape[0] == self.surf[surf_type].get_vertices_num():
+                self.overlay_list.append(ScalarData(curv_bin_name, curv_bin))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                raise ValueError("vertices number mismatch!")
 
     def del_surfs(self, surf_type):
         """Del surface data"""
@@ -870,7 +890,7 @@ class Hemisphere(object):
             data = data.astype(np.float64)
             if data.dtype.byteorder == '>':
                 data.byteswap(True)
-            if data.shape[0] == self.surf.get_vertices_num():
+            if data.shape[0] == self.surf[surf_type].get_vertices_num():
                 self.overlay_list.append(ScalarData(data_name, data))
                 self.overlay_idx.append(len(self.overlay_idx))
             else:
