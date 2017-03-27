@@ -788,7 +788,7 @@ class BpMainWindow(QMainWindow):
                 self._temp_dir = temp_dir
 
         ends = basename.split('.')[-1]
-        if len(self.surface_model.get_data()) == 0 and ends not in ('pial', 'white', 'inflated'):
+        if len(self.surface_model.get_data()) == 0 and ends not in ('pial', 'white', 'inflated', 'gii'):
             QMessageBox.warning(self,
                                 'Warning',
                                 'You must choose the brain surface file first!',

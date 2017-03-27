@@ -3,6 +3,7 @@ import numpy as np
 import nibabel as nib
 from PyQt4 import QtGui, QtCore
 from scipy.spatial.distance import cdist
+from scipy import io as scipy_io
 
 from my_tools import read_scalar_data
 from ..algorithm.surfaceRG import SurfaceToRegions, AdaptiveRegionGrowing, SeededRegionGrowing
@@ -55,7 +56,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         # connect
         self.connect(ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
-        self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("close()"))
+        # self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("close()"))
+        self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self.close)
         self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
         self.connect(ring_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_n_ring)
         self.connect(rg_type_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_rg_type)
@@ -118,6 +120,20 @@ class SurfaceRGDialog(QtGui.QDialog):
                         self.scalars.append(data)
                     else:
                         print 'vertices number mismatch!'
+            elif suffix == 'mat':
+                # read scalar data
+                mat_data1 = scipy_io.loadmat(fpath)
+                scalar = mat_data1.values()[0][0]
+
+                # read vertex number corresponded to scalar data
+                # FIXME read the vertex number interactively in the future
+                mat_data2 = scipy_io.loadmat('/nfs/j3/userhome/chenxiayu/workingdir/test/L_vertex_num.mat')
+                vertices = mat_data2.values()[0][0]
+
+                # create scalar data array with suitable size
+                data = np.zeros(self.hemi_vtx_number, np.float)
+                data[vertices] = scalar
+                self.scalars.append(data)
             else:
                 print 'Unsupported data type.'
 
