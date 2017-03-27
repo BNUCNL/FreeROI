@@ -19,6 +19,8 @@ from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
 from labelconfig import LabelConfig
 from nibabel.spatialimages import ImageFileError
+from nibabel.gifti import giftiio as g_io
+from scipy import io as scipy_io
 
 
 class DoStack(QObject):
@@ -652,7 +654,14 @@ class SurfaceDataset(object):
             return None
         self.surf_path = surf_path
         (self.surf_dir, self.name) = os.path.split(surf_path)
-        self.hemi = self.name.split('.')[0]
+        name_split = self.name.split('.')
+        self.suffix = name_split[-1]
+        if self.suffix in ('pial', 'inflated', 'white'):
+            self.hemi = name_split[0]
+        elif self.suffix == 'gii':
+            self.hemi = name_split[1]
+        else:
+            raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
         self.offset = offset
 
         # load geometry
@@ -660,9 +669,16 @@ class SurfaceDataset(object):
 
     def load_geometry(self):
         """Load surface geometry."""
-        self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
+        if self.suffix in ('pial', 'inflated', 'white'):
+            self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
+        elif self.suffix == 'gii':
+            gii_data = g_io.read(self.surf_path).darrays
+            self.coords, self.faces = gii_data[0].data, gii_data[1].data
+        else:
+            raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
+
         if self.offset is not None:
-            if self.hemi == 'lh':
+            if self.hemi in ('lh', 'L'):
                 self.coords[:, 0] -= (np.max(self.coords[:, 0]) + self.offset)
             else:
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
@@ -910,7 +926,7 @@ class Hemisphere(object):
             else:
                 print 'Vertices number mismatch!'
 
-        elif suffix == "nii" or suffix == "gz" or suffix == "mgz":
+        elif suffix in ('nii', 'gz', 'mgh', 'mgz'):  # FIXME remove the support for the 'gz'
             hemi = os.path.split(data_file)[1].split('.')[0]
             basename = os.path.basename(data_file)
             if basename.endswith(".nii.gz"):
@@ -935,6 +951,21 @@ class Hemisphere(object):
                     self.overlay_idx.append(len(self.overlay_idx))
                 else:
                     print 'vertices number mismatch!'
+        elif suffix == 'mat':
+            # read scalar data
+            mat_data1 = scipy_io.loadmat(data_file)
+            scalar = mat_data1.values()[0][0]
+
+            # read vertex number corresponded to scalar data
+            # FIXME read the vertex number interactively in the future
+            mat_data2 = scipy_io.loadmat('/nfs/j3/userhome/chenxiayu/workingdir/test/L_vertex_num.mat')
+            vertices = mat_data2.values()[0][0]
+
+            # create scalar data array with suitable size
+            data = np.zeros(self.surf[surf_type].get_vertices_num(), np.float)
+            data[vertices] = scalar
+            self.overlay_list.append(ScalarData(data_name, data))
+            self.overlay_idx.append(len(self.overlay_idx))
         else:
             print 'Unsupported data type.'
 

@@ -415,7 +415,7 @@ class AdaptiveRegionGrowing(object):
             for index, key in enumerate(vtx_feat.keys()):
                 X[index] = key
 
-            file_name = "/nfs/j3/userhome/chenxiayu/workingdir/" + str(seed.id) + "_srg_zstat.label"
+            file_name = "/nfs/j3/userhome/chenxiayu/workingdir/" + str(seed.id) + "_arg_zstat.label"
             header = str("the number of vertex: " + str(len(vtx_feat)))
             np.savetxt(file_name, X, fmt='%d',
                        header=header, comments="# ascii, label vertexes saved by genius cxy!\n")
