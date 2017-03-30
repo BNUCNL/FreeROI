@@ -158,7 +158,7 @@ class SurfaceView(QWidget):
         mesh.data.cell_data.normals = None
 
         # generate the surface
-        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh, representation='wireframe')
+        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
         self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
 
         # add point picker observer
