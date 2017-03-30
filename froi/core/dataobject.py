@@ -684,17 +684,20 @@ class SurfaceDataset(object):
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
         self.nn = mshtool.compute_normals(self.coords, self.faces)
 
-    def get_curv_bin(self):
-
+    def get_bin_curv(self):
+        """
+        load and get binarized curvature (gyrus' curvature<0, sulcus's curvature>0)
+        :return:
+            binarized curvature
+        """
         curv_name = '{}.curv'.format(self.hemi)
         curv_path = os.path.join(self.surf_dir, curv_name)
         if not os.path.exists(curv_path):
-            return None, None
-        curv_bin = nib.freesurfer.read_morph_data(curv_path) > 0
-        curv_bin = curv_bin.astype(np.int)
-        curv_bin_name = curv_name + '_bin'
+            return None
+        bin_curv = nib.freesurfer.read_morph_data(curv_path) <= 0
+        bin_curv = bin_curv.astype(np.int)
 
-        return curv_bin, curv_bin_name
+        return bin_curv
 
     def find_1_ring_neighbor(self):
 
@@ -849,6 +852,7 @@ class Hemisphere(object):
         # self.surf = SurfaceDataset(surf_path, offset)
         surf_type = 'white'
         self.surf = {}
+        self.bin_curv = None
         self.overlay_list = []
         self.overlay_idx = []
         self.alpha = 1.0
@@ -861,13 +865,7 @@ class Hemisphere(object):
     def _add_surface(self, surf_path, surf_type, offset=None):
         """Add surface data"""
         self.surf[surf_type] = SurfaceDataset(surf_path, offset)
-        curv_bin, curv_bin_name = self.surf[surf_type].get_curv_bin()
-        if curv_bin_name is not None:
-            if curv_bin.shape[0] == self.surf[surf_type].get_vertices_num():
-                self.overlay_list.append(ScalarData(curv_bin_name, curv_bin))
-                self.overlay_idx.append(len(self.overlay_idx))
-            else:
-                raise ValueError("vertices number mismatch!")
+        self.bin_curv = self.surf[surf_type].get_bin_curv()
 
     def del_surfs(self, surf_type):
         """Del surface data"""
@@ -1058,7 +1056,10 @@ class Hemisphere(object):
             rgba_list.append(self.get_rgba(idx))
 
         # automatically add the background array
-        background = np.ones((len(self.surf['white'].x), 4)) * 127.5  # simulate the geometry_data color
+        if self.bin_curv is not None:
+            background = aq.array2qrgba(self.bin_curv, 255.0, 'gray', (-1, 1.5))
+        else:
+            background = np.ones((self.surf['white'].get_vertices_num(), 4)) * 127.5
         rgba_list.insert(0, background)
 
         return aq.qcomposition(rgba_list)
@@ -1139,7 +1140,8 @@ class Hemisphere(object):
 
         for index in self.overlay_idx[-1::-1]:
             scalar = self.overlay_list[index]
-            if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible():
+            if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible()\
+                    and scalar.get_min() <= np.min(scalar.get_data()):
                 return self.overlay_idx.index(index)
 
         # 0 means that the render will start with the bottom overlay.
