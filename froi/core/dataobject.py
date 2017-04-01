@@ -949,6 +949,7 @@ class Hemisphere(object):
                     self.overlay_idx.append(len(self.overlay_idx))
                 else:
                     print 'vertices number mismatch!'
+
         elif suffix == 'mat':
             # read scalar data
             mat_data1 = scipy_io.loadmat(data_file)
@@ -964,6 +965,15 @@ class Hemisphere(object):
             data[vertices] = scalar
             self.overlay_list.append(ScalarData(data_name, data))
             self.overlay_idx.append(len(self.overlay_idx))
+
+        elif suffix == 'gii':
+            gii_data = g_io.read(data_file).darrays
+            data = gii_data[0].data
+            if data.shape[0] == self.surf[surf_type].get_vertices_num():
+                self.overlay_list.append(ScalarData(data_name, data))
+                self.overlay_idx.append(len(self.overlay_idx))
+            else:
+                print 'vertices number mismatch!'
         else:
             print 'Unsupported data type.'
 
@@ -1033,16 +1043,14 @@ class Hemisphere(object):
     def get_name(self):
         return self.name
 
-    def get_rgba(self, idx):
+    def get_rgba(self, ol):
         """
         Return a RGBA array according to scalar_data, alpha and colormap.
 
-        :param idx:
-            The index of self.overlay_list.
-        :return:
+        :param ol:
+            The element in self.overlay_list.
+        :return: array
         """
-
-        ol = self.overlay_list[idx]
 
         return aq.array2qrgba(ol.get_data(), ol.get_alpha()*255, ol.get_colormap(),
                               (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
@@ -1051,9 +1059,12 @@ class Hemisphere(object):
 
         start_render_index = self._get_start_render_index()
 
+        # get rgba arrays according to each overlay
         rgba_list = []
         for idx in self.overlay_idx[start_render_index:]:
-            rgba_list.append(self.get_rgba(idx))
+            ol = self.overlay_list[idx]
+            if ol.is_visible():
+                rgba_list.append(self.get_rgba(ol))
 
         # automatically add the background array
         if self.bin_curv is not None:
