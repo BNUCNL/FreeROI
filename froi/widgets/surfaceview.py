@@ -113,18 +113,24 @@ class SurfaceView(QWidget):
             self.surf.remove()
             self.surf = None
 
-        # reset
+        # flag
+        no_hemi_flag = True
         first_hemi_flag = True
+
+        # reset
         nn = None
         self.rgba_lut = None
         vertex_number = 0
 
         for hemisphere in hemisphere_list:
             if hemisphere.is_visible():
+
+                no_hemi_flag = False
+
                 # get geometry's information
-                geo = hemisphere.surf['white']  # 'white' should be replaced with var: surf_type
+                geo = hemisphere.surf['white']  # FIXME 'white' should be replaced with var: surf_type
                 hemi_coords = geo.get_coords()
-                hemi_faces = geo.get_faces()
+                hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
                 hemi_nn = geo.get_nn()
 
                 # get the rgba_lut
@@ -147,19 +153,20 @@ class SurfaceView(QWidget):
                     self.rgba_lut = np.r_[self.rgba_lut, hemi_lut]
                 vertex_number += hemi_vertex_number
 
-        # generate the triangular mesh
-        scalars = np.array(range(vertex_number))
-        mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
-                                                                             self.coords[:, 1],
-                                                                             self.coords[:, 2],
-                                                                             self.faces,
-                                                                             scalars=scalars)
-        mesh.data.point_data.normals = nn
-        mesh.data.cell_data.normals = None
+        if not no_hemi_flag:
+            # generate the triangular mesh
+            scalars = np.array(range(vertex_number))
+            mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
+                                                                                 self.coords[:, 1],
+                                                                                 self.coords[:, 2],
+                                                                                 self.faces,
+                                                                                 scalars=scalars)
+            mesh.data.point_data.normals = nn
+            mesh.data.cell_data.normals = None
 
-        # generate the surface
-        self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
-        self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
+            # generate the surface
+            self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+            self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
 
         # add point picker observer
         if self.gcf_flag:

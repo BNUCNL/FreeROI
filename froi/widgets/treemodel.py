@@ -134,8 +134,8 @@ class TreeModel(QAbstractItemModel):
         item = index.internalPointer()
         if role == Qt.EditRole:
             value_str = value.toPyObject()
-            if not value_str == '':
-                if not item.get_name() == value_str:
+            if value_str != '':
+                if item.get_name() != value_str:
                     item.set_name(str(value_str))
                 else:
                     return False
@@ -149,29 +149,29 @@ class TreeModel(QAbstractItemModel):
 
         if item in self._data:
             if role == Qt.UserRole + 2:
-                if not item.get_alpha == value:
+                if item.get_alpha != value:
                     item.set_alpha(value)
             elif role == Qt.UserRole + 3:
-                if not item.get_colormap == value:
+                if item.get_colormap != value:
                     item.set_colormap(value)
         else:
             if role == Qt.UserRole:
-                if not str(item.get_min()) == value:
+                if str(item.get_min()) != value:
                     item.set_min(value)
                 else:
                     return False
             elif role == Qt.UserRole + 1:
-                if not str(item.get_max()) == value:
+                if str(item.get_max()) != value:
                     item.set_max(value)
                 else:
                     return False
             elif role == Qt.UserRole + 2:
-                if not item.get_alpha() == value:
+                if item.get_alpha() != value:
                     item.set_alpha(value)
                 else:
                     return False
             elif role == Qt.UserRole + 3:
-                if not item.get_colormap() == value:
+                if item.get_colormap() != value:
                     item.set_colormap(value)
                 else:
                     return False
