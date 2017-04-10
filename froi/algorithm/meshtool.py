@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+import copy
 import subprocess
 import numpy as np
 from scipy import sparse
@@ -446,3 +447,47 @@ def ffmpeg(dst, frame_path, framerate=24, codec='mpeg4', bitrate='1M'):
                "information.")
         raise RuntimeError(err)
 
+
+def get_n_ring_neighbor(faces, n=1, ordinal=False):
+    """
+    get n ring nerghbor from faces array
+    :param faces: the array of shape [n_triangles, 3]
+    :param n: integer
+        specify which ring should be got
+    :param ordinal: bool
+        True: get the n_th ring neighbor
+        False: get the n ring neighbor
+    :return:
+    """
+    n_vtx = np.max(faces) + 1  # get the number of vertices
+
+    # find 1_ring neighbors' id for each vertex
+    n_ring_neighbors = [set() for _ in range(n_vtx)]
+    for face in faces:
+        for v_id in face:
+            n_ring_neighbors[v_id].update(set(face))
+    # remove vertex itself from its neighbor set
+    for v_id in range(n_vtx):
+        n_ring_neighbors[v_id].remove(v_id)
+
+    # find n_ring neighbors
+    one_ring_neighbors = copy.deepcopy(n_ring_neighbors)
+    n_th_ring_neighbors = copy.deepcopy(n_ring_neighbors)
+    # if n>1, go to get more neighbors
+    for i in range(n-1):
+        for neighbor_set in n_th_ring_neighbors:
+            neighbor_set_tmp = neighbor_set.copy()
+            for v_id in neighbor_set_tmp:
+                neighbor_set.update(one_ring_neighbors[v_id])
+
+        if i == 0:
+            for v_id in range(n_vtx):
+                n_th_ring_neighbors[v_id].remove(v_id)
+
+        for v_id in range(n_vtx):
+            n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
+            n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
+    if ordinal:
+        return n_th_ring_neighbors
+    else:
+        return n_ring_neighbors
