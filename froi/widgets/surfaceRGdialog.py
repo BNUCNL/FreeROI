@@ -1,11 +1,8 @@
-import os
 import numpy as np
-import nibabel as nib
 from PyQt4 import QtGui, QtCore
 from scipy.spatial.distance import cdist
-from scipy import io as scipy_io
 
-from my_tools import read_scalar_data
+from ..io.surf_io import read_data
 from ..algorithm.surfaceRG import SurfaceToRegions, AdaptiveRegionGrowing, SeededRegionGrowing
 
 
@@ -87,7 +84,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                                                     'mask files(*.nii *.nii.gz *.mgz *.mgh)')
         if not fpath:
             return
-        self.mask = read_scalar_data(fpath)[0]
+        self.mask = read_data(fpath, self.hemi_vtx_number)[0]
 
     def _scalar_dialog(self):
 
@@ -96,46 +93,9 @@ class SurfaceRGDialog(QtGui.QDialog):
         if not fpaths:
             return
         for fpath in fpaths:
-            fname = os.path.basename(fpath)
-            suffix = fname.split('.')[-1]
-            if suffix in ('curv', 'thickness'):
-                data = nib.freesurfer.read_morph_data(fpath)
-                data = data.astype(np.float64)
-                if data.dtype.byteorder == '>':
-                    data.byteswap(True)
-                if data.shape[0] == self.hemi_vtx_number:
-                    self.scalars.append(data)
-                else:
-                    print 'Vertices number mismatch!'
-
-            elif suffix in ("nii", "gz", "mgz", 'mgh'):
-                scalar_data_list = read_scalar_data(fpath)
-                for data in scalar_data_list:
-                    # transform type of data into float64
-                    data = data.astype(np.float64)
-                    if data.dtype.byteorder == '>':
-                        data.byteswap(True)
-
-                    if data.shape[0] == self.hemi_vtx_number:
-                        self.scalars.append(data)
-                    else:
-                        print 'vertices number mismatch!'
-            elif suffix == 'mat':
-                # read scalar data
-                mat_data1 = scipy_io.loadmat(fpath)
-                scalar = mat_data1.values()[0][0]
-
-                # read vertex number corresponded to scalar data
-                # FIXME read the vertex number interactively in the future
-                mat_data2 = scipy_io.loadmat('/nfs/j3/userhome/chenxiayu/workingdir/test/L_vertex_num.mat')
-                vertices = mat_data2.values()[0][0]
-
-                # create scalar data array with suitable size
-                data = np.zeros(self.hemi_vtx_number, np.float)
-                data[vertices] = scalar
+            data_list = read_data(fpath, self.hemi_vtx_number)
+            for data in data_list:
                 self.scalars.append(data)
-            else:
-                print 'Unsupported data type.'
 
     def _set_rg_type(self):
 
