@@ -5,7 +5,6 @@ from meshtool import get_n_ring_neighbor
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 import numpy as np
-import copy
 
 const = ConstVariable()
 const.CONTRAST_STEP = 10

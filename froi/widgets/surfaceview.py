@@ -1,6 +1,4 @@
-import os
 import sys
-import sip
 
 from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
@@ -192,7 +190,7 @@ class SurfaceView(QWidget):
                     self.path.extend(bfs(self.graph, self.plot_start, picked_id))
                     self.plot_start = picked_id
             elif self.surfRG_flag:  # get seed position
-                self.seed_pos.append(picked_pos)
+                self.seed_pos.append(picked_pos.copy())
                 self.seed_picked.seed_picked.emit()
 
             # plot point
