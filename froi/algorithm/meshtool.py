@@ -550,3 +550,21 @@ def graph_ncut(graph, thresh=0.001, num_cuts=10, in_place=True, max_edge=1.0):
         data['ncut label'] = rag.node[node]['ncut label']
 
     return graph
+
+
+def node_attr2array(graph, attrs):
+    """
+    extract nodes' attributes into a array
+    :param graph: nx.Graph
+    :param attrs: tuple (e.g. ('ncut label', 'color'))
+        nodes' attributes which are going to be saved
+    :return: numpy array
+        each row_index represents a node; each column represent a nodes' attribute.
+    """
+    n_vtx = graph.number_of_nodes()
+    arr_shape = (n_vtx, len(attrs))
+    arr = np.zeros(arr_shape)
+    for node, data in graph.nodes_iter(data=True):
+        for idx, attr in enumerate(attrs):
+            arr[node, idx] = data[attr]
+    return arr

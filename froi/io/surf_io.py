@@ -3,10 +3,12 @@ import numpy as np
 import nibabel as nib
 from nibabel.gifti import giftiio as g_io
 
+from ..algorithm.meshtool import node_attr2array
+
 
 def read_scalar_data(filepath):
     """
-	Load in scalar data from an image.
+    Load in scalar data from an image.
 
     Parameters
     ----------
@@ -135,3 +137,24 @@ def read_data(fpath, n_vtx_limit=None):
             if data.shape[0] != n_vtx_limit:
                 raise RuntimeError('vertices number mismatch!')
     return [data]
+
+
+def node_attr2text(fpath, graph, attrs, fmt='%d', comments='#!ascii\n', **kwargs):
+    """
+    save nodes' attributes to text file
+    :param fpath: str
+        output file name
+    :param graph: nx.Graph
+    :param attrs: tuple e.g. ('ncut label', 'color')
+        nodes' attributes which are going to be saved
+    :param fmt: str or sequence of strs, optional
+    :param comments: str, optional
+    :param kwargs: key-word arguments for numpy.savetxt()
+    :return:
+    """
+    header = ''
+    for attr in attrs:
+        header = header + attr + '\t'
+
+    X = node_attr2array(graph, attrs)
+    np.savetxt(fpath, X, fmt=fmt, header=header, comments=comments, **kwargs)
