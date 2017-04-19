@@ -2,10 +2,13 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
+import copy
 import subprocess
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import cdist
+from skimage.future.graph.rag import RAG
+from skimage.future.graph.graph_cut import _ncut_relabel
 
 
 def _fast_cross_3d(x, y):
@@ -44,6 +47,7 @@ def _fast_cross_3d(x, y):
     else:
         return np.cross(x, y)
 
+
 def compute_normals(rr, tris):
     """Efficiently compute vertex normals for triangulated surface"""
     # first, compute triangle normals
@@ -77,6 +81,7 @@ def compute_normals(rr, tris):
     nn /= size[:, np.newaxis]
     return nn
 
+
 def find_closest_vertices(surface_coords, point_coords):
     """Return the vertices on a surface mesh closest to some 
     given coordinates.
@@ -99,6 +104,7 @@ def find_closest_vertices(surface_coords, point_coords):
     point_coords = np.atleast_2d(point_coords)
     return np.argmin(cdist(surface_coords, point_coords), axis=0)
 
+
 def tal_to_mni(coords):
     """Convert Talairach coords to MNI using the Lancaster transform.
 
@@ -120,6 +126,7 @@ def tal_to_mni(coords):
                     [0.00000,  0.00000, 0.00000,  1.00000]])
     mni_coords = np.dot(np.c_[coords, np.ones(coords.shape[0])], xfm.T)[:, :3]
     return mni_coords
+
 
 def mesh_edges(faces):
     """Returns sparse matrix with edges as an adjacency matrix
@@ -146,6 +153,7 @@ def mesh_edges(faces):
     edges = edges + edges.T
     edges = edges.tocoo()
     return edges
+
 
 def create_color_lut(cmap, n_colors=256):
     """Return a colormap suitable for setting as a Mayavi LUT.
@@ -199,6 +207,7 @@ def create_color_lut(cmap, n_colors=256):
     lut = (cmap(np.linspace(0, 1, n_colors)) * 255).astype(np.int)
 
     return lut
+
 
 def smoothing_matrix(vertices, adj_mat, smoothing_steps=20, verbose=None):
     """Create a smoothing matrix which can be used to interpolate data defined
@@ -261,6 +270,7 @@ def smoothing_matrix(vertices, adj_mat, smoothing_steps=20, verbose=None):
 
     return smooth_mat
 
+
 def coord_to_label(subject_id, coord, label, hemi='lh', n_steps=30,
                    map_surface='white', coord_as_vert=False, verbose=None):
     """Create label from MNI coordinate
@@ -309,6 +319,7 @@ def coord_to_label(subject_id, coord, label, hemi='lh', n_steps=30,
         x, y, z = geo.coords[i]
         f.write('%d  %f  %f  %f 0.000000\n' % (i, x, y, z))
 
+
 def _get_subjects_dir(subjects_dir=None, raise_error=True):
     """Get the subjects directory from parameter or environment variable
 
@@ -340,6 +351,7 @@ def _get_subjects_dir(subjects_dir=None, raise_error=True):
 
     return subjects_dir
 
+
 def has_fsaverage(subjects_dir=None):
     """Determine whether the user has a usable fsaverage"""
     fs_dir = os.path.join(_get_subjects_dir(subjects_dir, False), 'fsaverage')
@@ -352,7 +364,8 @@ def has_fsaverage(subjects_dir=None):
 requires_fsaverage = np.testing.dec.skipif(not has_fsaverage(),
                                            'Requires fsaverage subject data')
 
-#---  check ffmpeg
+
+# ---  check ffmpeg
 def has_ffmpeg():
     """Test whether the FFmpeg is available in a subprocess
 
@@ -368,6 +381,7 @@ def has_ffmpeg():
     except OSError:
         return False
 
+
 def assert_ffmpeg_is_available():
     "Raise a RuntimeError if FFmpeg is not in the PATH"
     if not has_ffmpeg():
@@ -377,6 +391,7 @@ def assert_ffmpeg_is_available():
         raise RuntimeError(err)
 
 requires_ffmpeg = np.testing.dec.skipif(not has_ffmpeg(), 'Requires FFmpeg')
+
 
 def ffmpeg(dst, frame_path, framerate=24, codec='mpeg4', bitrate='1M'):
     """Run FFmpeg in a subprocess to convert an image sequence into a movie
@@ -446,3 +461,110 @@ def ffmpeg(dst, frame_path, framerate=24, codec='mpeg4', bitrate='1M'):
                "information.")
         raise RuntimeError(err)
 
+
+def get_n_ring_neighbor(faces, n=1, ordinal=False):
+    """
+    get n ring nerghbor from faces array
+    :param faces: the array of shape [n_triangles, 3]
+    :param n: integer
+        specify which ring should be got
+    :param ordinal: bool
+        True: get the n_th ring neighbor
+        False: get the n ring neighbor
+    :return:
+    """
+    n_vtx = np.max(faces) + 1  # get the number of vertices
+
+    # find 1_ring neighbors' id for each vertex
+    n_ring_neighbors = [set() for _ in range(n_vtx)]
+    for face in faces:
+        for v_id in face:
+            n_ring_neighbors[v_id].update(set(face))
+    # remove vertex itself from its neighbor set
+    for v_id in range(n_vtx):
+        n_ring_neighbors[v_id].remove(v_id)
+
+    # find n_ring neighbors
+    one_ring_neighbors = copy.deepcopy(n_ring_neighbors)
+    n_th_ring_neighbors = copy.deepcopy(n_ring_neighbors)
+    # if n>1, go to get more neighbors
+    for i in range(n-1):
+        for neighbor_set in n_th_ring_neighbors:
+            neighbor_set_tmp = neighbor_set.copy()
+            for v_id in neighbor_set_tmp:
+                neighbor_set.update(one_ring_neighbors[v_id])
+
+        if i == 0:
+            for v_id in range(n_vtx):
+                n_th_ring_neighbors[v_id].remove(v_id)
+
+        for v_id in range(n_vtx):
+            n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
+            n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
+    if ordinal:
+        return n_th_ring_neighbors
+    else:
+        return n_ring_neighbors
+
+
+def graph_ncut(graph, thresh=0.001, num_cuts=10, in_place=True, max_edge=1.0):
+    """
+    adapt from skimage.future.graph.graph_cut.cut_normalized()--version: 0.12.3
+    Perform Normalized Graph cut on the nx.Graph. Recursively perform
+    a 2-way normalized cut on it. All nodes belonging to a subgraph
+    that cannot be cut further are assigned a unique label in the output.
+
+    Parameters
+    ----------
+    graph: nx.Graph
+    thresh: float
+        The threshold. A subgraph won't be further subdivided if the
+        value of the N-cut exceeds `thresh`.
+    num_cuts: int
+        The number or N-cuts to perform before determining the optimal one.
+    in_place: bool
+        If set, modifies `graph` in place. For each node `n` the function will
+        set a new attribute ``rag.node[n]['ncut label']``.
+    max_edge: float, optional
+        The maximum possible value of an edge in the RAG. This corresponds to
+        an edge between identical regions. This is used to put self
+        edges in the RAG.
+
+    Returns
+    -------
+    out: nx.Graph
+        The new labeled array.
+    """
+    if not in_place:
+        graph = graph.copy()
+
+    rag = RAG(data=graph)
+
+    for node, data in rag.nodes_iter(data=True):
+        rag.add_edge(node, node, weight=max_edge)
+        data['labels'] = [node]  # prepare for skimage.future.graph.graph_cut._label_all()
+
+    _ncut_relabel(rag, thresh, num_cuts)
+
+    for node, data in graph.nodes_iter(data=True):
+        data['ncut label'] = rag.node[node]['ncut label']
+
+    return graph
+
+
+def node_attr2array(graph, attrs):
+    """
+    extract nodes' attributes into a array
+    :param graph: nx.Graph
+    :param attrs: tuple (e.g. ('ncut label', 'color'))
+        nodes' attributes which are going to be saved
+    :return: numpy array
+        each row_index represents a node; each column represent a nodes' attribute.
+    """
+    n_vtx = graph.number_of_nodes()
+    arr_shape = (n_vtx, len(attrs))
+    arr = np.zeros(arr_shape)
+    for node, data in graph.nodes_iter(data=True):
+        for idx, attr in enumerate(attrs):
+            arr[node, idx] = data[attr]
+    return arr

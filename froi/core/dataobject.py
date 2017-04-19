@@ -11,16 +11,16 @@ import sys
 
 import nibabel as nib
 import numpy as np
+from nibabel.spatialimages import ImageFileError
+from nibabel.gifti import giftiio as g_io
 import gzip
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
+from ..io.surf_io import read_data
 from labelconfig import LabelConfig
-from nibabel.spatialimages import ImageFileError
-from nibabel.gifti import giftiio as g_io
-from scipy import io as scipy_io
 
 
 class DoStack(QObject):
@@ -895,87 +895,13 @@ class Hemisphere(object):
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, data_file, surf_type):
+    def load_overlay(self, fpath, surf_type):
         """Load scalar data as an overlay."""
-        (data_dir, data_name) = os.path.split(data_file)
-        suffix = data_name.split('.')[-1]
-        if suffix == 'curv' or suffix == 'thickness':
-            data = nib.freesurfer.read_morph_data(data_file)
-            data = data.astype(np.float64)
-            if data.dtype.byteorder == '>':
-                data.byteswap(True)
-            if data.shape[0] == self.surf[surf_type].get_vertices_num():
-                self.overlay_list.append(ScalarData(data_name, data))
-                self.overlay_idx.append(len(self.overlay_idx))
-            else:
-                print 'Vertices number mismatch!'
-
-        elif suffix == 'label':
-            data = nib.freesurfer.read_label(data_file)
-            if np.max(data) <= self.surf[surf_type].get_vertices_num():
-
-                if data.dtype.byteorder == '>':
-                    data.byteswap(True)
-
-                label_array = np.zeros(self.surf[surf_type].get_vertices_num(), np.int)
-                label_array[data] = 1
-                self.overlay_list.append(ScalarData(data_name, label_array, colormap='blue'))
-                self.overlay_idx.append(len(self.overlay_idx))
-            else:
-                print 'Vertices number mismatch!'
-
-        elif suffix in ('nii', 'gz', 'mgh', 'mgz'):  # FIXME remove the support for the 'gz'
-            hemi = os.path.split(data_file)[1].split('.')[0]
-            basename = os.path.basename(data_file)
-            if basename.endswith(".nii.gz"):
-                basename = basename[:-7]
-            if basename.endswith(".gz"):
-                basename = basename[:-3]
-            if basename.startswith("%s." % hemi):
-                basename = basename[3:]
-            data_name = os.path.splitext(basename)[0]
-
-            # load act_data
-            # data = nib.load(data_file).get_data()
-            scalar_data_list = self._read_scalar_data(data_file)
-            for data in scalar_data_list:
-                # transform type of data into float64
-                data = data.astype(np.float64)
-                if data.dtype.byteorder == '>':
-                    data.byteswap(True)
-
-                if data.shape[0] == self.surf[surf_type].get_vertices_num():
-                    self.overlay_list.append(ScalarData(data_name, data))
-                    self.overlay_idx.append(len(self.overlay_idx))
-                else:
-                    print 'vertices number mismatch!'
-
-        elif suffix == 'mat':
-            # read scalar data
-            mat_data1 = scipy_io.loadmat(data_file)
-            scalar = mat_data1.values()[0][0]
-
-            # read vertex number corresponded to scalar data
-            # FIXME read the vertex number interactively in the future
-            mat_data2 = scipy_io.loadmat('/nfs/j3/userhome/chenxiayu/workingdir/test/L_vertex_num.mat')
-            vertices = mat_data2.values()[0][0]
-
-            # create scalar data array with suitable size
-            data = np.zeros(self.surf[surf_type].get_vertices_num(), np.float)
-            data[vertices] = scalar
-            self.overlay_list.append(ScalarData(data_name, data))
+        fname = os.path.basename(fpath)
+        data_list = read_data(fpath, self.surf[surf_type].get_vertices_num())
+        for data in data_list:
+            self.overlay_list.append(ScalarData(fname, data))
             self.overlay_idx.append(len(self.overlay_idx))
-
-        elif suffix == 'gii':
-            gii_data = g_io.read(data_file).darrays
-            data = gii_data[0].data
-            if data.shape[0] == self.surf[surf_type].get_vertices_num():
-                self.overlay_list.append(ScalarData(data_name, data))
-                self.overlay_idx.append(len(self.overlay_idx))
-            else:
-                print 'vertices number mismatch!'
-        else:
-            print 'Unsupported data type.'
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""

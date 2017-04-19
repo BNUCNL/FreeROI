@@ -1,10 +1,10 @@
 from ..core.dataobject import SurfaceDataset
 from ..widgets.my_tools import ConstVariable
+from meshtool import get_n_ring_neighbor
 
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 import numpy as np
-import copy
 
 const = ConstVariable()
 const.CONTRAST_STEP = 10
@@ -200,48 +200,17 @@ class SurfaceToRegions(object):
                 self.v_id2r_id[v_id] = r_id
 
         # find neighbors
-        # find 1_ring neighbors' id for each region
-        # list_of_neighbor_set = [set()] * len(self.regions)  # each element is
-        # the reference to the same set object
-        list_of_neighbor_set = [set() for i in range(n_vtx)]
-        f = surf.get_faces()
-        for face in f:
-            for v_id in face:
-                list_of_neighbor_set[v_id].update(set(face))
-
-        for v_id in range(n_vtx):
-            list_of_neighbor_set[v_id].remove(v_id)
-
-        # n_ring neighbors
-        list_of_1_ring_neighbor_set = copy.deepcopy(list_of_neighbor_set)
-        list_of_n_ring_neighbor_set = copy.deepcopy(list_of_neighbor_set)
-        n = 1
-        while n < n_ring:
-
-            for neighbor_set in list_of_n_ring_neighbor_set:
-                neighbor_set_tmp = neighbor_set.copy()
-                for v_id in neighbor_set_tmp:
-                    neighbor_set.update(list_of_1_ring_neighbor_set[v_id])
-
-            if n == 1:
-                for v_id in range(n_vtx):
-                    list_of_n_ring_neighbor_set[v_id].remove(v_id)
-
-            for v_id in range(n_vtx):
-                list_of_n_ring_neighbor_set[v_id] -= list_of_neighbor_set[v_id]
-                list_of_neighbor_set[v_id] |= list_of_n_ring_neighbor_set[v_id]
-
-            n += 1
+        n_ring_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
 
         # add neighbors
         if mask is None:
             for r_id in range(len(self.regions)):
-                for neighbor_id in list_of_neighbor_set[r_id]:
+                for neighbor_id in n_ring_neighbors[r_id]:
                     self.regions[r_id].add_neighbor(self.regions[neighbor_id])
         else:
             for r_id in range(len(self.regions)):
                 v_id = self.regions[r_id].id
-                for neighbor_v_id in list_of_neighbor_set[v_id]:
+                for neighbor_v_id in n_ring_neighbors[v_id]:
                     neighbor_r_id = self.v_id2r_id.get(neighbor_v_id)
                     if neighbor_r_id is not None:
                         self.regions[r_id].add_neighbor(self.regions[neighbor_r_id])
