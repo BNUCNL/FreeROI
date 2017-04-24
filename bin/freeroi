@@ -12,8 +12,11 @@ os.environ['ETS_TOOLKIT'] = 'qt4'
 os.environ['QT_API'] = 'pyqt'
 
 import sip
-sip.setapi('QString', 2)
-sip.setapi('QVariant', 2)
+API_NAMES = ['QDate', 'QDateTime', 'QString', 'QTextStream', 'QTime',
+             'QUrl', 'QVariant']
+API_VERSION = 2
+for name in API_NAMES:
+    sip.setapi(name, API_VERSION)
 
 from PyQt4.QtGui import QApplication
 
