@@ -7,8 +7,6 @@ import subprocess
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import cdist
-from skimage.future.graph.rag import RAG
-from skimage.future.graph.graph_cut import _ncut_relabel
 
 
 def _fast_cross_3d(x, y):
@@ -471,7 +469,9 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
     :param ordinal: bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
-    :return:
+    :return: list
+        each index of the list represents a vertex number
+        each element is a set which includes neighbors of corresponding vertex
     """
     n_vtx = np.max(faces) + 1  # get the number of vertices
 
@@ -505,66 +505,3 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
         return n_th_ring_neighbors
     else:
         return n_ring_neighbors
-
-
-def graph_ncut(graph, thresh=0.001, num_cuts=10, in_place=True, max_edge=1.0):
-    """
-    adapt from skimage.future.graph.graph_cut.cut_normalized()--version: 0.12.3
-    Perform Normalized Graph cut on the nx.Graph. Recursively perform
-    a 2-way normalized cut on it. All nodes belonging to a subgraph
-    that cannot be cut further are assigned a unique label in the output.
-
-    Parameters
-    ----------
-    graph: nx.Graph
-    thresh: float
-        The threshold. A subgraph won't be further subdivided if the
-        value of the N-cut exceeds `thresh`.
-    num_cuts: int
-        The number or N-cuts to perform before determining the optimal one.
-    in_place: bool
-        If set, modifies `graph` in place. For each node `n` the function will
-        set a new attribute ``rag.node[n]['ncut label']``.
-    max_edge: float, optional
-        The maximum possible value of an edge in the RAG. This corresponds to
-        an edge between identical regions. This is used to put self
-        edges in the RAG.
-
-    Returns
-    -------
-    out: nx.Graph
-        The new labeled array.
-    """
-    if not in_place:
-        graph = graph.copy()
-
-    rag = RAG(data=graph)
-
-    for node, data in rag.nodes_iter(data=True):
-        rag.add_edge(node, node, weight=max_edge)
-        data['labels'] = [node]  # prepare for skimage.future.graph.graph_cut._label_all()
-
-    _ncut_relabel(rag, thresh, num_cuts)
-
-    for node, data in graph.nodes_iter(data=True):
-        data['ncut label'] = rag.node[node]['ncut label']
-
-    return graph
-
-
-def node_attr2array(graph, attrs):
-    """
-    extract nodes' attributes into a array
-    :param graph: nx.Graph
-    :param attrs: tuple (e.g. ('ncut label', 'color'))
-        nodes' attributes which are going to be saved
-    :return: numpy array
-        each row_index represents a node; each column represent a nodes' attribute.
-    """
-    n_vtx = graph.number_of_nodes()
-    arr_shape = (n_vtx, len(attrs))
-    arr = np.zeros(arr_shape)
-    for node, data in graph.nodes_iter(data=True):
-        for idx, attr in enumerate(attrs):
-            arr[node, idx] = data[attr]
-    return arr
