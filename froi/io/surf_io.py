@@ -3,7 +3,7 @@ import numpy as np
 import nibabel as nib
 from nibabel.gifti import giftiio as g_io
 
-from ..algorithm.meshtool import node_attr2array
+from ..algorithm.graph_tool import node_attr2array
 
 
 def read_scalar_data(filepath):
