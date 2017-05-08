@@ -137,6 +137,7 @@ def graph2parcel(graph, n=2, num_cuts=10, in_place=True, max_edge=1.0):
     subgraphs = [graph]
     min_parcels = []
     while len(subgraphs)+len(min_parcels) < n and subgraphs:
+        subgraphs.sort(key=lambda x: x.number_of_nodes(), reverse=True)
         subgraph = subgraphs.pop(0)
         sub1, sub2 = two_ncut(subgraph, num_cuts)
         if sub2 is None:
