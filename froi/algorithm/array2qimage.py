@@ -276,7 +276,7 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
             new_array2[..., 0] = new_array_R + add_
             new_array2[..., 1] = new_array_G + add_
             new_array2[..., 2] = new_array_B + add_
-            new_array2[..., 3] = alpha * _np.sum(new_array2, 2).clip(0, 1)
+            new_array2[..., 3] = alpha * _np.sum(new_array2, new_array2.ndim-1).clip(0, 1)
             #_np.set_printoptions(threshold=1000000)
             new_array = new_array2
     else:

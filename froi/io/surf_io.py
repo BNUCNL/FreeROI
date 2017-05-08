@@ -1,7 +1,9 @@
 import os
+import gzip
 import numpy as np
 import nibabel as nib
 from nibabel.gifti import giftiio as g_io
+from nibabel.spatialimages import ImageFileError
 
 from ..algorithm.graph_tool import node_attr2array
 
