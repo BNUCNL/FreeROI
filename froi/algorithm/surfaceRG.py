@@ -142,7 +142,7 @@ class Region(object):
 
 class SurfaceToRegions(object):
 
-    def __init__(self, surf, scalars, mask=None, n_ring=1):
+    def __init__(self, surf, X, mask=None, n_ring=1):
         """
         represent the surface to preliminary regions
 
@@ -150,6 +150,9 @@ class SurfaceToRegions(object):
         ----------
         surf: SurfaceDataset
             a instance of the class SurfaceDataset
+        X : numpy array
+            NxM array, N is the number of vertices,
+            M is the number of measurements or time points.
         mask: scalar_data
             specify a area where the ROI is in.
         n_ring: int
@@ -167,7 +170,7 @@ class SurfaceToRegions(object):
         n_vtx = surf.get_vertices_num()
 
         # just temporarily use the field to find suitable seed_region
-        self.scalar = scalars[0]
+        self.scalar = X[:, 0]
 
         if mask is not None:
             id_iter = np.nonzero(mask)[0]
@@ -178,23 +181,18 @@ class SurfaceToRegions(object):
         # initialize regions
         self.regions = []
         self.v_id2r_id = dict()
-        scalars_count = len(scalars)
         if mask is None:
             for v_id in id_iter:
 
                 vtx_feat = dict()
-                vtx_feat[v_id] = np.zeros(scalars_count)
-                for i, scalar in enumerate(scalars):
-                    vtx_feat[v_id][i] = scalar[v_id]
+                vtx_feat[v_id] = X[v_id]
 
                 self.regions.append(Region(v_id, vtx_feat))
         else:
             for r_id, v_id in enumerate(id_iter):
 
                 vtx_feat = dict()
-                vtx_feat[v_id] = np.zeros(scalars_count)
-                for i, scalar in enumerate(scalars):
-                    vtx_feat[v_id][i] = scalar[v_id]
+                vtx_feat[v_id] = X[v_id]
 
                 self.regions.append(Region(v_id, vtx_feat))
                 self.v_id2r_id[v_id] = r_id

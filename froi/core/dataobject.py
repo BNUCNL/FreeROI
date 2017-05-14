@@ -898,10 +898,9 @@ class Hemisphere(object):
     def load_overlay(self, fpath, surf_type):
         """Load scalar data as an overlay."""
         fname = os.path.basename(fpath)
-        data_list = read_data(fpath, self.surf[surf_type].get_vertices_num())
-        for data in data_list:
-            self.overlay_list.append(ScalarData(fname, data))
-            self.overlay_idx.append(len(self.overlay_idx))
+        data = read_data(fpath, self.surf[surf_type].get_vertices_num())
+        self.overlay_list.append(ScalarData(fname, data))
+        self.overlay_idx.append(len(self.overlay_idx))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
@@ -978,7 +977,11 @@ class Hemisphere(object):
         :return: array
         """
 
-        return aq.array2qrgba(ol.get_data(), ol.get_alpha()*255, ol.get_colormap(),
+        data = ol.get_data()
+        if data.ndim == 2:
+            data = np.mean(data, 1)
+
+        return aq.array2qrgba(data, ol.get_alpha()*255, ol.get_colormap(),
                               (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
 
     def get_composite_rgb(self):

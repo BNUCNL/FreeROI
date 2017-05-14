@@ -19,19 +19,20 @@ def read_scalar_data(filepath):
 
     Returns
     -------
-    scalar_data : [numpy array]
-        flat numpy array of scalar data
+    scalar_data : numpy array
+        NxM array, N is the number of vertices,
+        M is the number of time points.
     """
     try:
-        scalar_data = nib.load(filepath).get_data()
-        shape = scalar_data.shape
-        if len(shape) == 4:
-            scalar_data_list = []
-            for index in range(shape[3]):
-                scalar_data_list.append(np.ravel(scalar_data[:, :, :, index], order='F'))
+        data = nib.load(filepath).get_data()
+        scalar_data = []
+        if data.ndim == 4:
+            for idx in range(data.shape[3]):
+                scalar_data.append(np.ravel(data[..., idx], order='F'))
         else:
-            scalar_data_list = [np.ravel(scalar_data, order="F")]
-        return scalar_data_list
+            scalar_data.append(np.ravel(data, order="F"))
+        scalar_data = np.array(scalar_data).T
+        return scalar_data
 
     except ImageFileError:
         ext = os.path.splitext(filepath)[1]
@@ -68,11 +69,19 @@ def read_scalar_data(filepath):
         nbytes = ndim1 * ndim2 * ndim3 * nframes * databytes
         # Read in all the data, keep it in flat representation
         # (is this ever a problem?)
-        scalar_data = np.fromstring(fobj.read(nbytes), typecode)
+        data = np.fromstring(fobj.read(nbytes), typecode)
     finally:
         fobj.close()
 
-    return [scalar_data]
+    scalar_data = []
+    if data.ndim == 4:
+        for idx in range(data.shape[3]):
+            scalar_data.append(np.ravel(data[..., idx], order='F'))
+    else:
+        scalar_data.append(np.ravel(data, order="F"))
+    scalar_data = np.array(scalar_data).T
+
+    return scalar_data
 
 
 def read_data(fpath, n_vtx_limit=None):
@@ -82,40 +91,13 @@ def read_data(fpath, n_vtx_limit=None):
     if suffix in ('curv', 'thickness'):
         data = nib.freesurfer.read_morph_data(fpath)
         data = data.astype(np.float64)
-        if data.dtype.byteorder == '>':
-            data.byteswap(True)
 
     elif suffix == 'label':
         data = nib.freesurfer.read_label(fpath)
-        if data.dtype.byteorder == '>':
-            data.byteswap(True)
 
     elif suffix in ('nii', 'gz', 'mgh', 'mgz'):  # FIXME remove the support for the 'gz'
-        data_list = read_scalar_data(fpath)
-        for _ in data_list:
-            if _.shape[0] != n_vtx_limit:
-                raise RuntimeError('vertices number mismatch!')
-
-            # transform type of data into float64
-            _ = _.astype(np.float64)
-            if _.dtype.byteorder == '>':
-                _.byteswap(True)
-        return data_list
-
-    elif suffix == 'mat':
-        'just test, should not be formally supported'
-        from scipy import io as sp_io
-        # read scalar data
-        mat_data1 = sp_io.loadmat(fpath)
-        scalar = mat_data1.values()[2][0]
-
-        # read vertex number corresponded to scalar data
-        mat_data2 = sp_io.loadmat('/nfs/j3/userhome/chenxiayu/workingdir/test/lqq/FFA_vanE_ver_num.mat')
-        vertices = mat_data2.values()[2][0]
-
-        # create scalar data array with suitable size
-        data = np.zeros(n_vtx_limit, np.float)
-        data[vertices] = scalar
+        data = read_scalar_data(fpath)
+        data = data.astype(np.float64)  # transform type of data into float64
 
     elif suffix == 'gii':
         gii_data = g_io.read(fpath).darrays
@@ -127,9 +109,6 @@ def read_data(fpath, n_vtx_limit=None):
     if n_vtx_limit is not None:
         if suffix == 'label':
             if np.max(data) <= n_vtx_limit:
-                if data.dtype.byteorder == '>':
-                    data.byteswap(True)
-
                 label_array = np.zeros(n_vtx_limit, np.int)
                 label_array[data] = 1
                 data = label_array
@@ -138,7 +117,11 @@ def read_data(fpath, n_vtx_limit=None):
         else:
             if data.shape[0] != n_vtx_limit:
                 raise RuntimeError('vertices number mismatch!')
-    return [data]
+
+    if data.dtype.byteorder == '>':
+        data.byteswap(True)
+
+    return data
 
 
 def node_attr2text(fpath, graph, attrs, fmt='%d', comments='#!ascii\n', **kwargs):
