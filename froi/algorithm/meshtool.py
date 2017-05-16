@@ -476,31 +476,34 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
     n_vtx = np.max(faces) + 1  # get the number of vertices
 
     # find 1_ring neighbors' id for each vertex
-    n_ring_neighbors = [set() for _ in range(n_vtx)]
-    for face in faces:
-        for v_id in face:
-            n_ring_neighbors[v_id].update(set(face))
-    # remove vertex itself from its neighbor set
-    for v_id in range(n_vtx):
-        n_ring_neighbors[v_id].remove(v_id)
+    coo_w = mesh_edges(faces)
+    csr_w = coo_w.tocsr()
+    n_ring_neighbors = [csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]] for i in range(n_vtx)]
+    n_ring_neighbors = [set(i) for i in n_ring_neighbors]
 
-    # find n_ring neighbors
-    one_ring_neighbors = copy.deepcopy(n_ring_neighbors)
-    n_th_ring_neighbors = copy.deepcopy(n_ring_neighbors)
-    # if n>1, go to get more neighbors
-    for i in range(n-1):
-        for neighbor_set in n_th_ring_neighbors:
-            neighbor_set_tmp = neighbor_set.copy()
-            for v_id in neighbor_set_tmp:
-                neighbor_set.update(one_ring_neighbors[v_id])
+    if n > 1:
+        # find n_ring neighbors
+        one_ring_neighbors = [i.copy() for i in n_ring_neighbors]
+        n_th_ring_neighbors = [i.copy() for i in n_ring_neighbors]
+        # if n>1, go to get more neighbors
+        for i in range(n-1):
+            for neighbor_set in n_th_ring_neighbors:
+                neighbor_set_tmp = neighbor_set.copy()
+                for v_id in neighbor_set_tmp:
+                    neighbor_set.update(one_ring_neighbors[v_id])
 
-        if i == 0:
+            if i == 0:
+                for v_id in range(n_vtx):
+                    n_th_ring_neighbors[v_id].remove(v_id)
+
             for v_id in range(n_vtx):
-                n_th_ring_neighbors[v_id].remove(v_id)
+                n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
+                n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
+    elif n == 1:
+        n_th_ring_neighbors = n_ring_neighbors
+    else:
+        raise RuntimeError("The number of rings should be equal or greater than 1!")
 
-        for v_id in range(n_vtx):
-            n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
-            n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
     if ordinal:
         return n_th_ring_neighbors
     else:
