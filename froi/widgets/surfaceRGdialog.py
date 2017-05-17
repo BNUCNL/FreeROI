@@ -75,8 +75,11 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.count_edit = count_edit
         self.rg_type_edit = rg_type_edit
         self.rg_type = 'arg'
-        self.scalars = []
         self.mask = None
+
+        # NxM array, N is the number of vertices,
+        # M is the number of measurements or time points.
+        self.X = np.zeros((self.hemi_vtx_number,))
 
     def _mask_dialog(self):
 
@@ -84,7 +87,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                                                     'mask files(*.nii *.nii.gz *.mgz *.mgh)')
         if not fpath:
             return
-        self.mask = read_data(fpath, self.hemi_vtx_number)[0]
+        self.mask = read_data(fpath, self.hemi_vtx_number)
 
     def _scalar_dialog(self):
 
@@ -93,9 +96,9 @@ class SurfaceRGDialog(QtGui.QDialog):
         if not fpaths:
             return
         for fpath in fpaths:
-            data_list = read_data(fpath, self.hemi_vtx_number)
-            for data in data_list:
-                self.scalars.append(data)
+            data = read_data(fpath, self.hemi_vtx_number)
+            self.X = np.c_[self.X, data]
+        self.X = np.delete(self.X, 0, 1)
 
     def _set_rg_type(self):
 
@@ -132,7 +135,7 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         coords = self.surf.get_coords()
         # We should exclude the labels within scalar_dict in future version
-        s2r = SurfaceToRegions(self.surf, self.scalars, self.mask, self.n_ring)
+        s2r = SurfaceToRegions(self.surf, self.X, self.mask, self.n_ring)
         regions, v_id2r_id = s2r.get_regions()
 
         seed_regions = []

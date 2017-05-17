@@ -124,8 +124,12 @@ def graph2parcel(graph, n=2, num_cuts=10, in_place=True, max_edge=1.0):
 
     Returns
     -------
-    out: nx.Graph
+    out1: nx.Graph
         The new labeled Graph.
+    out2: list
+        A Element which belongs to the list's first axis is a list of parcel neighbors.
+        A element's index is equivalent to a parcel's label.
+        So the parcel neighbors belong to the parcel which has a related label.
     """
     if not in_place:
         graph = graph.copy()
@@ -147,15 +151,26 @@ def graph2parcel(graph, n=2, num_cuts=10, in_place=True, max_edge=1.0):
     if not subgraphs:
         print 'The graph can not be further sub-divided!'
 
-    # assign labels for each parcel
+    # assign labels for each parcel & find neighbor parcels
+    node_neighbors = list()
+    edge_dict = graph.edge
     for label, parcel in enumerate(subgraphs):
+        node_neighbors.append(set())  # initialize the parcel's neighbor set
         for node, data in parcel.nodes_iter(data=True):
-            data['label'] = label
+            data['label'] = label  # assign label for the parcel
+            node_neighbors[label].update(edge_dict[node].keys())
+        node_neighbors[label].difference_update(parcel.nodes())  # remove the parcel's own nodes
     for label, parcel in enumerate(min_parcels, len(subgraphs)):
+        node_neighbors.append(set())  # initialize the parcel's neighbor set
         for node, data in parcel.nodes_iter(data=True):
             data['label'] = label
+            node_neighbors[label].update(edge_dict[node].keys())
+        node_neighbors[label].difference_update(parcel.nodes())  # remove the parcel's own nodes
+    # transform node to parcel label
+    parcel_neighbors = [map(lambda x: graph.node[x]['label'], nodes) for nodes in node_neighbors]
+    parcel_neighbors = [np.unique(parcels) for parcels in parcel_neighbors]
 
-    return graph
+    return graph, parcel_neighbors
 
 
 def graph_ncut_thr(graph, thresh=0.001, num_cuts=10, in_place=True, max_edge=1.0):
