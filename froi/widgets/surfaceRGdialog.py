@@ -149,18 +149,14 @@ class SurfaceRGDialog(QtGui.QDialog):
             if seed_id not in seed_ids:
                 seed_ids.append(seed_id)
 
-        if v_id2r_id:
-            for index in seed_ids:
-                seed_r_id = v_id2r_id.get(index)
-                if seed_r_id is None:
-                    raise RuntimeError("At least one of your seeds is out of the mask!")
-                seed_regions.append(regions[seed_r_id])
-        else:
-            for index in seed_ids:
-                seed_regions.append(regions[index])
+        for seed_v_id in seed_ids:
+            seed_r_id = v_id2r_id[seed_v_id]
+            if seed_r_id == -1:
+                raise RuntimeError("At least one of your seeds is out of the mask!")
+            seed_regions.append(regions[seed_r_id])
 
         if not seed_regions:
-            seed_regions = s2r.get_seed_region()  # The method seems can't deal with the 4-D data at present.
+            seed_regions = [s2r.get_seed_region()]
 
         if self.rg_type == 'arg':
             surf_rg = AdaptiveRegionGrowing(seed_regions, self.stop_criteria)
