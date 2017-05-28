@@ -657,3 +657,30 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
     graph.add_weighted_edges_from(zip(row_ind, col_ind, edge_data))
 
     return graph
+
+if __name__ == '__main__':
+    from nibabel.freesurfer import read_geometry
+    from froi.io.surf_io import read_scalar_data
+    from networkx import Graph
+    from graph_tool import graph2parcel, node_attr2array
+    import nibabel as nib
+
+    coords, faces = read_geometry('/nfs/t1/nsppara/corticalsurface/fsaverage5/surf/rh.inflated')
+    scalar = read_scalar_data('/nfs/t3/workingshop/chenxiayu/data/region-growing-froi/S1/surf/'
+                              'rh_zstat1_1w_fracavg.mgz')
+    # faces = np.array([[1, 2, 3], [0, 1, 3]])
+    # scalar = np.array([[1], [2], [3], [4]])
+
+    graph = mesh2graph(faces, vtx_signal=scalar, weight_normalization=True)
+
+    graph, parcel_neighbors = graph2parcel(graph, n=5000)
+    labels = [attrs['label'] for attrs in graph.node.values()]
+    print 'finish ncut!'
+    labels = np.unique(labels)
+    print len(labels)
+    print np.max(labels)
+
+    arr = node_attr2array(graph, ('label',))
+    # zero_idx = np.where(map(lambda x: x not in parcel_neighbors[800], arr))
+    # arr[zero_idx[0]] = 0
+    nib.save(nib.Nifti1Image(arr, np.eye(4)), '/nfs/t3/workingshop/chenxiayu/test/cxy/ncut_label_1w_5000.nii')

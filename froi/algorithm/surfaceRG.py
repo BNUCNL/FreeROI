@@ -1,6 +1,7 @@
 from ..core.dataobject import SurfaceDataset
 from ..widgets.my_tools import ConstVariable
-from meshtool import get_n_ring_neighbor
+from meshtool import get_n_ring_neighbor, mesh2graph
+from graph_tool import graph2parcel
 
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
@@ -15,7 +16,7 @@ class Region(object):
     An object to represent the region and its associated attributes
     """
 
-    def __init__(self, r_id, vtx_feat):
+    def __init__(self, r_id):
         """
         Parameters
         ----------
@@ -31,8 +32,8 @@ class Region(object):
         # Initialize fields
         # ------------------------------------------------------------------------------------
         self.id = r_id
-        self.vtx_feat = vtx_feat
-        self.vtx_feat_init = self.vtx_feat.copy()  # save the original vertices.
+        self.vtx_feat = dict()
+        self.vtx_feat_init = None  # save the original vertices.
         self.component = [self]  # component regions list
         self.neighbor = []  # neighbor region list
 
@@ -68,14 +69,14 @@ class Region(object):
         """
 
         # merge features
-        self.vtx_feat.update(region.vtx_feat_init)
+        self.vtx_feat.update(region.vtx_feat)
 
         # add region to the component
-        self.component.append(region)
+        self.component.extend(region.component)
 
         # add region's neighbor to the seed's neighbor
-        for i in range(len(region.neighbor)):
-            self.add_neighbor(region.neighbor[i])
+        for i in region.neighbor:
+            self.add_neighbor(i)
 
     def add_neighbor(self, region):
         """
@@ -139,10 +140,13 @@ class Region(object):
 
         return self.neighbor[index], dist[index]
 
+    def add_vertex(self, v_id, vtx_signal):
+        self.vtx_feat[v_id] = vtx_signal[v_id]
+
 
 class SurfaceToRegions(object):
 
-    def __init__(self, surf, X, mask=None, n_ring=1):
+    def __init__(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
         """
         represent the surface to preliminary regions
 
@@ -150,7 +154,7 @@ class SurfaceToRegions(object):
         ----------
         surf: SurfaceDataset
             a instance of the class SurfaceDataset
-        X : numpy array
+        vtx_signal : numpy array
             NxM array, N is the number of vertices,
             M is the number of measurements or time points.
         mask: scalar_data
@@ -168,88 +172,64 @@ class SurfaceToRegions(object):
             raise TypeError("The argument surf must be a instance of SurfaceDataset!")
 
         n_vtx = surf.get_vertices_num()
-
-        # just temporarily use the field to find suitable seed_region
-        self.scalar = X[:, 0]
-
-        if mask is not None:
-            id_iter = np.nonzero(mask)[0]
+        self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
+        if n_parcel:
+            # Prepare parcels, neighbors and v_id2r_id
+            graph = mesh2graph(surf.get_faces(),
+                               vtx_signal=vtx_signal, weight_normalization=True)
+            if mask is not None:
+                graph = graph[np.nonzero(mask)[0]]
+            graph, region_neighbors = graph2parcel(graph, n_parcel)
+            for node, data in graph.nodes_iter(data=True):
+                self.v_id2r_id[node] = data['label']
         else:
-            id_iter = range(n_vtx)
-        self.id_iter = id_iter
+            # Prepare neighbors and v_id2r_id
+            vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
+            if mask is None:
+                for i in range(n_vtx):
+                    self.v_id2r_id[i] = i
+                region_neighbors = vtx_neighbors
+            else:
+                tmp_neighbors = []
+                mask_id = np.nonzero(mask)[0]
+                for r_id, v_id in enumerate(mask_id):
+                    self.v_id2r_id[v_id] = r_id
+                    tmp_neighbors.append(vtx_neighbors[v_id].intersection(mask_id))
+
+                # warning: a region's neighbors is stored as a list rather than a set at here.
+                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in tmp_neighbors]
 
         # initialize regions
-        self.regions = []
-        self.v_id2r_id = dict()
-        if mask is None:
-            for v_id in id_iter:
-
-                vtx_feat = dict()
-                vtx_feat[v_id] = X[v_id]
-
-                self.regions.append(Region(v_id, vtx_feat))
-        else:
-            for r_id, v_id in enumerate(id_iter):
-
-                vtx_feat = dict()
-                vtx_feat[v_id] = X[v_id]
-
-                self.regions.append(Region(v_id, vtx_feat))
-                self.v_id2r_id[v_id] = r_id
-
-        # find neighbors
-        n_ring_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
+        n_regions = np.max(self.v_id2r_id) + 1
+        self.regions = [Region(r_id) for r_id in range(n_regions)]
+        for v_id, r_id in enumerate(self.v_id2r_id):
+            if r_id != -1:
+                self.regions[r_id].add_vertex(v_id, vtx_signal=vtx_signal)
+        for region in self.regions:
+            region.vtx_feat_init = region.vtx_feat.copy()
 
         # add neighbors
-        if mask is None:
-            for r_id in range(len(self.regions)):
-                for neighbor_id in n_ring_neighbors[r_id]:
-                    self.regions[r_id].add_neighbor(self.regions[neighbor_id])
-        else:
-            for r_id in range(len(self.regions)):
-                v_id = self.regions[r_id].id
-                for neighbor_v_id in n_ring_neighbors[v_id]:
-                    neighbor_r_id = self.v_id2r_id.get(neighbor_v_id)
-                    if neighbor_r_id is not None:
-                        self.regions[r_id].add_neighbor(self.regions[neighbor_r_id])
+        for r_id, region in enumerate(self.regions):
+            for neighbor_id in region_neighbors[r_id]:
+                region.add_neighbor(self.regions[neighbor_id])
 
     def get_regions(self):
         return self.regions, self.v_id2r_id
 
     def get_seed_region(self):
         """
-        just temporarily use the method to find suitable seed_region
+        used to find a region with max mean feature as seed region.
+        The features are usually activity values.
 
-        return
+        Return
         ------
-            the list of seeds
+            Region
         """
 
-        if not isinstance(self.id_iter, np.ndarray):
-            v_id_array = np.array(self.id_iter)
-        else:
-            v_id_array = self.id_iter
+        mean_feat = [np.mean(region.mean_feat()) for region in self.regions]
+        seed_r_id = np.argmax(mean_feat)
 
-        data = self.scalar
-        mask_data = data[v_id_array]
-        mask_max = mask_data.max()
-        v_id_index = np.nonzero(mask_data == mask_max)[0]
-
-        cnt = 0
-        seed_region = []
-        for idx in v_id_index:
-
-            cnt += 1
-            if cnt > 10:
-                break
-
-            if self.v_id2r_id:  # if mask is not None, we need the v_id2r_id.
-                r_id = self.v_id2r_id[v_id_array[idx]]
-            else:
-                r_id = v_id_array[idx]
-            seed_region.append(self.regions[r_id])
-
-        return seed_region
+        return self.regions[seed_r_id]
 
 
 class AdaptiveRegionGrowing(object):
