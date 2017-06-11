@@ -154,7 +154,7 @@ class VolumeListModel(QAbstractListModel):
 
         row = index.row()
         if role == Qt.EditRole:
-            value_str = value.toPyObject()
+            value_str = str(value)
             if not value_str == '':
                 if not self._data[row].get_name() == value_str:
                     self._data[row].set_name(str(value_str))
@@ -163,8 +163,8 @@ class VolumeListModel(QAbstractListModel):
             else:
                 return False
         elif role == Qt.CheckStateRole:
-            if not self._data[row].is_visible() == value.toBool():
-                self._data[row].set_visible(value.toBool())
+            if not self._data[row].is_visible() == bool(value):
+                self._data[row].set_visible(bool(value))
             else:
                 return False
         elif role == Qt.UserRole:

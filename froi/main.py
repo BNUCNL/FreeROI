@@ -943,7 +943,8 @@ class BpMainWindow(QMainWindow):
             path += '.nii'
         else:
             path += '.nii.gz'
-        if not path.isEmpty():
+        if path:
+        #if not path.isEmpty():
             if sys.platform == 'win32':
                 path = unicode(path).encode('gb2312')
                 self._temp_dir = os.path.dirname(unicode(path, 'gb2312'))
