@@ -1,6 +1,16 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 import numpy as np
+from scipy.spatial.distance import cdist, pdist
+import matplotlib.pyplot as plt
+
+from ..core.dataobject import SurfaceDataset
+from meshtool import mesh2graph, get_n_ring_neighbor
+from graph_tool import graph2parcel
+from ..widgets.my_tools import ConstVariable
+
+const = ConstVariable()
+const.ASSESS_STEP = 1
 
 
 def region_growing(image,coordinate,number):
@@ -108,3 +118,481 @@ def region_growing(image,coordinate,number):
         neighbor_pos -= 1
 
     return rg_image
+
+
+# --------------new architecture-------------------
+class Region(object):
+    """
+    An object to represent the region unit used for region growing.
+
+    Attributes
+    ----------
+    vtx_signal : dict
+        key is a vertex number, value is a vertex signal with the shape (n_features,)
+    neighbors : list
+        neighbor regions list
+    """
+
+    def __init__(self):
+        """
+        Parameters
+        ----------
+        r_id: int
+            region id, a unique scalar(actually is vertex number)
+        """
+
+        # Initialize fields
+        self.vtx_signal = dict()
+        self.neighbors = []
+
+    # get region's information
+    # -------------------------------------------
+    def size(self):
+        """
+        calculate the number of self's vertices
+
+        Returns
+        -------
+            the size of self
+        """
+
+        return len(self.vtx_signal)
+
+    def mean_signal(self):
+        """
+        Calculate the mean of all vertices' signals in the region.
+        """
+
+        return np.mean(self.vtx_signal.values(), axis=0)
+
+    def nearest_neighbor(self):
+        """
+        find the nearest neighbor of self
+
+        Returns
+        -------
+            the nearest neighbor and its distance corresponding to self
+        """
+
+        neighbor_signals = np.array([region.mean_signal() for region in self.neighbors])
+        self_signal = np.atleast_2d(self.mean_signal())
+
+        dist = cdist(neighbor_signals, self_signal)
+        index = np.argmin(np.array(dist))
+
+        return self.neighbors[index], dist[index]
+
+    # update region
+    # -------------------------------------------
+    def add_neighbor(self, region):
+        """
+        add the neighbor for self
+
+        Parameters
+        ----------
+        region: Region
+        """
+
+        if region not in self.neighbors:
+            self.neighbors.append(region)
+
+    def remove_neighbor(self, region):
+        """
+        remove the neighbor for self
+
+        Parameters
+        ----------
+        region: Region
+        """
+
+        if region in self.neighbors:
+            self.neighbors.remove(region)
+
+    def add_vertex(self, v_id, vtx_signal):
+        """
+        add intrinsic vertices for self
+
+        Parameters
+        ----------
+        v_id : integer
+            vertex number
+        vtx_signal : dict
+            vertices and their signals
+        """
+
+        self.vtx_signal[v_id] = vtx_signal[v_id]
+
+
+class EvolvingRegion(Region):
+    """
+    An object to represent the evolving region.
+
+    Attributes
+    ----------
+    seed_id : integer
+        the seed vertex number
+    component : list
+        component regions list
+    """
+
+    def __init__(self, seed_id):
+        """
+        Parameters
+        ----------
+        r_id: int
+            region id, a unique scalar(actually is vertex number)
+        """
+        super(EvolvingRegion, self).__init__()
+
+        # Initialize fields
+        # -----------------
+        self.seed_id = seed_id
+        self.component = []
+
+    # update region
+    # -------------------------------------------
+    def merge(self, region):
+        """
+        merge the region to self
+
+        Parameters
+        ---------
+        region: Region
+        """
+
+        # merge vertices and signals
+        self.vtx_signal.update(region.vtx_signal)
+
+        # add region to the component
+        self.component.append(region)
+
+        # add region's neighbors to the self's neighbors
+        for i in region.neighbors:
+            self.add_neighbor(i)
+
+    def add_neighbor(self, region):
+        """
+        add the neighbor for self
+
+        Parameters
+        ----------
+        region: Region
+        """
+
+        if region not in self.component and region not in self.neighbors:
+            self.neighbors.append(region)
+
+
+class RegionGrow(object):
+    """
+    Region growing performs a segmentation of an object with respect to a set of points.
+
+    Attributes
+    ----------
+    similarity : float
+        The similarity criteria which control the neighbor to merge to the region
+    stop_criteria: integer
+        The stop criteria which control when the region growing stop
+    seeds_id : list
+        The seed id list
+
+    Methods
+    -------
+    _compute(region,image)
+        do region growing
+    """
+
+    def __init__(self, seeds_id, stop_criteria, similarity=None):
+
+        # initialize fields
+        # -----------------
+        self.similarity = similarity
+        self.stop_criteria = stop_criteria
+        self.seeds_id = seeds_id
+        self.regions = []
+        self.v_id2r_id = None
+
+    def surf2regions(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+        """
+        represent the surface to preliminary regions
+
+        Parameters
+        ----------
+        surf : SurfaceDataset
+            a instance of the class SurfaceDataset
+        vtx_signal : numpy array
+            NxM array, N is the number of vertices,
+            M is the number of measurements or time points.
+        mask : scalar_data
+            specify a area where the ROI is in.
+        n_ring : integer
+            The n-ring neighbors of v are defined as vertices that are
+            reachable from v by traversing no more than n edges in the mesh.
+        n_parcel : integer
+            If n_parcel is 0, each vertex will be a region,
+            else the surface will be partitioned to n_parcel parcels.
+        """
+
+        if not isinstance(surf, SurfaceDataset):
+            raise TypeError("The argument surf must be a instance of SurfaceDataset!")
+
+        n_vtx = surf.get_vertices_num()
+        self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
+        if n_parcel:
+            # Prepare parcels, neighbors and v_id2r_id
+            graph = mesh2graph(surf.get_faces(),
+                               vtx_signal=vtx_signal, weight_normalization=True)
+            if mask is not None:
+                graph = graph[np.nonzero(mask)[0]]
+            graph, region_neighbors = graph2parcel(graph, n_parcel)
+            for node, data in graph.nodes_iter(data=True):
+                self.v_id2r_id[node] = data['label']
+        else:
+            # Prepare neighbors and v_id2r_id
+            vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
+            if mask is None:
+                for i in range(n_vtx):
+                    self.v_id2r_id[i] = i
+                region_neighbors = vtx_neighbors
+            else:
+                tmp_neighbors = []
+                mask_id = np.nonzero(mask)[0]
+                for r_id, v_id in enumerate(mask_id):
+                    self.v_id2r_id[v_id] = r_id
+                    tmp_neighbors.append(vtx_neighbors[v_id].intersection(mask_id))
+
+                # warning: a region's neighbors is stored as a list rather than a set at here.
+                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in tmp_neighbors]
+
+        # initialize regions
+        n_regions = np.max(self.v_id2r_id) + 1
+        self.regions = [Region() for r_id in range(n_regions)]
+        for v_id, r_id in enumerate(self.v_id2r_id):
+            if r_id != -1:
+                self.regions[r_id].add_vertex(v_id, vtx_signal=vtx_signal)
+
+        # add neighbors
+        for r_id, region in enumerate(self.regions):
+            for neighbor_id in region_neighbors[r_id]:
+                region.add_neighbor(self.regions[neighbor_id])
+
+    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+        """
+        Adaptive region growing performs a segmentation of an object with respect to a set of points.
+        """
+        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
+
+        # call methods of the class
+        evolved_regions, region_assessments = self._compute()
+
+        # find the max assessed value
+        for r in range(len(evolved_regions)):
+            # plot the diagram
+            plt.figure(r)
+            plt.plot(region_assessments[r], 'b*')
+            plt.xlabel('contrast step/component')
+            plt.ylabel('assessed value')
+
+            index = np.argmax(region_assessments[r])
+            end_index = (index+1)*const.ASSESS_STEP
+
+            # update component
+            evolved_regions[r].component = evolved_regions[r].component[:end_index]
+            # update vtx_signal
+            evolved_regions[r].vtx_signal = dict()
+            for region in evolved_regions[r].component:
+                evolved_regions[r].vtx_signal.update(region.vtx_signal)
+        plt.show()
+
+        return evolved_regions
+
+    def srg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+        """
+        Adaptive region growing performs a segmentation of an object with respect to a set of points.
+        """
+        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
+
+        # call methods of the class
+        evolved_regions, region_assessments = self._compute(assessment=False)
+
+        return evolved_regions
+
+    def _compute(self, assessment=True):
+        """
+        do region growing
+        """
+
+        # initialization
+        evolving_regions = []
+        if self.seeds_id:
+            for seed in self.seeds_id:
+                seed_r_id = self.v_id2r_id[seed]
+                if seed_r_id == -1:
+                    raise RuntimeError("At least one of your seeds is out of the mask!")
+                else:
+                    evolving_region = EvolvingRegion(seed)
+                    evolving_region.merge(self.regions[seed_r_id])
+                    evolving_regions.append(evolving_region)
+        else:
+            evolving_regions.append(self.get_seed_region())
+        n_seed = len(evolving_regions)
+        region_size = np.array([region.size() for region in evolving_regions])
+        region_assessments = [[] for i in range(n_seed)]
+
+        # Positive infinity and negative infinity evaluate to True, because they are not equal to zero.
+        dist = np.empty(n_seed)
+        dist.fill(np.inf)
+
+        neighbor = [None] * n_seed
+        merged_regions = [self.regions[self.v_id2r_id[seed]] for seed in self.seeds_id]
+
+        while np.any(np.less(region_size, self.stop_criteria)):
+            r_to_grow = np.less(region_size, self.stop_criteria)
+            dist[np.logical_not(r_to_grow)] = np.inf
+
+            r_index = np.nonzero(r_to_grow)[0]
+
+            for i in r_index:
+                # find the nearest neighbor for the each seed region
+                r_neighbor, r_dist, = evolving_regions[i].nearest_neighbor()
+                dist[i] = r_dist
+                neighbor[i] = r_neighbor
+
+            # find the seed which has the nearest neighbor in this iteration
+            r = np.argmin(dist)
+            target_neighbor = neighbor[r]
+
+            # Prevent a seed from intersecting with another seed
+            if target_neighbor not in merged_regions:
+                merged_regions.append(target_neighbor)
+                # merge the neighbor to the seed
+                evolving_regions[r].merge(target_neighbor)
+
+                if assessment:
+                    # compute assessments
+                    if len(evolving_regions[r].component) % const.ASSESS_STEP == 0:
+                        assessed_value = self._assess_transition_level(evolving_regions[r])
+                        region_assessments[r].append(assessed_value)
+
+            for i in r_index:
+                # remove the neighbor from the neighbor list of growing seeds
+                evolving_regions[i].remove_neighbor(target_neighbor)
+
+                # update region_size
+                if not evolving_regions[i].neighbors:
+                    # If the seed has no neighbor, stop its growing.
+                    region_size[i] = np.inf
+            region_size[r] = region_size[r] + target_neighbor.size()
+
+        return evolving_regions, region_assessments
+
+    def get_regions(self):
+        return self.regions, self.v_id2r_id
+
+    def get_seed_region(self):
+        """
+        used to find a region with max mean feature as seed region.
+        The features are usually activity values.
+
+        Return
+        ------
+            evolving_region : EvolvingRegion
+        """
+
+        mean_signal = [np.mean(region.mean_signal()) for region in self.regions]
+        seed_r_id = np.argmax(mean_signal)
+        seed_v_id = np.where(self.v_id2r_id == seed_r_id)[0][0]
+        evolving_region = EvolvingRegion(seed_v_id)
+        evolving_region.merge(self.regions[seed_r_id])
+
+        return evolving_region
+
+    @staticmethod
+    def region2text(evolved_regions):
+        """
+        save region into text
+        """
+
+        for region in evolved_regions:
+
+            vtx_signal = region.vtx_signal
+            X = np.array(vtx_signal.keys())
+
+            file_name = "/nfs/j3/userhome/chenxiayu/workingdir/test/cxy/" + str(region.seed_id) + "_arg.label"
+            header = str("the number of vertex: " + str(len(vtx_signal)))
+            np.savetxt(file_name, X, fmt='%d',
+                       header=header, comments="# ascii, label vertexes\n")
+
+    @staticmethod
+    def _assess_signal_euclidean_distance(region):
+        """
+        Calculate the euclidean distance between the region's mean signal and its neighbors' mean signal.
+        The distance is regarded as the region's assessed value
+
+        Parameter
+        ---------
+        region : Region
+
+        Return
+        ------
+        assessed_value : float
+            Larger assessed_value means better grown region.
+        """
+
+        neighbor_mean_signal = np.mean([i.mean_signal() for i in region.neighbors], 0)
+        assessed_value = np.sqrt(np.sum((region.mean_signal() - neighbor_mean_signal)**2))
+
+        return assessed_value
+
+    @staticmethod
+    def _assess_transition_level(region):
+        """
+        Calculate the transition level on the region's boundary.
+        The result is regarded as the region's assessed value.
+        Adapted from (Chantal et al. 2002).
+
+        Parameter
+        ---------
+        region : Region
+
+        Return
+        ------
+        assessed_value : float
+            Larger assessed_value means better grown region.
+        """
+
+        outer_boundary = region.neighbors
+
+        # find all couples
+        couples = []
+        for i in outer_boundary:
+            tmp_couples = [(n, i) for n in i.neighbors if n in region.component]
+            couples.extend(tmp_couples)
+        # calculate assessed value
+        couples_signal = map(lambda x: [x[0].mean_signal(), x[1].mean_signal()], couples)
+        couples_dist = map(pdist, couples_signal)
+        assessed_value = np.mean(couples_dist)
+
+        return assessed_value
+
+    @staticmethod
+    def _assess_within_cluster_similarity1(region):
+        """
+        Calculate the within-cluster similarity for the region.
+        The result is regarded as the region's assessed value.
+        Adapted from (Chantal et al. 2002).
+
+        Parameter
+        ---------
+        region : Region
+
+        Return
+        ------
+        assessed_value : float
+            Larger assessed_value means better grown region.
+        """
+
+        mean_signal = np.atleast_2d(region.mean_signal())
+        assessed_value = np.mean(cdist(region.vtx_signal.values(), mean_signal))
+
+        return assessed_value
