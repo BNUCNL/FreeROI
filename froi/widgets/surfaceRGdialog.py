@@ -3,7 +3,7 @@ from PyQt4 import QtGui, QtCore
 from scipy.spatial.distance import cdist
 
 from ..io.surf_io import read_data
-from ..algorithm.surfaceRG import SurfaceToRegions, AdaptiveRegionGrowing, SeededRegionGrowing
+from ..algorithm.regiongrow import RegionGrow
 
 
 class SurfaceRGDialog(QtGui.QDialog):
@@ -130,42 +130,27 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _start_surfRG(self):
 
         self.close()
-
         self._surf_view.surfRG_flag = False
 
         coords = self.surf.get_coords()
-        # We should exclude the labels within scalar_dict in future version
-        s2r = SurfaceToRegions(self.surf, self.X, self.mask, self.n_ring)
-        regions, v_id2r_id = s2r.get_regions()
-
-        seed_regions = []
-        seed_ids = []
-
+        seeds_id = []
         # get the seed's vertex id
         for seed in self.seed_pos:
             distance = cdist(coords, seed)
             seed_id = np.argmin(distance)
             # To avoid repeatedly picking a same seed
-            if seed_id not in seed_ids:
-                seed_ids.append(seed_id)
+            if seed_id not in seeds_id:
+                seeds_id.append(seed_id)
 
-        for seed_v_id in seed_ids:
-            seed_r_id = v_id2r_id[seed_v_id]
-            if seed_r_id == -1:
-                raise RuntimeError("At least one of your seeds is out of the mask!")
-            seed_regions.append(regions[seed_r_id])
-
-        if not seed_regions:
-            seed_regions = [s2r.get_seed_region()]
+        rg = RegionGrow(seeds_id, self.stop_criteria)
 
         if self.rg_type == 'arg':
-            surf_rg = AdaptiveRegionGrowing(seed_regions, self.stop_criteria)
+            evolved_regions = rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring)
         elif self.rg_type == 'srg':
-            surf_rg = SeededRegionGrowing(seed_regions, self.stop_criteria)
+            evolved_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
-
-        surf_rg.region2text()
+        rg.region2text(evolved_regions)
 
     def close(self):
 
