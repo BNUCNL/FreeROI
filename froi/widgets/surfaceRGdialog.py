@@ -8,26 +8,31 @@ from ..algorithm.regiongrow import RegionGrow
 
 class SurfaceRGDialog(QtGui.QDialog):
 
-    def __init__(self, surf_view, parent=None):
+    rg_types = ['arg', 'srg']
+
+    def __init__(self, index, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
         self.setWindowTitle("surfRG")
         self._surf_view = surf_view
-        hemi_list = surf_view.surface_model.get_data()
+        self.index = index
 
         self._surf_view.surfRG_flag = True
 
         # Initialize widgets
         count_label = QtGui.QLabel("seeds counts:")
         count_edit = QtGui.QLineEdit()
+        count_edit.setReadOnly(True)
 
         stop_label = QtGui.QLabel("stop_criteria:")
         stop_edit = QtGui.QLineEdit()
 
         ring_label = QtGui.QLabel("n_ring:")
-        ring_edit = QtGui.QLineEdit()
+        ring_edit = QtGui.QSpinBox()
+        ring_edit.setMinimum(1)
 
         rg_type_label = QtGui.QLabel('RG-type')
-        rg_type_edit = QtGui.QLineEdit()
+        rg_type_edit = QtGui.QComboBox()
+        rg_type_edit.addItems(self.rg_types)
 
         scalar_button = QtGui.QPushButton("add scalar")
         mask_button = QtGui.QPushButton('add mask')
@@ -56,30 +61,30 @@ class SurfaceRGDialog(QtGui.QDialog):
         # self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("close()"))
         self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self.close)
         self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
-        self.connect(ring_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_n_ring)
-        self.connect(rg_type_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_rg_type)
+        ring_edit.valueChanged.connect(self._set_n_ring)
+        rg_type_edit.currentIndexChanged.connect(self._set_rg_type)
         self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
         self.connect(mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
         self._surf_view.seed_picked.seed_picked.connect(self._set_count_edit_text)
 
-        # fields
-        # FIXME only support the RG which is based on the first hemisphere at present.
-        # FIXME 'white' should be replaced with surf_type in the future
-        self.surf = hemi_list[0].surf['white']
-        self.hemi_vtx_number = self.surf.get_vertices_num()
-        self.seed_pos = []
-        self.stop_criteria = 1000
-        self.n_ring = 1
+        # ---------------fields--------------------
         self.stop_edit = stop_edit
         self.ring_edit = ring_edit
         self.count_edit = count_edit
         self.rg_type_edit = rg_type_edit
+
         self.rg_type = 'arg'
         self.mask = None
-
+        self.seed_pos = []
+        self.stop_criteria = 1000
+        self.n_ring = 1
+        self.hemi = self._get_curr_hemi()
+        # FIXME 'white' should be replaced with surf_type in the future
+        self.surf = self.hemi.surf['white']
+        self.hemi_vtx_number = self.surf.get_vertices_num()
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
-        self.X = np.zeros((self.hemi_vtx_number,))
+        self.X = None
 
     def _mask_dialog(self):
 
@@ -95,15 +100,14 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         if not fpaths:
             return
+        self.X = np.zeros((self.hemi_vtx_number,))
         for fpath in fpaths:
             data = read_data(fpath, self.hemi_vtx_number)
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
     def _set_rg_type(self):
-
-        text_unicode = self.rg_type_edit.text()
-        self.rg_type = str(text_unicode)
+        self.rg_type = str(self.rg_type_edit.currentText())
 
     def _set_count_edit_text(self):
 
@@ -123,11 +127,16 @@ class SurfaceRGDialog(QtGui.QDialog):
             print self.stop_criteria
 
     def _set_n_ring(self):
-
-        text_unicode = self.ring_edit.text()
-        self.n_ring = int(text_unicode)
+        self.n_ring = int(self.ring_edit.value())
 
     def _start_surfRG(self):
+
+        if self.X is None:
+            overlay = self._get_curr_overlay()
+            if not overlay:
+                return None
+            else:
+                self.X = overlay.get_data()
 
         self.close()
         self._surf_view.surfRG_flag = False
@@ -151,6 +160,41 @@ class SurfaceRGDialog(QtGui.QDialog):
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
         rg.region2text(evolved_regions)
+
+    def _get_curr_hemi(self):
+
+        if not self.index.isValid():
+            QtGui.QMessageBox.warning(self, 'Error',
+                                      'You have not specified a surface!',
+                                      QtGui.QMessageBox.Yes)
+            self.close()  # FIXME may be a bug
+        else:
+            parent = self.index.parent()
+            if not parent.isValid():
+                # add_item = Hemisphere(source)
+                hemi_item = self.index.internalPointer()
+            else:
+                hemi_item = parent.internalPointer()
+            return hemi_item
+
+    def _get_curr_overlay(self):
+        """
+        If no scalar data is selected, the program will
+        get current overlay's data as region growing's data.
+        """
+
+        parent = self.index.parent()
+        if not parent.isValid():
+            QtGui.QMessageBox.warning(self, 'Warning',
+                                      'You have not specified any overlay!',
+                                      QtGui.QMessageBox.Yes)
+            return 0
+        else:
+            hemi_item = parent.internalPointer()
+            row = self.index.row()
+            idx = hemi_item.overlay_idx[hemi_item.overlay_count()-1-row]
+            overlay = hemi_item.overlay_list[idx]
+            return overlay
 
     def close(self):
 

@@ -78,7 +78,7 @@ class SurfaceTreeView(QWidget):
         # -- Surface display settings panel
         # initialize Surface display settings widgets
         # TODO: to be refactorred
-        surface_name_label = QLabel('Hemisphere name:')
+        surface_name_label = QLabel('Hemi:')
         self._surface_name = QLineEdit()
         surface_colormap_label = QLabel('Colormap:')
         self._surface_colormap = QComboBox()
