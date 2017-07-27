@@ -93,6 +93,8 @@ class BpMainWindow(QMainWindow):
         self.toolbar_status = {}
         self.image_view = None
         self.surface_view = None
+        self.list_view = None
+        self.surface_tree_view = None
 
     def config_extra_settings(self, data_dir):
         """Set data directory and update some configurations."""
@@ -820,6 +822,7 @@ class BpMainWindow(QMainWindow):
             self._disable_toolbar()
             self._actions['scribing'].setEnabled(True)
             self._actions['surf_region_grow'].setEnabled(True)
+            self._actions['save_image'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',
@@ -845,12 +848,11 @@ class BpMainWindow(QMainWindow):
         self.toolbar_status['atlas'] = self._actions['atlas'].isEnabled()
 
     def _disable_toolbar(self):
-        #Disable all toolbar controls
+        # Disable some toolbar controls
         self._actions['grid_view'].setEnabled(False)
         self._actions['orth_view'].setEnabled(False)
         self._actions['hand'].setEnabled(False)
         self._actions['snapshot'].setEnabled(False)
-        self._actions['save_image'].setEnabled(False)
         self._actions['duplicate_image'].setEnabled(False)
         self._actions['new_image'].setEnabled(False)
         self._actions['close'].setEnabled(False)
@@ -926,32 +928,60 @@ class BpMainWindow(QMainWindow):
             self._actions['remove_image'].setEnabled(False)
 
     def _save_image(self):
-        """Save image as a nifti file."""
-        index = self.model.currentIndex()
+        """Save overlay as a file."""
+
         if not self._temp_dir:
             temp_dir = str(QDir.currentPath())
         else:
             temp_dir = self._temp_dir
-        file_path = os.path.join(temp_dir,
+
+        if self.tabWidget.currentWidget() == self.list_view:
+            index = self.model.currentIndex()
+            file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii)"
+            file_path = os.path.join(temp_dir,
                                   str(self.model.data(index, Qt.DisplayRole)))
-        file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii)"
-        path,filter = QFileDialog.getSaveFileNameAndFilter(
-            self,
-            'Save image as...',
-            file_path,
-            file_types,)
-        if filter == 'NIFTI file(*.nii)':
-            path += '.nii'
+            overlay = self.model._data[index.row()]
         else:
-            path += '.nii.gz'
-        if not path.isEmpty():
+            index = self.surface_tree_view_control.currentIndex()
+            if not index.isValid():
+                QMessageBox.warning(self, 'Error',
+                                    'You have not specified a overlay!',
+                                    QMessageBox.Yes)
+                return
+            else:
+                parent = index.parent()
+                if not parent.isValid():
+                    QMessageBox.warning(self, 'Error',
+                                        'You have not specified a overlay!',
+                                        QMessageBox.Yes)
+                    return
+
+            file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii);;FS label(*.label)"
+            file_path = os.path.join(temp_dir,
+                                     str(self.surface_model.data(index, Qt.DisplayRole)))
+            overlay = index.internalPointer()
+
+        path, filter = QFileDialog.getSaveFileNameAndFilter(self, 'Save image as...',
+                                                            file_path, file_types)
+        if str(path) != '':
+            if filter == 'NIFTI file(*.nii)':
+                path += '.nii'
+            elif filter == 'FS label(*.label)':
+                path += '.label'
+            else:
+                path += '.nii.gz'
+
             if sys.platform == 'win32':
                 path = unicode(path).encode('gb2312')
                 self._temp_dir = os.path.dirname(unicode(path, 'gb2312'))
             else:
                 path = str(path)
                 self._temp_dir = os.path.dirname(path)
-            self.model._data[index.row()].save2nifti(path)
+
+            if filter == 'FS label(*.label)':
+                overlay.save2label(path)
+            else:
+                overlay.save2nifti(path)
 
     def _close_display(self):
         """Close current display."""
