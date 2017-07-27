@@ -960,11 +960,15 @@ class Hemisphere(object):
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, fpath, surf_type):
+    def load_overlay(self, source, surf_type):
         """Load scalar data as an overlay."""
-        name = os.path.basename(fpath).split('.')[0]
-        data = read_data(fpath, self.surf[surf_type].get_vertices_num())
-        self.overlay_list.append(ScalarData(name, data))
+        if isinstance(source, np.ndarray):
+            name = 'new_overlay'
+            self.overlay_list.append(ScalarData(name, source))
+        else:
+            name = os.path.basename(source).split('.')[0]
+            data = read_data(source, self.surf[surf_type].get_vertices_num())
+            self.overlay_list.append(ScalarData(name, data))
         self.overlay_idx.append(len(self.overlay_idx))
 
     def overlay_up(self, idx):

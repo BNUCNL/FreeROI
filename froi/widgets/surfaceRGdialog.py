@@ -8,31 +8,42 @@ from ..algorithm.regiongrow import RegionGrow
 
 class SurfaceRGDialog(QtGui.QDialog):
 
-    rg_types = ['arg', 'srg']
+    rg_types = ['srg', 'arg']
 
-    def __init__(self, index, surf_view, parent=None):
+    def __init__(self, model, index, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
         self.setWindowTitle("surfRG")
         self._surf_view = surf_view
         self.index = index
+        self.model = model
 
         self._surf_view.surfRG_flag = True
 
+        self.rg_type = 'arg'
+        self.mask = None
+        self.seeds_id = []
+        self.stop_criteria = 500
+        self.n_ring = 1
+
         # Initialize widgets
-        count_label = QtGui.QLabel("seeds counts:")
-        count_edit = QtGui.QLineEdit()
-        count_edit.setReadOnly(True)
+        seeds_label = QtGui.QLabel("seeds:")
+        seeds_edit = QtGui.QLineEdit()
+        seeds_edit.setReadOnly(True)
+        seeds_edit.setText('peak value vertex')
 
         stop_label = QtGui.QLabel("stop_criteria:")
         stop_edit = QtGui.QLineEdit()
+        stop_edit.setText(str(self.stop_criteria))
 
         ring_label = QtGui.QLabel("n_ring:")
         ring_edit = QtGui.QSpinBox()
         ring_edit.setMinimum(1)
+        ring_edit.setValue(self.n_ring)
 
         rg_type_label = QtGui.QLabel('RG-type')
         rg_type_edit = QtGui.QComboBox()
         rg_type_edit.addItems(self.rg_types)
+        rg_type_edit.setCurrentIndex(self.rg_types.index(self.rg_type))
 
         scalar_button = QtGui.QPushButton("add scalar")
         mask_button = QtGui.QPushButton('add mask')
@@ -42,8 +53,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         # layout
         grid_layout = QtGui.QGridLayout()
-        grid_layout.addWidget(count_label, 0, 0)
-        grid_layout.addWidget(count_edit, 0, 1)
+        grid_layout.addWidget(seeds_label, 0, 0)
+        grid_layout.addWidget(seeds_edit, 0, 1)
         grid_layout.addWidget(stop_label, 1, 0)
         grid_layout.addWidget(stop_edit, 1, 1)
         grid_layout.addWidget(ring_label, 2, 0)
@@ -65,19 +76,14 @@ class SurfaceRGDialog(QtGui.QDialog):
         rg_type_edit.currentIndexChanged.connect(self._set_rg_type)
         self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
         self.connect(mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
-        self._surf_view.seed_picked.seed_picked.connect(self._set_count_edit_text)
+        self._surf_view.seed_picked.seed_picked.connect(self._set_seeds_edit_text)
 
         # ---------------fields--------------------
         self.stop_edit = stop_edit
         self.ring_edit = ring_edit
-        self.count_edit = count_edit
+        self.seeds_edit = seeds_edit
         self.rg_type_edit = rg_type_edit
 
-        self.rg_type = 'arg'
-        self.mask = None
-        self.seed_pos = []
-        self.stop_criteria = 1000
-        self.n_ring = 1
         self.hemi = self._get_curr_hemi()
         # FIXME 'white' should be replaced with surf_type in the future
         self.surf = self.hemi.surf['white']
@@ -109,20 +115,21 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _set_rg_type(self):
         self.rg_type = str(self.rg_type_edit.currentText())
 
-    def _set_count_edit_text(self):
+    def _set_seeds_edit_text(self):
 
-        self.seed_pos = list(self._surf_view.seed_pos)  # make a copy
-        self.count_edit.setText(str(len(self.seed_pos)))
+        self.seeds_id = list(self._surf_view.seeds_id)  # make a copy
+        text = ','.join(map(str, self.seeds_id))
+        self.seeds_edit.setText(text)
 
     def _set_stop_criteria(self):
 
         text_unicode = self.stop_edit.text()
         text_list = text_unicode.split(',')
-        if len(text_list) == len(self.seed_pos):
+        if len(text_list) == len(self.seeds_id):
             if text_list[-1] != "":
                 self.stop_criteria = np.array(text_list, dtype="int")
                 print self.stop_criteria
-        elif not self.seed_pos:
+        elif not self.seeds_id:
             self.stop_criteria = np.array(text_list[0], dtype="int")
             print self.stop_criteria
 
@@ -141,17 +148,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.close()
         self._surf_view.surfRG_flag = False
 
-        coords = self.surf.get_coords()
-        seeds_id = []
-        # get the seed's vertex id
-        for seed in self.seed_pos:
-            distance = cdist(coords, seed)
-            seed_id = np.argmin(distance)
-            # To avoid repeatedly picking a same seed
-            if seed_id not in seeds_id:
-                seeds_id.append(seed_id)
-
-        rg = RegionGrow(seeds_id, self.stop_criteria)
+        rg = RegionGrow(self.seeds_id, self.stop_criteria)
 
         if self.rg_type == 'arg':
             evolved_regions = rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring)
@@ -159,7 +156,11 @@ class SurfaceRGDialog(QtGui.QDialog):
             evolved_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
-        rg.region2text(evolved_regions)
+        for evolved_region in evolved_regions:
+            labeled_vertices = evolved_region.get_vertices()
+            data = np.zeros((self.hemi_vtx_number,), np.int)
+            data[labeled_vertices] = 1
+            self.model._add_item(self.index, data)
 
     def _get_curr_hemi(self):
 

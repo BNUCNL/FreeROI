@@ -231,6 +231,16 @@ class Region(object):
 
         self.vtx_signal[v_id] = vtx_signal[v_id]
 
+    # output
+    # --------------------------------------------
+    def region2text(self, file_name):
+        """
+        save region into text
+        """
+        X = np.array(self.get_vertices())
+        header = str("the number of vertex: " + str(self.size()))
+        np.savetxt(file_name, X, fmt='%d', header=header, comments="# ascii, label vertexes\n")
+
 
 class EvolvingRegion(Region):
     """
@@ -529,22 +539,6 @@ class RegionGrow(object):
         evolving_region.merge(self.regions[seed_r_id])
 
         return evolving_region
-
-    @staticmethod
-    def region2text(evolved_regions):
-        """
-        save region into text
-        """
-
-        for region in evolved_regions:
-
-            vtx_signal = region.vtx_signal
-            X = np.array(vtx_signal.keys())
-
-            file_name = "/nfs/j3/userhome/chenxiayu/workingdir/test/cxy/" + str(region.seed_id) + "_arg.label"
-            header = str("the number of vertex: " + str(len(vtx_signal)))
-            np.savetxt(file_name, X, fmt='%d',
-                       header=header, comments="# ascii, label vertexes\n")
 
     @staticmethod
     def _assess_mean_signal_dist(region):

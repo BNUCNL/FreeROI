@@ -555,7 +555,8 @@ class BpMainWindow(QMainWindow):
         self._actions['surf_region_grow'].setEnabled(False)
 
     def _surf_rg(self):
-        new_dialog = SurfaceRGDialog(self.surface_tree_view_control.currentIndex(),
+        new_dialog = SurfaceRGDialog(self.surface_model,
+                                     self.surface_tree_view_control.currentIndex(),
                                      self.surface_view, self)
         new_dialog.show()
 
