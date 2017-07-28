@@ -177,7 +177,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             labeled_vertices = evolved_region.get_vertices()
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model._add_item(self.index, data)
+            self.model.add_item(self.index, data)
 
     def _get_curr_hemi(self):
 

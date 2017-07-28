@@ -797,7 +797,7 @@ class BpMainWindow(QMainWindow):
                                 'Warning',
                                 'You must choose the brain surface file first!',
                                 QMessageBox.Yes)
-        elif self.surface_model._add_item(self.surface_tree_view_control.currentIndex(), file_path):
+        elif self.surface_model.add_item(self.surface_tree_view_control.currentIndex(), file_path):
             # Initial the tabwidget.
             if not self.tabWidget:
                 self._init_tab_widget()

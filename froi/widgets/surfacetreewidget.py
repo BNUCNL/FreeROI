@@ -315,9 +315,7 @@ class SurfaceTreeView(QWidget):
     def _rightclick_del_action(self):
         """Del"""
         index = self._tree_view.currentIndex()
-        parent = self._model.parent(index)
-        print index.row()
-        self._model.removeRow(index.row(), parent)
+        self._model.del_item(index)
         self._disp_current_para()
 
     # def _add_item(self, source):

@@ -200,8 +200,8 @@ class TreeModel(QAbstractItemModel):
             self._data.remove(item)
         else:
             idx = parent_item.overlay_list.index(item)
-            parent_item.overlay_list.pop(item)
-            item.ovarlay_idx.pop(idx)
+            parent_item.overlay_list.remove(item)
+            parent_item.overlay_idx.remove(idx)
         self.endRemoveRows()
         return True
 
@@ -247,7 +247,7 @@ class TreeModel(QAbstractItemModel):
         else:
             return False
 
-    def _add_item(self, index, source):
+    def add_item(self, index, source):
         if not index.isValid():
             add_item = Hemisphere(source)
             ok = self.insertRow(index.row(), add_item, index)
@@ -271,9 +271,9 @@ class TreeModel(QAbstractItemModel):
         else:
             return False
 
-    def _del_item(self, index, parent):
+    def del_item(self, index):
         if not index.isValid():
-            return False
+            return None
         ok = self.removeRow(index.row(), index.parent())
         if ok:
             self.repaint_surface.emit()
