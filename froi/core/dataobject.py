@@ -919,7 +919,6 @@ class Hemisphere(object):
         self.surf = {}
         self.bin_curv = None
         self.overlay_list = []
-        self.overlay_idx = []
         self.alpha = 1.0
         self.colormap = "gray"
         self.visible = True
@@ -969,25 +968,22 @@ class Hemisphere(object):
             name = os.path.basename(source).split('.')[0]
             data = read_data(source, self.surf[surf_type].get_vertices_num())
             self.overlay_list.append(ScalarData(name, data))
-        self.overlay_idx.append(len(self.overlay_idx))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
         if not self.is_top_layer(idx):
-            current_pos = self.overlay_idx.index(idx)
-            self.overlay_idx[current_pos], self.overlay_idx[current_pos+1] = \
-            self.overlay_idx[current_pos+1], self.overlay_idx[current_pos]
+            self.overlay_list[idx], self.overlay_list[idx+1] = \
+                self.overlay_list[idx+1], self.overlay_list[idx]
 
     def overlay_down(self, idx):
         """Move the `idx` overlay layer down."""
         if not self.is_bottom_layer(idx):
-            current_pos = self.overlay_idx.index(idx)
-            self.overlay_idx[current_pos], self.overlay_idx[current_pos-1] = \
-            self.overlay_idx[current_pos-1], self.overlay_idx[current_pos]
+            self.overlay_list[idx], self.overlay_list[idx-1] = \
+                self.overlay_list[idx-1], self.overlay_list[idx]
 
     def is_top_layer(self, idx):
-        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
-            if self.overlay_idx[-1] == idx:
+        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
+            if len(self.overlay_list)-1 == idx:
                 return True
             else:
                 return False
@@ -995,8 +991,8 @@ class Hemisphere(object):
             print 'Invalid input!'
 
     def is_bottom_layer(self, idx):
-        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
-            if self.overlay_idx[0] == idx:
+        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
+            if idx == 0:
                 return True
             else:
                 return False
@@ -1060,8 +1056,7 @@ class Hemisphere(object):
 
         # get rgba arrays according to each overlay
         rgba_list = []
-        for idx in self.overlay_idx[start_render_index:]:
-            ol = self.overlay_list[idx]
+        for ol in self.overlay_list[start_render_index:]:
             if ol.is_visible():
                 rgba_list.append(self.get_rgba(ol))
 
@@ -1083,12 +1078,11 @@ class Hemisphere(object):
             The index that the render starts at.
         """
 
-        for index in self.overlay_idx[-1::-1]:
-            scalar = self.overlay_list[index]
+        for ol in self.overlay_list[-1::-1]:
             # FIXME There may be even no 'label' in a label's name, so we need use other method to recognize a label.
-            if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible()\
-                    and scalar.get_min() <= np.min(scalar.get_data()):
-                return self.overlay_idx.index(index)
+            if "label" not in ol.get_name() and ol.get_alpha() == 1. and ol.is_visible()\
+                    and ol.get_min() <= np.min(ol.get_data()):
+                return self.overlay_list.index(ol)
 
         # 0 means that the render will start with the bottom overlay.
         return 0

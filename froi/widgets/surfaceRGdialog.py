@@ -209,13 +209,9 @@ class SurfaceRGDialog(QtGui.QDialog):
                     'You have not specified any overlay!',
                     QtGui.QMessageBox.Yes
             )
-            return 0
+            return False
         else:
-            hemi_item = parent.internalPointer()
-            row = self.index.row()
-            idx = hemi_item.overlay_idx[hemi_item.overlay_count()-1-row]
-            overlay = hemi_item.overlay_list[idx]
-            return overlay
+            return self.index.internalPointer()
 
     def close(self):
 

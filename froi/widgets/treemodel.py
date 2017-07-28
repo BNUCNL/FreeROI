@@ -28,17 +28,14 @@ class TreeModel(QAbstractItemModel):
             return QModelIndex()
 
         if not parent.isValid():
-            parentItem = self._data[row]
-            return self.createIndex(row, column, parentItem)
+            hemi_item = self._data[row]
+            return self.createIndex(row, column, hemi_item)
         else:
-            parentItem = parent.internalPointer()
-            if parentItem in self._data:
-
-                childItem_idx = parentItem.overlay_idx[
-                                    parentItem.overlay_count()-1-row]
-                childItem = parentItem.overlay_list[childItem_idx]
-                if childItem:
-                    return self.createIndex(row, column, childItem)
+            hemi_item = parent.internalPointer()
+            if hemi_item in self._data:
+                ol_item = hemi_item.overlay_list[hemi_item.overlay_count()-1-row]
+                if ol_item:
+                    return self.createIndex(row, column, ol_item)
                 else:
                     return QModelIndex()
             else:
@@ -182,15 +179,9 @@ class TreeModel(QAbstractItemModel):
 
     def insertRow(self, row, item, parent):
         self.beginInsertRows(parent, row, row)
-        try:
-            if item is not None:
-                self._data.append(item)  # insert(row, item)
-        except:
-            raise
-            print 'Insert new item failed!'
-            return False
+        if item is not None:
+            self._data.append(item)  # insert(row, item)
         self.endInsertRows()
-        return True
 
     def removeRow(self, row, parent):
         self.beginRemoveRows(parent, row, row)
@@ -199,11 +190,8 @@ class TreeModel(QAbstractItemModel):
         if item in self._data:
             self._data.remove(item)
         else:
-            idx = parent_item.overlay_list.index(item)
             parent_item.overlay_list.remove(item)
-            parent_item.overlay_idx.remove(idx)
         self.endRemoveRows()
-        return True
 
     def moveUp(self, index):
         item = index.internalPointer()
@@ -250,7 +238,7 @@ class TreeModel(QAbstractItemModel):
     def add_item(self, index, source):
         if not index.isValid():
             add_item = Hemisphere(source)
-            ok = self.insertRow(index.row(), add_item, index)
+            self.insertRow(index.row(), add_item, index)
 
         else:
             parent = index.parent()
@@ -263,21 +251,14 @@ class TreeModel(QAbstractItemModel):
                 parent_item = parent.internalPointer()
                 parent_item.load_overlay(source, 'white')  # FIXME 'white' should be replaced with surf_type
                 add_item = None
-            ok = self.insertRow(index.row(), add_item, parent)
-
-        if ok:
+            self.insertRow(index.row(), add_item, parent)
             self.repaint_surface.emit()
-            return True
-        else:
-            return False
+        return True
 
     def del_item(self, index):
         if not index.isValid():
             return None
-        ok = self.removeRow(index.row(), index.parent())
-        if ok:
-            self.repaint_surface.emit()
-            return True
-        else:
-            return False
+        self.removeRow(index.row(), index.parent())
+        self.repaint_surface.emit()
+        return True
 
