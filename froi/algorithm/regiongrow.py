@@ -344,6 +344,15 @@ class RegionGrow(object):
         self.seeds_id = seeds_id
         self.regions = []
         self.v_id2r_id = None
+        self._assess_func = None
+
+        self.assess_dict = {
+            'transition level': self._assess_transition_level,
+            'mean signal dist': self._assess_mean_signal_dist,
+            'gray level dist1': self._assess_gray_level_dist1,
+            'gray level dist2': self._assess_gray_level_dist2,
+            'gray level dist3': self._assess_gray_level_dist3
+        }
 
     def surf2regions(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
         """
@@ -504,7 +513,7 @@ class RegionGrow(object):
                 if assessment:
                     # compute assessments
                     if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
-                        assessed_value = self._assess_transition_level(evolving_regions[r])
+                        assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
 
             for i in r_index:
@@ -514,7 +523,7 @@ class RegionGrow(object):
                 # update region_size
                 if not evolving_regions[i].neighbors:
                     # If the seed has no neighbor, stop its growing.
-                    region_size[i] = np.inf
+                    region_size[i] = self.stop_criteria
             region_size[r] = region_size[r] + target_neighbor.size()
 
         return evolving_regions, region_assessments
@@ -539,6 +548,12 @@ class RegionGrow(object):
         evolving_region.merge(self.regions[seed_r_id])
 
         return evolving_region
+
+    def set_assessment(self, assess_type):
+        self._assess_func = self.assess_dict[assess_type]
+
+    def get_assess_types(self):
+        return self.assess_dict.keys()
 
     @staticmethod
     def _assess_mean_signal_dist(region):

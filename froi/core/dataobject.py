@@ -890,7 +890,7 @@ class ScalarData(object):
             header['datatype'] = data_type[data.dtype.type]
         header['cal_max'] = data.max()
         header['cal_min'] = data.min()
-        image = nib.Nifti1Image(data, np.eye(4), header)
+        image = nib.Nifti1Image(data, None, header)
         nib.nifti1.save(image, file_path)
 
     def save2label(self, file_path):
@@ -1048,13 +1048,15 @@ class Hemisphere(object):
 
         data = ol.get_data()
         data = np.mean(data, 1)
+        data = data.reshape((data.shape[0],))
 
         return aq.array2qrgba(data, ol.get_alpha()*255, ol.get_colormap(),
                               (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
 
     def get_composite_rgb(self):
 
-        start_render_index = self._get_start_render_index()
+        # start_render_index = self._get_start_render_index()
+        start_render_index = 0
 
         # get rgba arrays according to each overlay
         rgba_list = []
@@ -1083,6 +1085,7 @@ class Hemisphere(object):
 
         for index in self.overlay_idx[-1::-1]:
             scalar = self.overlay_list[index]
+            # FIXME There may be even no 'label' in a label's name, so we need use other method to recognize a label.
             if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible()\
                     and scalar.get_min() <= np.min(scalar.get_data()):
                 return self.overlay_idx.index(index)

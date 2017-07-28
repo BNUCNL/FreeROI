@@ -1,6 +1,5 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
-from scipy.spatial.distance import cdist
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
@@ -145,17 +144,35 @@ class SurfaceRGDialog(QtGui.QDialog):
             else:
                 self.X = overlay.get_data()
 
-        self.close()
-        self._surf_view.surfRG_flag = False
-
         rg = RegionGrow(self.seeds_id, self.stop_criteria)
-
         if self.rg_type == 'arg':
-            evolved_regions = rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring)
+            assess_type, ok = QtGui.QInputDialog.getItem(
+                    self,
+                    'select a assessment function',
+                    'assessments:',
+                    rg.get_assess_types()
+            )
+            if ok and assess_type != '':
+                rg.set_assessment(assess_type)
+                self._surf_view.surfRG_flag = False
+                evolved_regions = rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring)
+            else:
+                QtGui.QMessageBox.warning(
+                    self,
+                    'Warning',
+                    'You have to specify a assessment function for arg!',
+                    QtGui.QMessageBox.Yes
+                )
+                return None
         elif self.rg_type == 'srg':
+            self._surf_view.surfRG_flag = False
             evolved_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
+
+        self.close()
+
+        # add RG's result as tree items
         for evolved_region in evolved_regions:
             labeled_vertices = evolved_region.get_vertices()
             data = np.zeros((self.hemi_vtx_number,), np.int)
@@ -186,9 +203,12 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         parent = self.index.parent()
         if not parent.isValid():
-            QtGui.QMessageBox.warning(self, 'Warning',
-                                      'You have not specified any overlay!',
-                                      QtGui.QMessageBox.Yes)
+            QtGui.QMessageBox.warning(
+                    self,
+                    'Warning',
+                    'You have not specified any overlay!',
+                    QtGui.QMessageBox.Yes
+            )
             return 0
         else:
             hemi_item = parent.internalPointer()
@@ -200,6 +220,6 @@ class SurfaceRGDialog(QtGui.QDialog):
     def close(self):
 
         self._surf_view.surfRG_flag = False
-        self._surf_view.seed_pos = []  # clear the seed_pos for next using
+        self._surf_view.seeds_id = []  # clear the seeds_id for next using
 
         QtGui.QDialog.close(self)
