@@ -1,5 +1,6 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
+import matplotlib.pyplot as plt
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
@@ -27,7 +28,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         # Initialize widgets
         seeds_label = QtGui.QLabel("seeds:")
         seeds_edit = QtGui.QLineEdit()
-        seeds_edit.setReadOnly(True)
+        # seeds_edit.setReadOnly(True)
         seeds_edit.setText('peak value vertex')
 
         stop_label = QtGui.QLabel("stop_criteria:")
@@ -70,6 +71,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.connect(ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
         # self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("close()"))
         self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self.close)
+        self.connect(seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
         self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
         ring_edit.valueChanged.connect(self._set_n_ring)
         rg_type_edit.currentIndexChanged.connect(self._set_rg_type)
@@ -122,15 +124,26 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _set_stop_criteria(self):
 
-        text_unicode = self.stop_edit.text()
-        text_list = text_unicode.split(',')
+        text_list = self.stop_edit.text().split(',')
+        while '' in text_list:
+            text_list.remove('')
         if len(text_list) == len(self.seeds_id):
-            if text_list[-1] != "":
-                self.stop_criteria = np.array(text_list, dtype="int")
-                print self.stop_criteria
-        elif not self.seeds_id:
+            self.stop_criteria = np.array(text_list, dtype="int")
+        elif len(text_list) == 0:
+            pass
+        else:
+            # If the number of stop_criteria is not equal to seeds,
+            # then we use its first stop criteria for all seeds.
             self.stop_criteria = np.array(text_list[0], dtype="int")
-            print self.stop_criteria
+
+    def _set_seeds_id(self):
+
+        text_list = self.seeds_edit.text().split(',')
+        while '' in text_list:
+            text_list.remove('')
+        self.seeds_id = map(int, text_list)
+        self._surf_view.seeds_id = map(int, text_list)
+        self._set_stop_criteria()
 
     def _set_n_ring(self):
         self.n_ring = int(self.ring_edit.value())
@@ -146,16 +159,28 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         rg = RegionGrow(self.seeds_id, self.stop_criteria)
         if self.rg_type == 'arg':
+            # ------------------select a assessment function-----------------
             assess_type, ok = QtGui.QInputDialog.getItem(
                     self,
                     'select a assessment function',
                     'assessments:',
                     rg.get_assess_types()
             )
+
+            # ------------------If ok, start arg!-----------------
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 self._surf_view.surfRG_flag = False
-                evolved_regions = rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring)
+                rg_regions, evolved_regions, region_assessments =\
+                    rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring, whole_results=True)
+
+                # plot diagrams
+                for r_idx, r in enumerate(evolved_regions):
+                    plt.figure(r_idx)
+                    plt.plot(region_assessments[r_idx], 'b*')
+                    plt.xlabel('contrast step/component')
+                    plt.ylabel('assessed value')
+                plt.show()
             else:
                 QtGui.QMessageBox.warning(
                     self,
@@ -166,15 +191,15 @@ class SurfaceRGDialog(QtGui.QDialog):
                 return None
         elif self.rg_type == 'srg':
             self._surf_view.surfRG_flag = False
-            evolved_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
+            rg_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
 
         self.close()
 
         # add RG's result as tree items
-        for evolved_region in evolved_regions:
-            labeled_vertices = evolved_region.get_vertices()
+        for r in rg_regions:
+            labeled_vertices = r.get_vertices()
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
             self.model.add_item(self.index, data)

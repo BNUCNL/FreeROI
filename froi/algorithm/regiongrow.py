@@ -2,7 +2,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
-import matplotlib.pyplot as plt
 
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
@@ -418,35 +417,57 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0, whole_results=False):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
+
+        Parameters
+        ----------
+        surf : SurfaceDataset
+            a instance of the class SurfaceDataset
+        vtx_signal : numpy array
+            NxM array, N is the number of vertices,
+            M is the number of measurements or time points.
+        mask : scalar_data
+            specify a area where the ROI is in.
+        n_ring : integer
+            The n-ring neighbors of v are defined as vertices that are
+            reachable from v by traversing no more than n edges in the mesh.
+        n_parcel : integer
+            If n_parcel is 0, each vertex will be a region,
+            else the surface will be partitioned to n_parcel parcels.
+        whole_results : bool
+            If true, then return max_assess_regions, evolved_regions and region_assessments.
+            If false, then just return max_assess_region.
+
+        Returns
+        -------
+        max_assess_regions : list
+            max-assess region is of max assessment value
+            among corresponding evolved region's evolving history.
+        evolved_regions : list
+            Include all evolved regions after self._compute()
+        region_assessment : list
+            All assessment values for corresponding evolved region
         """
         self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
 
         # call methods of the class
         evolved_regions, region_assessments = self._compute()
-
+        max_assess_regions = [EvolvingRegion(r.get_seed_id()) for r in evolved_regions]
         # find the max assessed value
-        for r in range(len(evolved_regions)):
-            # plot the diagram
-            plt.figure(r)
-            plt.plot(region_assessments[r], 'b*')
-            plt.xlabel('contrast step/component')
-            plt.ylabel('assessed value')
+        for r_idx, r in enumerate(evolved_regions):
 
-            index = np.argmax(region_assessments[r])
+            index = np.argmax(region_assessments[r_idx])
             end_index = (index+1)*const.ASSESS_STEP
 
-            # update component
-            evolved_regions[r].component = evolved_regions[r].component[:end_index]
-            # update vtx_signal
-            evolved_regions[r].vtx_signal = dict()
-            for region in evolved_regions[r].component:
-                evolved_regions[r].vtx_signal.update(region.vtx_signal)
-        plt.show()
+            for region in r.component[:end_index]:
+                max_assess_regions[r_idx].merge(region)
 
-        return evolved_regions
+        if whole_results:
+            return max_assess_regions, evolved_regions, region_assessments
+        else:
+            return max_assess_regions
 
     def srg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
         """
@@ -509,6 +530,7 @@ class RegionGrow(object):
                 merged_regions.append(target_neighbor)
                 # merge the neighbor to the seed
                 evolving_regions[r].merge(target_neighbor)
+                region_size[r] = region_size[r] + target_neighbor.size()
 
                 if assessment:
                     # compute assessments
@@ -524,7 +546,6 @@ class RegionGrow(object):
                 if not evolving_regions[i].neighbors:
                     # If the seed has no neighbor, stop its growing.
                     region_size[i] = self.stop_criteria
-            region_size[r] = region_size[r] + target_neighbor.size()
 
         return evolving_regions, region_assessments
 
