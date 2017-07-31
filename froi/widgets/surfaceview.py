@@ -93,7 +93,7 @@ class SurfaceView(QWidget):
         self.path = []
         self.graph = None
         self.surfRG_flag = False
-        self.seed_pos = []
+        self.seeds_id = []
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -189,9 +189,11 @@ class SurfaceView(QWidget):
                 else:
                     self.path.extend(bfs(self.graph, self.plot_start, picked_id))
                     self.plot_start = picked_id
-            elif self.surfRG_flag:  # get seed position
-                self.seed_pos.append(picked_pos.copy())
-                self.seed_picked.seed_picked.emit()
+            elif self.surfRG_flag:  # get seed
+                if picked_id not in self.seeds_id:
+                    # To avoid repeatedly picking a same seed
+                    self.seeds_id.append(picked_id)
+                    self.seed_picked.seed_picked.emit()
 
             # plot point
             tmp_lut = self.rgba_lut.copy()

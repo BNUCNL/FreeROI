@@ -2,7 +2,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
-import matplotlib.pyplot as plt
 
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
@@ -182,6 +181,15 @@ class Region(object):
 
         return self.neighbors[index], dist[index]
 
+    def get_vertices(self):
+        return self.vtx_signal.keys()
+
+    def get_vtx_signal(self):
+        return self.vtx_signal
+
+    def get_neighbors(self):
+        return self.neighbors
+
     # update region
     # -------------------------------------------
     def add_neighbor(self, region):
@@ -222,6 +230,16 @@ class Region(object):
 
         self.vtx_signal[v_id] = vtx_signal[v_id]
 
+    # output
+    # --------------------------------------------
+    def region2text(self, file_name):
+        """
+        save region into text
+        """
+        X = np.array(self.get_vertices())
+        header = str("the number of vertex: " + str(self.size()))
+        np.savetxt(file_name, X, fmt='%d', header=header, comments="# ascii, label vertexes\n")
+
 
 class EvolvingRegion(Region):
     """
@@ -248,6 +266,14 @@ class EvolvingRegion(Region):
         # -----------------
         self.seed_id = seed_id
         self.component = []
+
+    # get information
+    # -------------------------------------------
+    def get_seed_id(self):
+        return self.seed_id
+
+    def get_component(self):
+        return self.component
 
     # update region
     # -------------------------------------------
@@ -289,8 +315,6 @@ class RegionGrow(object):
 
     Attributes
     ----------
-    similarity : float
-        The similarity criteria which control the neighbor to merge to the region
     stop_criteria: integer
         The stop criteria which control when the region growing stop
     seeds_id : list
@@ -300,17 +324,34 @@ class RegionGrow(object):
     -------
     _compute(region,image)
         do region growing
+
+    Examples
+    --------
+    Use vertex with peak value as a seed:
+        rg = RegionGrow([], stop_criteria)
+        evolved_regions = rg.arg_parcel(surf, vtx_signal, mask, n_ring)
+    Specify seeds manually:
+        rg = RegionGrow(seeds_id, stop_criteria)
+        evolved_regions = rg.arg_parcel(surf, vtx_signal, mask, n_ring)
     """
 
-    def __init__(self, seeds_id, stop_criteria, similarity=None):
+    def __init__(self, seeds_id, stop_criteria):
 
         # initialize fields
         # -----------------
-        self.similarity = similarity
         self.stop_criteria = stop_criteria
         self.seeds_id = seeds_id
         self.regions = []
         self.v_id2r_id = None
+        self._assess_func = None
+
+        self.assess_dict = {
+            'transition level': self._assess_transition_level,
+            'mean signal dist': self._assess_mean_signal_dist,
+            'gray level dist1': self._assess_gray_level_dist1,
+            'gray level dist2': self._assess_gray_level_dist2,
+            'gray level dist3': self._assess_gray_level_dist3
+        }
 
     def surf2regions(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
         """
@@ -376,39 +417,61 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0, whole_results=False):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
+
+        Parameters
+        ----------
+        surf : SurfaceDataset
+            a instance of the class SurfaceDataset
+        vtx_signal : numpy array
+            NxM array, N is the number of vertices,
+            M is the number of measurements or time points.
+        mask : scalar_data
+            specify a area where the ROI is in.
+        n_ring : integer
+            The n-ring neighbors of v are defined as vertices that are
+            reachable from v by traversing no more than n edges in the mesh.
+        n_parcel : integer
+            If n_parcel is 0, each vertex will be a region,
+            else the surface will be partitioned to n_parcel parcels.
+        whole_results : bool
+            If true, then return max_assess_regions, evolved_regions and region_assessments.
+            If false, then just return max_assess_region.
+
+        Returns
+        -------
+        max_assess_regions : list
+            max-assess region is of max assessment value
+            among corresponding evolved region's evolving history.
+        evolved_regions : list
+            Include all evolved regions after self._compute()
+        region_assessment : list
+            All assessment values for corresponding evolved region
         """
         self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
 
         # call methods of the class
         evolved_regions, region_assessments = self._compute()
-
+        max_assess_regions = [EvolvingRegion(r.get_seed_id()) for r in evolved_regions]
         # find the max assessed value
-        for r in range(len(evolved_regions)):
-            # plot the diagram
-            plt.figure(r)
-            plt.plot(region_assessments[r], 'b*')
-            plt.xlabel('contrast step/component')
-            plt.ylabel('assessed value')
+        for r_idx, r in enumerate(evolved_regions):
 
-            index = np.argmax(region_assessments[r])
+            index = np.argmax(region_assessments[r_idx])
             end_index = (index+1)*const.ASSESS_STEP
 
-            # update component
-            evolved_regions[r].component = evolved_regions[r].component[:end_index]
-            # update vtx_signal
-            evolved_regions[r].vtx_signal = dict()
-            for region in evolved_regions[r].component:
-                evolved_regions[r].vtx_signal.update(region.vtx_signal)
-        plt.show()
+            for region in r.component[:end_index]:
+                max_assess_regions[r_idx].merge(region)
 
-        return evolved_regions
+        if whole_results:
+            return max_assess_regions, evolved_regions, region_assessments
+        else:
+            return max_assess_regions
 
     def srg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
         """
-        Adaptive region growing performs a segmentation of an object with respect to a set of points.
+        Seed region growing performs a segmentation of an object with respect to a set of points.
         """
         self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
 
@@ -467,11 +530,12 @@ class RegionGrow(object):
                 merged_regions.append(target_neighbor)
                 # merge the neighbor to the seed
                 evolving_regions[r].merge(target_neighbor)
+                region_size[r] = region_size[r] + target_neighbor.size()
 
                 if assessment:
                     # compute assessments
-                    if len(evolving_regions[r].component) % const.ASSESS_STEP == 0:
-                        assessed_value = self._assess_transition_level(evolving_regions[r])
+                    if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
+                        assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
 
             for i in r_index:
@@ -481,8 +545,7 @@ class RegionGrow(object):
                 # update region_size
                 if not evolving_regions[i].neighbors:
                     # If the seed has no neighbor, stop its growing.
-                    region_size[i] = np.inf
-            region_size[r] = region_size[r] + target_neighbor.size()
+                    region_size[i] = self.stop_criteria
 
         return evolving_regions, region_assessments
 
@@ -507,24 +570,14 @@ class RegionGrow(object):
 
         return evolving_region
 
-    @staticmethod
-    def region2text(evolved_regions):
-        """
-        save region into text
-        """
+    def set_assessment(self, assess_type):
+        self._assess_func = self.assess_dict[assess_type]
 
-        for region in evolved_regions:
-
-            vtx_signal = region.vtx_signal
-            X = np.array(vtx_signal.keys())
-
-            file_name = "/nfs/j3/userhome/chenxiayu/workingdir/test/cxy/" + str(region.seed_id) + "_arg.label"
-            header = str("the number of vertex: " + str(len(vtx_signal)))
-            np.savetxt(file_name, X, fmt='%d',
-                       header=header, comments="# ascii, label vertexes\n")
+    def get_assess_types(self):
+        return self.assess_dict.keys()
 
     @staticmethod
-    def _assess_signal_euclidean_distance(region):
+    def _assess_mean_signal_dist(region):
         """
         Calculate the euclidean distance between the region's mean signal and its neighbors' mean signal.
         The distance is regarded as the region's assessed value
@@ -539,7 +592,7 @@ class RegionGrow(object):
             Larger assessed_value means better grown region.
         """
 
-        neighbor_mean_signal = np.mean([i.mean_signal() for i in region.neighbors], 0)
+        neighbor_mean_signal = np.mean([i.mean_signal() for i in region.get_neighbors()], 0)
         assessed_value = np.sqrt(np.sum((region.mean_signal() - neighbor_mean_signal)**2))
 
         return assessed_value
@@ -561,12 +614,12 @@ class RegionGrow(object):
             Larger assessed_value means better grown region.
         """
 
-        outer_boundary = region.neighbors
+        outer_boundary = region.get_neighbors()
 
         # find all couples
         couples = []
         for i in outer_boundary:
-            tmp_couples = [(n, i) for n in i.neighbors if n in region.component]
+            tmp_couples = [(n, i) for n in i.get_neighbors() if n in region.get_component()]
             couples.extend(tmp_couples)
         # calculate assessed value
         couples_signal = map(lambda x: [x[0].mean_signal(), x[1].mean_signal()], couples)
@@ -576,9 +629,34 @@ class RegionGrow(object):
         return assessed_value
 
     @staticmethod
-    def _assess_within_cluster_similarity1(region):
+    def _assess_gray_level_dist1(region):
         """
         Calculate the within-cluster similarity for the region.
+        The result is regarded as the region's assessed value.
+        Adapted from (Chantal et al. 2002).
+        Parameter
+        ---------
+        region : Region
+        Return
+        ------
+        inv_gray_level_dist : float
+            Larger assessed_value means better grown region.
+        """
+
+        mean_signal = np.atleast_2d(region.mean_signal())
+        r_variance = np.mean(cdist(region.vtx_signal.values(), mean_signal))
+
+        gray_level_dist = np.sqrt(r_variance)
+        if gray_level_dist != 0:
+            inv_gray_level_dist = 1 / float(gray_level_dist)
+        else:
+            inv_gray_level_dist = np.inf
+
+        return inv_gray_level_dist
+
+    def _assess_gray_level_dist2(self, region):
+        """
+        Calculate the within-cluster similarity for the region and its complement.
         The result is regarded as the region's assessed value.
         Adapted from (Chantal et al. 2002).
 
@@ -588,11 +666,56 @@ class RegionGrow(object):
 
         Return
         ------
-        assessed_value : float
+        inv_gray_level_dist : float
             Larger assessed_value means better grown region.
         """
+        r_c = EvolvingRegion('region_complement')
+        for r in self.regions:
+            if r not in region.get_component():
+                r_c.merge(r)
 
-        mean_signal = np.atleast_2d(region.mean_signal())
-        assessed_value = np.mean(cdist(region.vtx_signal.values(), mean_signal))
+        r_mean_signal = np.atleast_2d(region.mean_signal())
+        r_c_mean_signal = np.atleast_2d(r_c.mean_signal())
+        r_variance = np.mean(cdist(region.get_vtx_signal().values(), r_mean_signal))
+        r_c_variance = np.mean(cdist(r_c.get_vtx_signal().values(), r_c_mean_signal))
 
-        return assessed_value
+        gray_level_dist = np.sqrt(r_variance + r_c_variance)
+        if gray_level_dist != 0:
+            inv_gray_level_dist = 1 / float(gray_level_dist)
+        else:
+            inv_gray_level_dist = np.inf
+
+        return inv_gray_level_dist
+
+    def _assess_gray_level_dist3(self, region):
+        """
+        Calculate the within-cluster similarity for the region and its complement.
+        The result is regarded as the region's assessed value.
+        Adapted from (Chantal et al. 2002).
+
+        Parameter
+        ---------
+        region : Region
+
+        Return
+        ------
+        inv_gray_level_dist : float
+            Larger assessed_value means better grown region.
+        """
+        r_c = EvolvingRegion('region_complement')
+        for r in self.regions:
+            if r not in region.get_component():
+                r_c.merge(r)
+
+        r_mean_signal = np.atleast_2d(region.mean_signal())
+        r_c_mean_signal = np.atleast_2d(r_c.mean_signal())
+        r_variance = np.sum(cdist(region.get_vtx_signal().values(), r_mean_signal))
+        r_c_variance = np.sum(cdist(r_c.get_vtx_signal().values(), r_c_mean_signal))
+
+        gray_level_dist = np.sqrt(r_variance + r_c_variance)
+        if gray_level_dist != 0:
+            inv_gray_level_dist = 1 / float(gray_level_dist)
+        else:
+            inv_gray_level_dist = np.inf
+
+        return inv_gray_level_dist

@@ -78,7 +78,7 @@ class SurfaceTreeView(QWidget):
         # -- Surface display settings panel
         # initialize Surface display settings widgets
         # TODO: to be refactorred
-        surface_name_label = QLabel('Hemisphere name:')
+        surface_name_label = QLabel('Hemi:')
         self._surface_name = QLineEdit()
         surface_colormap_label = QLabel('Colormap:')
         self._surface_colormap = QComboBox()
@@ -315,9 +315,7 @@ class SurfaceTreeView(QWidget):
     def _rightclick_del_action(self):
         """Del"""
         index = self._tree_view.currentIndex()
-        parent = self._model.parent(index)
-        print index.row()
-        self._model.removeRow(index.row(), parent)
+        self._model.del_item(index)
         self._disp_current_para()
 
     # def _add_item(self, source):
