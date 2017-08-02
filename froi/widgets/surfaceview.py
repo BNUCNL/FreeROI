@@ -62,9 +62,7 @@ class Visualization(HasTraits):
 class SurfaceView(QWidget):
 
     # Signals
-    class SeedPicked(QtCore.QObject):
-        seed_picked = QtCore.pyqtSignal()
-    seed_picked = SeedPicked()
+    seed_picked = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(SurfaceView, self).__init__(parent)
@@ -93,7 +91,7 @@ class SurfaceView(QWidget):
         self.path = []
         self.graph = None
         self.surfRG_flag = False
-        self.seeds_id = []
+        self.seed_id = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -190,10 +188,8 @@ class SurfaceView(QWidget):
                     self.path.extend(bfs(self.graph, self.plot_start, picked_id))
                     self.plot_start = picked_id
             elif self.surfRG_flag:  # get seed
-                if picked_id not in self.seeds_id:
-                    # To avoid repeatedly picking a same seed
-                    self.seeds_id.append(picked_id)
-                    self.seed_picked.seed_picked.emit()
+                self.seed_id = picked_id
+                self.seed_picked.emit()
 
             # plot point
             tmp_lut = self.rgba_lut.copy()
@@ -224,6 +220,9 @@ class SurfaceView(QWidget):
 
     def get_faces(self):
         return self.faces
+
+    def get_seed(self):
+        return self.seed_id
 
 
 if __name__ == "__main__":

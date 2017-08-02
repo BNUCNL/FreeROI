@@ -216,6 +216,9 @@ class Region(object):
         if region in self.neighbors:
             self.neighbors.remove(region)
 
+    def remove_neighbors(self, regions):
+        map(self.remove_neighbor, regions)
+
     def add_vertex(self, v_id, vtx_signal):
         """
         add intrinsic vertices for self
@@ -247,13 +250,13 @@ class EvolvingRegion(Region):
 
     Attributes
     ----------
-    seed_id : integer
-        the seed vertex number
+    seeds : list
+        the seed vertices' numbers
     component : list
         component regions list
     """
 
-    def __init__(self, seed_id):
+    def __init__(self, seeds):
         """
         Parameters
         ----------
@@ -264,13 +267,13 @@ class EvolvingRegion(Region):
 
         # Initialize fields
         # -----------------
-        self.seed_id = seed_id
+        self.seeds = seeds
         self.component = []
 
     # get information
     # -------------------------------------------
-    def get_seed_id(self):
-        return self.seed_id
+    def get_seeds(self):
+        return self.seeds
 
     def get_component(self):
         return self.component
@@ -318,7 +321,9 @@ class RegionGrow(object):
     stop_criteria: integer
         The stop criteria which control when the region growing stop
     seeds_id : list
-        The seed id list
+        Its elements are also list, called sub-list,
+        each sub-list contains a group of seed vertices which are used to initialize a evolving region.
+        Different sub-list initializes different evolving region.
 
     Methods
     -------
@@ -454,7 +459,7 @@ class RegionGrow(object):
 
         # call methods of the class
         evolved_regions, region_assessments = self._compute()
-        max_assess_regions = [EvolvingRegion(r.get_seed_id()) for r in evolved_regions]
+        max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
 
@@ -485,19 +490,39 @@ class RegionGrow(object):
         do region growing
         """
 
-        # initialization
+        # -------initialize evolving_regions and merged_regions------
         evolving_regions = []
+        merged_regions = []
         if self.seeds_id:
-            for seed in self.seeds_id:
-                seed_r_id = self.v_id2r_id[seed]
-                if seed_r_id == -1:
-                    raise RuntimeError("At least one of your seeds is out of the mask!")
-                else:
-                    evolving_region = EvolvingRegion(seed)
-                    evolving_region.merge(self.regions[seed_r_id])
-                    evolving_regions.append(evolving_region)
+            for seeds in self.seeds_id:
+                evolving_region = EvolvingRegion(seeds)
+                merged_regions_tmp = []
+                for seed in seeds:
+                    seed_r_id = self.v_id2r_id[seed]
+                    if seed_r_id == -1:
+                        raise RuntimeError("At least one of your seeds is out of the mask!")
+                    else:
+                        seed_region = self.regions[seed_r_id]
+                        if seed_region in merged_regions:
+                            raise RuntimeError("More than one evolving regions are"
+                                               "assigned with a same unit region initially!")
+                        elif seed_region in merged_regions_tmp:
+                            # do not merge the same unit region repeatedly
+                            continue
+                        else:
+                            evolving_region.merge(seed_region)
+                            merged_regions_tmp.append(seed_region)
+                evolving_regions.append(evolving_region)
+                merged_regions.extend(merged_regions_tmp)
         else:
             evolving_regions.append(self.get_seed_region())
+            for evo_r in evolving_regions:
+                merged_regions.extend(evo_r.get_component())
+
+        for evo_r in evolving_regions:
+            evo_r.remove_neighbors(merged_regions)
+
+        # ------initialize other variables-------
         n_seed = len(evolving_regions)
         region_size = np.array([region.size() for region in evolving_regions])
         region_assessments = [[] for i in range(n_seed)]
@@ -507,8 +532,8 @@ class RegionGrow(object):
         dist.fill(np.inf)
 
         neighbor = [None] * n_seed
-        merged_regions = [self.regions[self.v_id2r_id[seed]] for seed in self.seeds_id]
 
+        # ------main cycle------
         while np.any(np.less(region_size, self.stop_criteria)):
             r_to_grow = np.less(region_size, self.stop_criteria)
             dist[np.logical_not(r_to_grow)] = np.inf
@@ -537,6 +562,7 @@ class RegionGrow(object):
                     if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
                         assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
+                        print evolving_regions[r].size()
 
             for i in r_index:
                 # remove the neighbor from the neighbor list of growing seeds
