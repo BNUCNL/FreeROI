@@ -89,8 +89,9 @@ class SurfaceView(QWidget):
         self.gcf_flag = True
         self.plot_start = None
         self.path = []
-        self.graph = None
         self.surfRG_flag = False
+        self.scribing_flag = False
+        self.edge_list = None
         self.seed_id = None
 
         hlayout = QHBoxLayout()
@@ -169,30 +170,34 @@ class SurfaceView(QWidget):
             self.gcf_flag = False
             fig = mlab.gcf()
             fig.on_mouse_pick(self._picker_callback_left)
+            # fig.scene.scene.interactor.add_observer('MouseMoveEvent', self._move_callback)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
-        tmp_pos = picker_obj.picked_positions.to_array()
+        picked_id = picker_obj.point_id
 
-        if len(tmp_pos):
-            picked_pos = np.atleast_2d(tmp_pos[0])
-            distance = cdist(self.coords, picked_pos)
-            picked_id = np.argmin(distance, axis=0)[0]
+        if picked_id != -1:
 
-            if self.graph is not None:  # plot line
+            tmp_lut = self.rgba_lut.copy()
+
+            if self.scribing_flag:  # plot line
                 if self.plot_start is None:
                     self.plot_start = picked_id
+                    self.path.append(picked_id)
                 else:
-                    self.path.extend(bfs(self.graph, self.plot_start, picked_id))
+                    new_path = bfs(self.edge_list, self.plot_start, picked_id)
+                    new_path.pop(0)
+                    self.path.extend(new_path)
                     self.plot_start = picked_id
+                    for v_id in self.path:
+                        toggle_color(tmp_lut[v_id])
             elif self.surfRG_flag:  # get seed
                 self.seed_id = picked_id
                 self.seed_picked.emit()
 
             # plot point
-            tmp_lut = self.rgba_lut.copy()
             toggle_color(tmp_lut[picked_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
 
@@ -212,8 +217,8 @@ class SurfaceView(QWidget):
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
 
-    def set_graph(self, graph):
-        self.graph = graph
+    def set_edge_list(self, edge_list):
+        self.edge_list = edge_list
 
     def get_coords(self):
         return self.coords
