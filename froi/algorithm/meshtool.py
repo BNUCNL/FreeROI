@@ -7,7 +7,6 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import cdist, pdist
 from scipy.stats import pearsonr
-from networkx import Graph
 
 
 def _fast_cross_3d(x, y):
@@ -462,16 +461,24 @@ def ffmpeg(dst, frame_path, framerate=24, codec='mpeg4', bitrate='1M'):
         raise RuntimeError(err)
 
 
-def get_n_ring_neighbor(faces, n=1, ordinal=False):
+def get_n_ring_neighbor(faces, n=1, ordinal=False, mask_id=None):
     """
     get n ring nerghbor from faces array
-    :param faces: the array of shape [n_triangles, 3]
-    :param n: integer
+
+    Parameters
+    ----------
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    n : integer
         specify which ring should be got
-    :param ordinal: bool
+    ordinal : bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
-    :return: list
+    mask_id : 1-D iterable collection
+        vertices specified by a mask
+    Returns
+    -------
+    lists
         each index of the list represents a vertex number
         each element is a set which includes neighbors of corresponding vertex
     """
@@ -480,8 +487,14 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
     # find 1_ring neighbors' id for each vertex
     coo_w = mesh_edges(faces)
     csr_w = coo_w.tocsr()
-    n_ring_neighbors = [csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]] for i in range(n_vtx)]
-    n_ring_neighbors = [set(i) for i in n_ring_neighbors]
+    if mask_id is None:
+        vtx_iter = range(n_vtx)
+        n_ring_neighbors = [csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]] for i in vtx_iter]
+        n_ring_neighbors = [set(i) for i in n_ring_neighbors]
+    else:
+        vtx_iter = mask_id
+        n_ring_neighbors = [set(csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]]).intersection(mask_id)
+                            if i in mask_id else set() for i in range(n_vtx)]
 
     if n > 1:
         # find n_ring neighbors
@@ -495,10 +508,10 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
                     neighbor_set.update(one_ring_neighbors[v_id])
 
             if i == 0:
-                for v_id in range(n_vtx):
+                for v_id in vtx_iter:
                     n_th_ring_neighbors[v_id].remove(v_id)
 
-            for v_id in range(n_vtx):
+            for v_id in vtx_iter:
                 n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
                 n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
     elif n == 1:

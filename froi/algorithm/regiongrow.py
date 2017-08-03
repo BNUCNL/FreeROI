@@ -386,7 +386,7 @@ class RegionGrow(object):
         self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
         if n_parcel:
             # Prepare parcels, neighbors and v_id2r_id
-            graph = mesh2graph(surf.get_faces(),
+            graph = mesh2graph(surf.get_faces(), n=n_ring,
                                vtx_signal=vtx_signal, weight_normalization=True)
             if mask is not None:
                 graph = graph[np.nonzero(mask)[0]]
@@ -395,20 +395,20 @@ class RegionGrow(object):
                 self.v_id2r_id[node] = data['label']
         else:
             # Prepare neighbors and v_id2r_id
-            vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
             if mask is None:
                 for i in range(n_vtx):
                     self.v_id2r_id[i] = i
-                region_neighbors = vtx_neighbors
+                region_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
             else:
-                tmp_neighbors = []
                 mask_id = np.nonzero(mask)[0]
+                vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring, mask_id=mask_id)
+                region_neighbors = []
                 for r_id, v_id in enumerate(mask_id):
                     self.v_id2r_id[v_id] = r_id
-                    tmp_neighbors.append(vtx_neighbors[v_id].intersection(mask_id))
+                    region_neighbors.append(vtx_neighbors[v_id])
 
                 # warning: a region's neighbors is stored as a list rather than a set at here.
-                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in tmp_neighbors]
+                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in region_neighbors]
 
         # initialize regions
         n_regions = np.max(self.v_id2r_id) + 1
@@ -422,25 +422,12 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0, whole_results=False):
+    def arg_parcel(self, whole_results=False):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
         Parameters
         ----------
-        surf : SurfaceDataset
-            a instance of the class SurfaceDataset
-        vtx_signal : numpy array
-            NxM array, N is the number of vertices,
-            M is the number of measurements or time points.
-        mask : scalar_data
-            specify a area where the ROI is in.
-        n_ring : integer
-            The n-ring neighbors of v are defined as vertices that are
-            reachable from v by traversing no more than n edges in the mesh.
-        n_parcel : integer
-            If n_parcel is 0, each vertex will be a region,
-            else the surface will be partitioned to n_parcel parcels.
         whole_results : bool
             If true, then return max_assess_regions, evolved_regions and region_assessments.
             If false, then just return max_assess_region.
@@ -455,7 +442,6 @@ class RegionGrow(object):
         region_assessment : list
             All assessment values for corresponding evolved region
         """
-        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
 
         # call methods of the class
         evolved_regions, region_assessments = self._compute()
@@ -474,15 +460,12 @@ class RegionGrow(object):
         else:
             return max_assess_regions
 
-    def srg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+    def srg_parcel(self):
         """
         Seed region growing performs a segmentation of an object with respect to a set of points.
         """
-        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
-
         # call methods of the class
         evolved_regions, region_assessments = self._compute(assessment=False)
-
         return evolved_regions
 
     def _compute(self, assessment=True):

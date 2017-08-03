@@ -105,7 +105,7 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _mask_dialog(self):
 
         fpath = QtGui.QFileDialog().getOpenFileName(self, 'Open mask file', './',
-                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh)')
+                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
         if not fpath:
             return
         self.mask = read_data(fpath, self.hemi_vtx_number)
@@ -213,8 +213,9 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 self._surf_view.surfRG_flag = False
+                rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
                 rg_regions, evolved_regions, region_assessments =\
-                    rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring, whole_results=True)
+                    rg.arg_parcel(whole_results=True)
 
                 # plot diagrams
                 for r_idx, r in enumerate(evolved_regions):
@@ -233,7 +234,8 @@ class SurfaceRGDialog(QtGui.QDialog):
                 return None
         elif self.rg_type == 'srg':
             self._surf_view.surfRG_flag = False
-            rg_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
+            rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
+            rg_regions = rg.srg_parcel()
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
 
