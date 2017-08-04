@@ -216,6 +216,9 @@ class Region(object):
         if region in self.neighbors:
             self.neighbors.remove(region)
 
+    def remove_neighbors(self, regions):
+        map(self.remove_neighbor, regions)
+
     def add_vertex(self, v_id, vtx_signal):
         """
         add intrinsic vertices for self
@@ -247,13 +250,13 @@ class EvolvingRegion(Region):
 
     Attributes
     ----------
-    seed_id : integer
-        the seed vertex number
+    seeds : list
+        the seed vertices' numbers
     component : list
         component regions list
     """
 
-    def __init__(self, seed_id):
+    def __init__(self, seeds):
         """
         Parameters
         ----------
@@ -264,13 +267,13 @@ class EvolvingRegion(Region):
 
         # Initialize fields
         # -----------------
-        self.seed_id = seed_id
+        self.seeds = seeds
         self.component = []
 
     # get information
     # -------------------------------------------
-    def get_seed_id(self):
-        return self.seed_id
+    def get_seeds(self):
+        return self.seeds
 
     def get_component(self):
         return self.component
@@ -318,7 +321,9 @@ class RegionGrow(object):
     stop_criteria: integer
         The stop criteria which control when the region growing stop
     seeds_id : list
-        The seed id list
+        Its elements are also list, called sub-list,
+        each sub-list contains a group of seed vertices which are used to initialize a evolving region.
+        Different sub-list initializes different evolving region.
 
     Methods
     -------
@@ -381,7 +386,7 @@ class RegionGrow(object):
         self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
         if n_parcel:
             # Prepare parcels, neighbors and v_id2r_id
-            graph = mesh2graph(surf.get_faces(),
+            graph = mesh2graph(surf.get_faces(), n=n_ring,
                                vtx_signal=vtx_signal, weight_normalization=True)
             if mask is not None:
                 graph = graph[np.nonzero(mask)[0]]
@@ -390,20 +395,20 @@ class RegionGrow(object):
                 self.v_id2r_id[node] = data['label']
         else:
             # Prepare neighbors and v_id2r_id
-            vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
             if mask is None:
                 for i in range(n_vtx):
                     self.v_id2r_id[i] = i
-                region_neighbors = vtx_neighbors
+                region_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
             else:
-                tmp_neighbors = []
                 mask_id = np.nonzero(mask)[0]
+                vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring, mask_id=mask_id)
+                region_neighbors = []
                 for r_id, v_id in enumerate(mask_id):
                     self.v_id2r_id[v_id] = r_id
-                    tmp_neighbors.append(vtx_neighbors[v_id].intersection(mask_id))
+                    region_neighbors.append(vtx_neighbors[v_id])
 
                 # warning: a region's neighbors is stored as a list rather than a set at here.
-                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in tmp_neighbors]
+                region_neighbors = [map(lambda v: self.v_id2r_id[v], vertices) for vertices in region_neighbors]
 
         # initialize regions
         n_regions = np.max(self.v_id2r_id) + 1
@@ -417,25 +422,12 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0, whole_results=False):
+    def arg_parcel(self, whole_results=False):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
         Parameters
         ----------
-        surf : SurfaceDataset
-            a instance of the class SurfaceDataset
-        vtx_signal : numpy array
-            NxM array, N is the number of vertices,
-            M is the number of measurements or time points.
-        mask : scalar_data
-            specify a area where the ROI is in.
-        n_ring : integer
-            The n-ring neighbors of v are defined as vertices that are
-            reachable from v by traversing no more than n edges in the mesh.
-        n_parcel : integer
-            If n_parcel is 0, each vertex will be a region,
-            else the surface will be partitioned to n_parcel parcels.
         whole_results : bool
             If true, then return max_assess_regions, evolved_regions and region_assessments.
             If false, then just return max_assess_region.
@@ -450,11 +442,10 @@ class RegionGrow(object):
         region_assessment : list
             All assessment values for corresponding evolved region
         """
-        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
 
         # call methods of the class
         evolved_regions, region_assessments = self._compute()
-        max_assess_regions = [EvolvingRegion(r.get_seed_id()) for r in evolved_regions]
+        max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
 
@@ -469,15 +460,12 @@ class RegionGrow(object):
         else:
             return max_assess_regions
 
-    def srg_parcel(self, surf, vtx_signal, mask=None, n_ring=1, n_parcel=0):
+    def srg_parcel(self):
         """
         Seed region growing performs a segmentation of an object with respect to a set of points.
         """
-        self.surf2regions(surf, vtx_signal, mask=mask, n_ring=n_ring, n_parcel=n_parcel)
-
         # call methods of the class
         evolved_regions, region_assessments = self._compute(assessment=False)
-
         return evolved_regions
 
     def _compute(self, assessment=True):
@@ -485,19 +473,39 @@ class RegionGrow(object):
         do region growing
         """
 
-        # initialization
+        # -------initialize evolving_regions and merged_regions------
         evolving_regions = []
+        merged_regions = []
         if self.seeds_id:
-            for seed in self.seeds_id:
-                seed_r_id = self.v_id2r_id[seed]
-                if seed_r_id == -1:
-                    raise RuntimeError("At least one of your seeds is out of the mask!")
-                else:
-                    evolving_region = EvolvingRegion(seed)
-                    evolving_region.merge(self.regions[seed_r_id])
-                    evolving_regions.append(evolving_region)
+            for seeds in self.seeds_id:
+                evolving_region = EvolvingRegion(seeds)
+                merged_regions_tmp = []
+                for seed in seeds:
+                    seed_r_id = self.v_id2r_id[seed]
+                    if seed_r_id == -1:
+                        raise RuntimeError("At least one of your seeds is out of the mask!")
+                    else:
+                        seed_region = self.regions[seed_r_id]
+                        if seed_region in merged_regions:
+                            raise RuntimeError("More than one evolving regions are"
+                                               "assigned with a same unit region initially!")
+                        elif seed_region in merged_regions_tmp:
+                            # do not merge the same unit region repeatedly
+                            continue
+                        else:
+                            evolving_region.merge(seed_region)
+                            merged_regions_tmp.append(seed_region)
+                evolving_regions.append(evolving_region)
+                merged_regions.extend(merged_regions_tmp)
         else:
             evolving_regions.append(self.get_seed_region())
+            for evo_r in evolving_regions:
+                merged_regions.extend(evo_r.get_component())
+
+        for evo_r in evolving_regions:
+            evo_r.remove_neighbors(merged_regions)
+
+        # ------initialize other variables-------
         n_seed = len(evolving_regions)
         region_size = np.array([region.size() for region in evolving_regions])
         region_assessments = [[] for i in range(n_seed)]
@@ -507,8 +515,8 @@ class RegionGrow(object):
         dist.fill(np.inf)
 
         neighbor = [None] * n_seed
-        merged_regions = [self.regions[self.v_id2r_id[seed]] for seed in self.seeds_id]
 
+        # ------main cycle------
         while np.any(np.less(region_size, self.stop_criteria)):
             r_to_grow = np.less(region_size, self.stop_criteria)
             dist[np.logical_not(r_to_grow)] = np.inf
@@ -537,6 +545,7 @@ class RegionGrow(object):
                     if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
                         assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
+                        print evolving_regions[r].size()
 
             for i in r_index:
                 # remove the neighbor from the neighbor list of growing seeds

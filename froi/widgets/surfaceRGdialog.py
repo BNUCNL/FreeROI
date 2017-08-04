@@ -24,8 +24,13 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.seeds_id = []
         self.stop_criteria = 500
         self.n_ring = 1
+        self.group_idx = 'new'  # specify current seed group's index
 
         # Initialize widgets
+        group_idx_label = QtGui.QLabel('seed group:')
+        group_idx_combo = QtGui.QComboBox()
+        group_idx_combo.addItem(self.group_idx)
+
         seeds_label = QtGui.QLabel("seeds:")
         seeds_edit = QtGui.QLineEdit()
         # seeds_edit.setReadOnly(True)
@@ -36,14 +41,14 @@ class SurfaceRGDialog(QtGui.QDialog):
         stop_edit.setText(str(self.stop_criteria))
 
         ring_label = QtGui.QLabel("n_ring:")
-        ring_edit = QtGui.QSpinBox()
-        ring_edit.setMinimum(1)
-        ring_edit.setValue(self.n_ring)
+        ring_spin = QtGui.QSpinBox()
+        ring_spin.setMinimum(1)
+        ring_spin.setValue(self.n_ring)
 
         rg_type_label = QtGui.QLabel('RG-type')
-        rg_type_edit = QtGui.QComboBox()
-        rg_type_edit.addItems(self.rg_types)
-        rg_type_edit.setCurrentIndex(self.rg_types.index(self.rg_type))
+        rg_type_combo = QtGui.QComboBox()
+        rg_type_combo.addItems(self.rg_types)
+        rg_type_combo.setCurrentIndex(self.rg_types.index(self.rg_type))
 
         scalar_button = QtGui.QPushButton("add scalar")
         mask_button = QtGui.QPushButton('add mask')
@@ -53,18 +58,20 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         # layout
         grid_layout = QtGui.QGridLayout()
-        grid_layout.addWidget(seeds_label, 0, 0)
-        grid_layout.addWidget(seeds_edit, 0, 1)
-        grid_layout.addWidget(stop_label, 1, 0)
-        grid_layout.addWidget(stop_edit, 1, 1)
-        grid_layout.addWidget(ring_label, 2, 0)
-        grid_layout.addWidget(ring_edit, 2, 1)
-        grid_layout.addWidget(rg_type_label, 3, 0)
-        grid_layout.addWidget(rg_type_edit, 3, 1)
-        grid_layout.addWidget(scalar_button, 4, 0)
-        grid_layout.addWidget(mask_button, 4, 1)
-        grid_layout.addWidget(ok_button, 5, 0)
-        grid_layout.addWidget(cancel_button, 5, 1)
+        grid_layout.addWidget(group_idx_label, 0, 0)
+        grid_layout.addWidget(group_idx_combo, 0, 1)
+        grid_layout.addWidget(seeds_label, 1, 0)
+        grid_layout.addWidget(seeds_edit, 1, 1)
+        grid_layout.addWidget(stop_label, 2, 0)
+        grid_layout.addWidget(stop_edit, 2, 1)
+        grid_layout.addWidget(ring_label, 3, 0)
+        grid_layout.addWidget(ring_spin, 3, 1)
+        grid_layout.addWidget(rg_type_label, 4, 0)
+        grid_layout.addWidget(rg_type_combo, 4, 1)
+        grid_layout.addWidget(scalar_button, 5, 0)
+        grid_layout.addWidget(mask_button, 5, 1)
+        grid_layout.addWidget(ok_button, 6, 0)
+        grid_layout.addWidget(cancel_button, 6, 1)
         self.setLayout(grid_layout)
 
         # connect
@@ -73,17 +80,19 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self.close)
         self.connect(seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
         self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
-        ring_edit.valueChanged.connect(self._set_n_ring)
-        rg_type_edit.currentIndexChanged.connect(self._set_rg_type)
+        ring_spin.valueChanged.connect(self._set_n_ring)
+        rg_type_combo.currentIndexChanged.connect(self._set_rg_type)
+        group_idx_combo.currentIndexChanged.connect(self._set_group_idx)
         self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
         self.connect(mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
-        self._surf_view.seed_picked.seed_picked.connect(self._set_seeds_edit_text)
+        self._surf_view.seed_picked.connect(self._set_seeds_edit_text)
 
         # ---------------fields--------------------
         self.stop_edit = stop_edit
-        self.ring_edit = ring_edit
+        self.ring_spin = ring_spin
         self.seeds_edit = seeds_edit
-        self.rg_type_edit = rg_type_edit
+        self.rg_type_combo = rg_type_combo
+        self.group_idx_combo = group_idx_combo
 
         self.hemi = self._get_curr_hemi()
         # FIXME 'white' should be replaced with surf_type in the future
@@ -96,7 +105,7 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _mask_dialog(self):
 
         fpath = QtGui.QFileDialog().getOpenFileName(self, 'Open mask file', './',
-                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh)')
+                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
         if not fpath:
             return
         self.mask = read_data(fpath, self.hemi_vtx_number)
@@ -113,13 +122,31 @@ class SurfaceRGDialog(QtGui.QDialog):
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
+    def _set_group_idx(self):
+
+        self.group_idx = str(self.group_idx_combo.currentText())
+        if self.group_idx == 'new':
+            self.seeds_edit.setText('')
+        else:
+            idx = int(self.group_idx)
+            text = ','.join(map(str, self.seeds_id[idx]))
+            self.seeds_edit.setText(text)
+
     def _set_rg_type(self):
-        self.rg_type = str(self.rg_type_edit.currentText())
+        self.rg_type = str(self.rg_type_combo.currentText())
 
     def _set_seeds_edit_text(self):
 
-        self.seeds_id = list(self._surf_view.seeds_id)  # make a copy
-        text = ','.join(map(str, self.seeds_id))
+        if self.group_idx == 'new':
+            idx = len(self.seeds_id)
+            self.seeds_id.append([self._surf_view.get_seed()])
+            self.group_idx = str(idx)
+            self.group_idx_combo.addItem(self.group_idx)
+            self.group_idx_combo.setCurrentIndex(idx+1)
+        else:
+            idx = int(self.group_idx)
+            self.seeds_id[idx].append(self._surf_view.get_seed())
+        text = ','.join(map(str, self.seeds_id[idx]))
         self.seeds_edit.setText(text)
 
     def _set_stop_criteria(self):
@@ -141,12 +168,27 @@ class SurfaceRGDialog(QtGui.QDialog):
         text_list = self.seeds_edit.text().split(',')
         while '' in text_list:
             text_list.remove('')
-        self.seeds_id = map(int, text_list)
-        self._surf_view.seeds_id = map(int, text_list)
+        if self.group_idx == 'new':
+            if text_list:
+                idx = len(self.seeds_id)
+                self.seeds_id.append(map(int, text_list))
+                self.group_idx = str(idx)
+                self.group_idx_combo.addItem(self.group_idx)
+                self.group_idx_combo.setCurrentIndex(idx+1)
+        else:
+            idx = int(self.group_idx)
+            if text_list:
+                self.seeds_id[idx] = map(int, text_list)
+            else:
+                end_item_idx = len(self.seeds_id)
+                self.seeds_id.pop(idx)
+                self.group_idx_combo.removeItem(end_item_idx)
+                self.group_idx = 'new'
+                self.group_idx_combo.setCurrentIndex(0)
         self._set_stop_criteria()
 
     def _set_n_ring(self):
-        self.n_ring = int(self.ring_edit.value())
+        self.n_ring = int(self.ring_spin.value())
 
     def _start_surfRG(self):
 
@@ -171,8 +213,9 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 self._surf_view.surfRG_flag = False
+                rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
                 rg_regions, evolved_regions, region_assessments =\
-                    rg.arg_parcel(self.surf, self.X, self.mask, self.n_ring, whole_results=True)
+                    rg.arg_parcel(whole_results=True)
 
                 # plot diagrams
                 for r_idx, r in enumerate(evolved_regions):
@@ -191,7 +234,8 @@ class SurfaceRGDialog(QtGui.QDialog):
                 return None
         elif self.rg_type == 'srg':
             self._surf_view.surfRG_flag = False
-            rg_regions = rg.srg_parcel(self.surf, self.X, self.mask, self.n_ring)
+            rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
+            rg_regions = rg.srg_parcel()
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
 
@@ -241,6 +285,4 @@ class SurfaceRGDialog(QtGui.QDialog):
     def close(self):
 
         self._surf_view.surfRG_flag = False
-        self._surf_view.seeds_id = []  # clear the seeds_id for next using
-
         QtGui.QDialog.close(self)
