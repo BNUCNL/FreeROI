@@ -139,13 +139,13 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         if self.group_idx == 'new':
             idx = len(self.seeds_id)
-            self.seeds_id.append([self._surf_view.get_seed()])
+            self.seeds_id.append([self._surf_view.point_id])
             self.group_idx = str(idx)
             self.group_idx_combo.addItem(self.group_idx)
             self.group_idx_combo.setCurrentIndex(idx+1)
         else:
             idx = int(self.group_idx)
-            self.seeds_id[idx].append(self._surf_view.get_seed())
+            self.seeds_id[idx].append(self._surf_view.point_id)
         text = ','.join(map(str, self.seeds_id[idx]))
         self.seeds_edit.setText(text)
 

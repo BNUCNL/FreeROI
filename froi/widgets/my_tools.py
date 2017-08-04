@@ -180,9 +180,9 @@ def bfs(graph, start, end):
     But the function just return one of them according to the first find.
     The function takes advantage of the Breadth First Search.
 
-    :param graph: Directory
-        The keys are vertices of the graph. One key's value is a list of vertices which can be
-        got from the key.
+    :param graph: dict | list
+        The indices are vertices of the graph.
+        One index's corresponding element is a collection of vertices which connect with the index.
     :param start:
         path's start vertex
     :param end:
