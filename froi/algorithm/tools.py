@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from mayavi import mlab
 
 
 # ------------------common tools-------------------

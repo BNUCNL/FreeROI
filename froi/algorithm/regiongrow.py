@@ -318,12 +318,7 @@ class RegionGrow(object):
 
     Attributes
     ----------
-    stop_criteria: integer
-        The stop criteria which control when the region growing stop
-    seeds_id : list
-        Its elements are also list, called sub-list,
-        each sub-list contains a group of seed vertices which are used to initialize a evolving region.
-        Different sub-list initializes different evolving region.
+
 
     Methods
     -------
@@ -340,12 +335,10 @@ class RegionGrow(object):
         evolved_regions = rg.arg_parcel(surf, vtx_signal, mask, n_ring)
     """
 
-    def __init__(self, seeds_id, stop_criteria):
+    def __init__(self):
 
         # initialize fields
         # -----------------
-        self.stop_criteria = stop_criteria
-        self.seeds_id = seeds_id
         self.regions = []
         self.v_id2r_id = None
         self._assess_func = None
@@ -401,7 +394,7 @@ class RegionGrow(object):
                 region_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
             else:
                 mask_id = np.nonzero(mask)[0]
-                vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring, mask_id=mask_id)
+                vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring, mask=mask)
                 region_neighbors = []
                 for r_id, v_id in enumerate(mask_id):
                     self.v_id2r_id[v_id] = r_id
@@ -422,12 +415,18 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, whole_results=False):
+    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
         Parameters
         ----------
+        seeds_id : list
+            Its elements are also list, called sub-list,
+            each sub-list contains a group of seed vertices which are used to initialize a evolving region.
+            Different sub-list initializes different evolving region.
+        stop_criteria : integer
+            The stop criteria which control when the region growing stop
         whole_results : bool
             If true, then return max_assess_regions, evolved_regions and region_assessments.
             If false, then just return max_assess_region.
@@ -444,7 +443,7 @@ class RegionGrow(object):
         """
 
         # call methods of the class
-        evolved_regions, region_assessments = self._compute()
+        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria)
         max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
@@ -460,15 +459,29 @@ class RegionGrow(object):
         else:
             return max_assess_regions
 
-    def srg_parcel(self):
+    def srg_parcel(self, seeds_id, stop_criteria):
         """
         Seed region growing performs a segmentation of an object with respect to a set of points.
+
+        Parameters
+        ----------
+        seeds_id : list
+            Its elements are also list, called sub-list,
+            each sub-list contains a group of seed vertices which are used to initialize a evolving region.
+            Different sub-list initializes different evolving region.
+        stop_criteria : integer
+            The stop criteria which control when the region growing stop
+
+        Returns
+        -------
+        evolved_regions : list
+            Include all evolved regions after self._compute()
         """
         # call methods of the class
-        evolved_regions, region_assessments = self._compute(assessment=False)
+        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria, assessment=False)
         return evolved_regions
 
-    def _compute(self, assessment=True):
+    def _compute(self, seeds_id, stop_criteria, assessment=True):
         """
         do region growing
         """
@@ -476,8 +489,8 @@ class RegionGrow(object):
         # -------initialize evolving_regions and merged_regions------
         evolving_regions = []
         merged_regions = []
-        if self.seeds_id:
-            for seeds in self.seeds_id:
+        if seeds_id:
+            for seeds in seeds_id:
                 evolving_region = EvolvingRegion(seeds)
                 merged_regions_tmp = []
                 for seed in seeds:
@@ -517,8 +530,8 @@ class RegionGrow(object):
         neighbor = [None] * n_seed
 
         # ------main cycle------
-        while np.any(np.less(region_size, self.stop_criteria)):
-            r_to_grow = np.less(region_size, self.stop_criteria)
+        while np.any(np.less(region_size, stop_criteria)):
+            r_to_grow = np.less(region_size, stop_criteria)
             dist[np.logical_not(r_to_grow)] = np.inf
 
             r_index = np.nonzero(r_to_grow)[0]
@@ -554,7 +567,7 @@ class RegionGrow(object):
                 # update region_size
                 if not evolving_regions[i].neighbors:
                     # If the seed has no neighbor, stop its growing.
-                    region_size[i] = self.stop_criteria
+                    region_size[i] = stop_criteria
 
         return evolving_regions, region_assessments
 

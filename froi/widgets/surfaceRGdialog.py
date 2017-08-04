@@ -200,7 +200,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             else:
                 self.X = overlay.get_data()
 
-        rg = RegionGrow(self.seeds_id, self.stop_criteria)
+        rg = RegionGrow()
         if self.rg_type == 'arg':
             # ------------------select a assessment function-----------------
             assess_type, ok = QtGui.QInputDialog.getItem(
@@ -216,7 +216,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 self._surf_view.surfRG_flag = False
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
                 rg_regions, evolved_regions, region_assessments =\
-                    rg.arg_parcel(whole_results=True)
+                    rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
                 # plot diagrams
                 for r_idx, r in enumerate(evolved_regions):
@@ -236,7 +236,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         elif self.rg_type == 'srg':
             self._surf_view.surfRG_flag = False
             rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-            rg_regions = rg.srg_parcel()
+            rg_regions = rg.srg_parcel(self.seeds_id, self.stop_criteria)
         else:
             raise RuntimeError("The region growing type must be arg or srg at present!")
 
