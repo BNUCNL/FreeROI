@@ -923,7 +923,7 @@ class Hemisphere(object):
         self.colormap = "gray"
         self.visible = True
 
-        self.add_surfs(surf_path, surf_type)
+        self.add_surfs(surf_path, surf_type, offset=1.0)
         self.name = self.surf[surf_type].name
 
     def _add_surface(self, surf_path, surf_type, offset=None):

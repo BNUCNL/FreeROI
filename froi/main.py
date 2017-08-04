@@ -556,7 +556,7 @@ class BpMainWindow(QMainWindow):
 
     def _surf_rg(self):
         new_dialog = SurfaceRGDialog(self.surface_model,
-                                     self.surface_tree_view_control.currentIndex(),
+                                     self.surface_tree_view_control,
                                      self.surface_view, self)
         new_dialog.show()
 

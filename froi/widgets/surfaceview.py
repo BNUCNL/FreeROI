@@ -7,11 +7,11 @@ from PyQt4.QtGui import *
 from PyQt4 import QtCore
 from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
-from scipy.spatial.distance import cdist
 import numpy as np
 
 from treemodel import TreeModel
-from my_tools import bfs, toggle_color
+from ..algorithm.tools import toggle_color
+from ..algorithm.meshtool import get_n_ring_neighbor
 
 
 # Helpers
@@ -63,6 +63,7 @@ class SurfaceView(QWidget):
 
     # Signals
     seed_picked = QtCore.pyqtSignal()
+    scribing = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(SurfaceView, self).__init__(parent)
@@ -87,12 +88,11 @@ class SurfaceView(QWidget):
         self.faces = None
         self.rgba_lut = None
         self.gcf_flag = True
-        self.plot_start = None
-        self.path = []
         self.surfRG_flag = False
         self.scribing_flag = False
         self.edge_list = None
-        self.seed_id = None
+        self.point_id = None
+        self.old_hemi = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -103,7 +103,11 @@ class SurfaceView(QWidget):
         render the overlays
         """
 
-        hemisphere_list = self.surface_model.get_data()
+        hemis = self.surface_model.get_data()
+        visible_hemis = [hemi for hemi in hemis if hemi.is_visible()]
+        if self.old_hemi != visible_hemis:
+            self.edge_list = None
+            self.old_hemi = visible_hemis
 
         # clear the old surface
         if self.surf is not None:
@@ -111,7 +115,6 @@ class SurfaceView(QWidget):
             self.surf = None
 
         # flag
-        no_hemi_flag = True
         first_hemi_flag = True
 
         # reset
@@ -119,38 +122,35 @@ class SurfaceView(QWidget):
         self.rgba_lut = None
         vertex_number = 0
 
-        for hemisphere in hemisphere_list:
-            if hemisphere.is_visible():
+        for hemi in visible_hemis:
 
-                no_hemi_flag = False
+            # get geometry's information
+            geo = hemi.surf['white']  # FIXME 'white' should be replaced with var: surf_type
+            hemi_coords = geo.get_coords()
+            hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
+            hemi_nn = geo.get_nn()
 
-                # get geometry's information
-                geo = hemisphere.surf['white']  # FIXME 'white' should be replaced with var: surf_type
-                hemi_coords = geo.get_coords()
-                hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
-                hemi_nn = geo.get_nn()
+            # get the rgba_lut
+            rgb_array = hemi.get_composite_rgb()
+            hemi_vertex_number = rgb_array.shape[0]
+            alpha_channel = np.ones((hemi_vertex_number, 1), dtype=np.uint8)*255
+            hemi_lut = np.c_[rgb_array, alpha_channel]
 
-                # get the rgba_lut
-                rgb_array = hemisphere.get_composite_rgb()
-                hemi_vertex_number = rgb_array.shape[0]
-                alpha_channel = np.ones((hemi_vertex_number, 1), dtype=np.uint8)*255
-                hemi_lut = np.c_[rgb_array, alpha_channel]
+            if first_hemi_flag:
+                first_hemi_flag = False
+                self.coords = hemi_coords
+                self.faces = hemi_faces
+                nn = hemi_nn
+                self.rgba_lut = hemi_lut
+            else:
+                self.coords = np.r_[self.coords, hemi_coords]
+                hemi_faces += vertex_number
+                self.faces = np.r_[self.faces, hemi_faces]
+                nn = np.r_[nn, hemi_nn]
+                self.rgba_lut = np.r_[self.rgba_lut, hemi_lut]
+            vertex_number += hemi_vertex_number
 
-                if first_hemi_flag:
-                    first_hemi_flag = False
-                    self.coords = hemi_coords
-                    self.faces = hemi_faces
-                    nn = hemi_nn
-                    self.rgba_lut = hemi_lut
-                else:
-                    self.coords = np.r_[self.coords, hemi_coords]
-                    hemi_faces += vertex_number
-                    self.faces = np.r_[self.faces, hemi_faces]
-                    nn = np.r_[nn, hemi_nn]
-                    self.rgba_lut = np.r_[self.rgba_lut, hemi_lut]
-                vertex_number += hemi_vertex_number
-
-        if not no_hemi_flag:
+        if visible_hemis:
             # generate the triangular mesh
             scalars = np.array(range(vertex_number))
             mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
@@ -176,30 +176,22 @@ class SurfaceView(QWidget):
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
-        picked_id = picker_obj.point_id
+        self.point_id = picker_obj.point_id
 
-        if picked_id != -1:
+        if self.point_id != -1:
 
-            tmp_lut = self.rgba_lut.copy()
+            self.tmp_lut = self.rgba_lut.copy()
 
             if self.scribing_flag:  # plot line
-                if self.plot_start is None:
-                    self.plot_start = picked_id
-                    self.path.append(picked_id)
-                else:
-                    new_path = bfs(self.edge_list, self.plot_start, picked_id)
-                    new_path.pop(0)
-                    self.path.extend(new_path)
-                    self.plot_start = picked_id
-                    for v_id in self.path:
-                        toggle_color(tmp_lut[v_id])
+                if self.edge_list is None:
+                    self.create_edge_list()
+                self.scribing.emit()
             elif self.surfRG_flag:  # get seed
-                self.seed_id = picked_id
                 self.seed_picked.emit()
 
             # plot point
-            toggle_color(tmp_lut[picked_id])
-            self.surf.module_manager.scalar_lut_manager.lut.table = tmp_lut
+            toggle_color(self.tmp_lut[self.point_id])
+            self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
 
     def _picker_callback_left(self, picker_obj):
         pass
@@ -217,18 +209,14 @@ class SurfaceView(QWidget):
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
 
-    def set_edge_list(self, edge_list):
-        self.edge_list = edge_list
+    def create_edge_list(self):
+        self.edge_list = get_n_ring_neighbor(self.faces)
 
     def get_coords(self):
         return self.coords
 
     def get_faces(self):
         return self.faces
-
-    def get_seed(self):
-        return self.seed_id
-
 
 if __name__ == "__main__":
 
