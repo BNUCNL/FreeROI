@@ -1,7 +1,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from my_tools import bfs, toggle_color
+from ..algorithm.tools import bfs, toggle_color
 
 
 class ScribingDialog(QDialog):

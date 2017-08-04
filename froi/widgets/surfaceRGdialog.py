@@ -4,17 +4,18 @@ import matplotlib.pyplot as plt
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
+from ..algorithm.tools import get_curr_hemi, get_curr_overlay
 
 
 class SurfaceRGDialog(QtGui.QDialog):
 
     rg_types = ['srg', 'arg']
 
-    def __init__(self, model, index, surf_view, parent=None):
+    def __init__(self, model, tree_view_control, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
         self.setWindowTitle("surfRG")
         self._surf_view = surf_view
-        self.index = index
+        self.tree_view_control = tree_view_control
         self.model = model
 
         self._surf_view.surfRG_flag = True
@@ -246,23 +247,19 @@ class SurfaceRGDialog(QtGui.QDialog):
             labeled_vertices = r.get_vertices()
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.index, data)
+            self.model.add_item(self.tree_view_control.currentIndex(), data)
 
     def _get_curr_hemi(self):
 
-        if not self.index.isValid():
-            QtGui.QMessageBox.warning(self, 'Error',
-                                      'You have not specified a surface!',
-                                      QtGui.QMessageBox.Yes)
+        hemi = get_curr_hemi(self.tree_view_control.currentIndex())
+        if not hemi:
+            QtGui.QMessageBox.warning(
+                    self, 'Error',
+                    'Get hemisphere failed!\nYou may have not selected any hemisphere!',
+                    QtGui.QMessageBox.Yes
+            )
             self.close()  # FIXME may be a bug
-        else:
-            parent = self.index.parent()
-            if not parent.isValid():
-                # add_item = Hemisphere(source)
-                hemi_item = self.index.internalPointer()
-            else:
-                hemi_item = parent.internalPointer()
-            return hemi_item
+        return hemi
 
     def _get_curr_overlay(self):
         """
@@ -270,17 +267,15 @@ class SurfaceRGDialog(QtGui.QDialog):
         get current overlay's data as region growing's data.
         """
 
-        parent = self.index.parent()
-        if not parent.isValid():
+        ol = get_curr_overlay(self.tree_view_control.currentIndex())
+        if not ol:
             QtGui.QMessageBox.warning(
                     self,
                     'Warning',
-                    'You have not specified any overlay!',
+                    'Get overlay failed!\nYou may have not selected any overlay!',
                     QtGui.QMessageBox.Yes
             )
-            return False
-        else:
-            return self.index.internalPointer()
+        return ol
 
     def close(self):
 

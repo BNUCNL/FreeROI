@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist, pdist
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
-from ..widgets.my_tools import ConstVariable
+from tools import ConstVariable
 
 const = ConstVariable()
 const.ASSESS_STEP = 1
@@ -545,7 +545,7 @@ class RegionGrow(object):
                     if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
                         assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
-                        print evolving_regions[r].size()
+                        print 'Evolving region{} size: {}'.format(r, evolving_regions[r].size())
 
             for i in r_index:
                 # remove the neighbor from the neighbor list of growing seeds

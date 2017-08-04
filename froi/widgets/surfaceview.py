@@ -10,7 +10,7 @@ from mayavi import mlab
 import numpy as np
 
 from treemodel import TreeModel
-from my_tools import toggle_color
+from ..algorithm.tools import toggle_color
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
