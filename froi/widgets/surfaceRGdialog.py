@@ -19,84 +19,6 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.tree_view_control = tree_view_control
         self.model = model
 
-        self._surf_view.surfRG_flag = True
-
-        self.rg_type = 'arg'
-        self.mask = None
-        self.seeds_id = []
-        self.stop_criteria = 500
-        self.n_ring = 1
-        self.group_idx = 'new'  # specify current seed group's index
-
-        # Initialize widgets
-        group_idx_label = QtGui.QLabel('seed group:')
-        group_idx_combo = QtGui.QComboBox()
-        group_idx_combo.addItem(self.group_idx)
-
-        seeds_label = QtGui.QLabel("seeds:")
-        seeds_edit = QtGui.QLineEdit()
-        # seeds_edit.setReadOnly(True)
-        seeds_edit.setText('peak value vertex')
-
-        stop_label = QtGui.QLabel("stop_criteria:")
-        stop_edit = QtGui.QLineEdit()
-        stop_edit.setText(str(self.stop_criteria))
-
-        ring_label = QtGui.QLabel("n_ring:")
-        ring_spin = QtGui.QSpinBox()
-        ring_spin.setMinimum(1)
-        ring_spin.setValue(self.n_ring)
-
-        rg_type_label = QtGui.QLabel('RG-type')
-        rg_type_combo = QtGui.QComboBox()
-        rg_type_combo.addItems(self.rg_types)
-        rg_type_combo.setCurrentIndex(self.rg_types.index(self.rg_type))
-
-        scalar_button = QtGui.QPushButton("add scalar")
-        mask_button = QtGui.QPushButton('add mask')
-
-        ok_button = QtGui.QPushButton("OK")
-        cancel_button = QtGui.QPushButton("Cancel")
-
-        # layout
-        grid_layout = QtGui.QGridLayout()
-        grid_layout.addWidget(group_idx_label, 0, 0)
-        grid_layout.addWidget(group_idx_combo, 0, 1)
-        grid_layout.addWidget(seeds_label, 1, 0)
-        grid_layout.addWidget(seeds_edit, 1, 1)
-        grid_layout.addWidget(stop_label, 2, 0)
-        grid_layout.addWidget(stop_edit, 2, 1)
-        grid_layout.addWidget(ring_label, 3, 0)
-        grid_layout.addWidget(ring_spin, 3, 1)
-        grid_layout.addWidget(rg_type_label, 4, 0)
-        grid_layout.addWidget(rg_type_combo, 4, 1)
-        grid_layout.addWidget(scalar_button, 5, 0)
-        grid_layout.addWidget(mask_button, 5, 1)
-        grid_layout.addWidget(ok_button, 6, 0)
-        grid_layout.addWidget(cancel_button, 6, 1)
-        self.setLayout(grid_layout)
-
-        # connect
-        self.connect(ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
-        # self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("close()"))
-        self.connect(cancel_button, QtCore.SIGNAL("clicked()"), self.close)
-        self.connect(seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
-        self.connect(stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
-        ring_spin.valueChanged.connect(self._set_n_ring)
-        rg_type_combo.currentIndexChanged.connect(self._set_rg_type)
-        group_idx_combo.currentIndexChanged.connect(self._set_group_idx)
-        self.connect(scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
-        self.connect(mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
-        self._surf_view.seed_picked.connect(self._set_seeds_edit_text)
-
-        # ---------------fields--------------------
-        self.stop_edit = stop_edit
-        self.ring_spin = ring_spin
-        self.seeds_edit = seeds_edit
-        self.rg_type_combo = rg_type_combo
-        self.group_idx_combo = group_idx_combo
-        self.scalar_button = scalar_button
-
         self.hemi = self._get_curr_hemi()
         # FIXME 'white' should be replaced with surf_type in the future
         self.surf = self.hemi.surf['white']
@@ -104,6 +26,90 @@ class SurfaceRGDialog(QtGui.QDialog):
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
         self.X = None
+
+        self.rg_type = 'arg'
+        self.mask = None
+        self.seeds_id = []
+        self.stop_criteria = 500
+        self.n_ring = 1
+        self.group_idx = 'new'  # specify current seed group's index
+        self.cut_line = []  # a list of vertices' id which plot a line
+
+        self._init_gui()
+        self._create_actions()
+
+        self._surf_view.seed_flag = True
+
+    def _init_gui(self):
+        # Initialize widgets
+        group_idx_label = QtGui.QLabel('seed group:')
+        self._group_idx_combo = QtGui.QComboBox()
+        self._group_idx_combo.addItem(self.group_idx)
+
+        seeds_label = QtGui.QLabel("seeds:")
+        self._seeds_edit = QtGui.QLineEdit()
+        self._seeds_edit.setText('peak value vertex')
+
+        self._stop_label = QtGui.QLabel("stop_criteria:")
+        self._stop_edit = QtGui.QLineEdit()
+        self._stop_edit.setText(str(self.stop_criteria))
+
+        ring_label = QtGui.QLabel("n_ring:")
+        self._ring_spin = QtGui.QSpinBox()
+        self._ring_spin.setMinimum(1)
+        self._ring_spin.setValue(self.n_ring)
+
+        rg_type_label = QtGui.QLabel('RG-type')
+        self._rg_type_combo = QtGui.QComboBox()
+        self._rg_type_combo.addItems(self.rg_types)
+        self._rg_type_combo.setCurrentIndex(self.rg_types.index(self.rg_type))
+
+        self._scalar_button = QtGui.QPushButton("add scalar")
+        self._mask_button = QtGui.QPushButton('add mask')
+
+        self._cutoff_button1 = QtGui.QPushButton('start cutoff')
+        self._cutoff_button2 = QtGui.QPushButton('stop cutoff')
+        self._cutoff_button1.setVisible(False)
+        self._cutoff_button2.setVisible(False)
+        self._cutoff_button2.setEnabled(False)
+
+        self._ok_button = QtGui.QPushButton("OK")
+        self._cancel_button = QtGui.QPushButton("Cancel")
+
+        # layout
+        grid_layout = QtGui.QGridLayout()
+        grid_layout.addWidget(group_idx_label, 0, 0)
+        grid_layout.addWidget(self._group_idx_combo, 0, 1)
+        grid_layout.addWidget(seeds_label, 1, 0)
+        grid_layout.addWidget(self._seeds_edit, 1, 1)
+        grid_layout.addWidget(self._stop_label, 2, 0)
+        grid_layout.addWidget(self._stop_edit, 2, 1)
+        grid_layout.addWidget(ring_label, 3, 0)
+        grid_layout.addWidget(self._ring_spin, 3, 1)
+        grid_layout.addWidget(rg_type_label, 4, 0)
+        grid_layout.addWidget(self._rg_type_combo, 4, 1)
+        grid_layout.addWidget(self._scalar_button, 5, 0)
+        grid_layout.addWidget(self._mask_button, 5, 1)
+        grid_layout.addWidget(self._cutoff_button1, 6, 0)
+        grid_layout.addWidget(self._cutoff_button2, 6, 1)
+        grid_layout.addWidget(self._ok_button, 7, 0)
+        grid_layout.addWidget(self._cancel_button, 7, 1)
+        self.setLayout(grid_layout)
+
+    def _create_actions(self):
+        # connect
+        self.connect(self._ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
+        self.connect(self._cancel_button, QtCore.SIGNAL("clicked()"), self.close)
+        self.connect(self._seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
+        self.connect(self._stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
+        self._ring_spin.valueChanged.connect(self._set_n_ring)
+        self._rg_type_combo.currentIndexChanged.connect(self._set_rg_type)
+        self._group_idx_combo.currentIndexChanged.connect(self._set_group_idx)
+        self.connect(self._scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
+        self.connect(self._mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
+        self.connect(self._cutoff_button1, QtCore.SIGNAL("clicked()"), self._start_cutoff)
+        self.connect(self._cutoff_button2, QtCore.SIGNAL("clicked()"), self._stop_cutoff)
+        self._surf_view.seed_picked.connect(self._set_seeds_edit_text)
 
     def _mask_dialog(self):
 
@@ -125,24 +131,50 @@ class SurfaceRGDialog(QtGui.QDialog):
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
+    def _start_cutoff(self):
+        self._cutoff_button1.setEnabled(False)
+        self._cutoff_button2.setEnabled(True)
+        self._surf_view.seed_flag = False
+        self._surf_view.scribing_flag = True
+        self.cut_line = []
+
+    def _stop_cutoff(self):
+        self._surf_view.seed_flag = True
+        self._surf_view.scribing_flag = False
+        self._cutoff_button1.setEnabled(True)
+        self._cutoff_button2.setEnabled(False)
+        self.cut_line = list(self._surf_view.path)
+        self._surf_view.plot_start = None
+        self._surf_view.path = []
+
     def _set_group_idx(self):
 
-        self.group_idx = str(self.group_idx_combo.currentText())
+        self.group_idx = str(self._group_idx_combo.currentText())
         if self.group_idx == 'new':
-            self.seeds_edit.setText('')
+            self._seeds_edit.setText('')
         else:
             idx = int(self.group_idx)
             text = ','.join(map(str, self.seeds_id[idx]))
-            self.seeds_edit.setText(text)
+            self._seeds_edit.setText(text)
 
     def _set_rg_type(self):
-        self.rg_type = str(self.rg_type_combo.currentText())
+        self.rg_type = str(self._rg_type_combo.currentText())
         if self.rg_type == 'crg':
-            self.stop_edit.setEnabled(False)
-            self.scalar_button.setEnabled(False)
+            self._stop_edit.setVisible(False)
+            self._stop_label.setVisible(False)
+            self._scalar_button.setVisible(False)
+            self._mask_button.setVisible(False)
+            self._cutoff_button1.setVisible(True)
+            self._cutoff_button2.setVisible(True)
         else:
-            self.stop_edit.setEnabled(True)
-            self.scalar_button.setEnabled(True)
+            self._stop_edit.setVisible(True)
+            self._stop_label.setVisible(True)
+            self._scalar_button.setVisible(True)
+            self._mask_button.setVisible(True)
+            self._cutoff_button1.setVisible(False)
+            self._cutoff_button2.setVisible(False)
+            self._stop_cutoff()
+            self.cut_line = []
 
     def _set_seeds_edit_text(self):
 
@@ -150,17 +182,17 @@ class SurfaceRGDialog(QtGui.QDialog):
             idx = len(self.seeds_id)
             self.seeds_id.append([self._surf_view.point_id])
             self.group_idx = str(idx)
-            self.group_idx_combo.addItem(self.group_idx)
-            self.group_idx_combo.setCurrentIndex(idx+1)
+            self._group_idx_combo.addItem(self.group_idx)
+            self._group_idx_combo.setCurrentIndex(idx+1)
         else:
             idx = int(self.group_idx)
             self.seeds_id[idx].append(self._surf_view.point_id)
         text = ','.join(map(str, self.seeds_id[idx]))
-        self.seeds_edit.setText(text)
+        self._seeds_edit.setText(text)
 
     def _set_stop_criteria(self):
 
-        text_list = self.stop_edit.text().split(',')
+        text_list = self._stop_edit.text().split(',')
         while '' in text_list:
             text_list.remove('')
         if len(text_list) == len(self.seeds_id):
@@ -174,7 +206,7 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _set_seeds_id(self):
 
-        text_list = self.seeds_edit.text().split(',')
+        text_list = self._seeds_edit.text().split(',')
         while '' in text_list:
             text_list.remove('')
         if self.group_idx == 'new':
@@ -182,8 +214,8 @@ class SurfaceRGDialog(QtGui.QDialog):
                 idx = len(self.seeds_id)
                 self.seeds_id.append(map(int, text_list))
                 self.group_idx = str(idx)
-                self.group_idx_combo.addItem(self.group_idx)
-                self.group_idx_combo.setCurrentIndex(idx+1)
+                self._group_idx_combo.addItem(self.group_idx)
+                self._group_idx_combo.setCurrentIndex(idx+1)
         else:
             idx = int(self.group_idx)
             if text_list:
@@ -191,25 +223,24 @@ class SurfaceRGDialog(QtGui.QDialog):
             else:
                 end_item_idx = len(self.seeds_id)
                 self.seeds_id.pop(idx)
-                self.group_idx_combo.removeItem(end_item_idx)
+                self._group_idx_combo.removeItem(end_item_idx)
                 self.group_idx = 'new'
-                self.group_idx_combo.setCurrentIndex(0)
+                self._group_idx_combo.setCurrentIndex(0)
         self._set_stop_criteria()
 
     def _set_n_ring(self):
-        self.n_ring = int(self.ring_spin.value())
+        self.n_ring = int(self._ring_spin.value())
 
     def _start_surfRG(self):
 
-        if self.X is None:
-            overlay = self._get_curr_overlay()
-            if not overlay:
-                return None
-            else:
-                self.X = overlay.get_data()
-
         rg = RegionGrow()
         if self.rg_type == 'arg':
+            if self.X is None:
+                ol = self._get_curr_overlay()
+                if not ol:
+                    return None
+                self.X = ol.get_data()
+
             # ------------------select a assessment function-----------------
             assess_type, ok = QtGui.QInputDialog.getItem(
                     self,
@@ -221,7 +252,6 @@ class SurfaceRGDialog(QtGui.QDialog):
             # ------------------If ok, start arg!-----------------
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
-                self._surf_view.surfRG_flag = False
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
                 rg_result, evolved_regions, region_assessments =\
                     rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
@@ -241,20 +271,33 @@ class SurfaceRGDialog(QtGui.QDialog):
                     QtGui.QMessageBox.Yes
                 )
                 return None
+
         elif self.rg_type == 'srg':
-            self._surf_view.surfRG_flag = False
+            if self.X is None:
+                ol = self._get_curr_overlay()
+                if not ol:
+                    return None
+                self.X = ol.get_data()
+
             rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
             rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria)
+
         elif self.rg_type == 'crg':
-            if self.mask is None:
-                ol = self._get_curr_overlay()
+            ol = get_curr_overlay(self.tree_view_control.currentIndex())
+            if ol:
                 data = ol.get_data()
                 data = np.mean(data, 1)
-                self.mask = data.reshape((data.shape[0],))
-                idx = np.where(self.mask < ol.get_min())
-                self.mask[idx] = 0
-            edge_list = get_n_ring_neighbor(self.surf.get_faces(), mask=self.mask)
+                mask = data.reshape((data.shape[0],))
+                idx = np.where(mask < ol.get_min())
+                mask[idx] = 0
+                edge_list = get_n_ring_neighbor(self.surf.get_faces(), mask=mask)
+            else:
+                edge_list = get_n_ring_neighbor(self.surf.get_faces())
+
+            for cut_vtx in self.cut_line:
+                edge_list[cut_vtx] = set()
             rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
+
         else:
             raise RuntimeError("The region growing type must be arg, srg and crg at present!")
 
@@ -306,5 +349,5 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def close(self):
 
-        self._surf_view.surfRG_flag = False
+        self._surf_view.seed_flag = False
         QtGui.QDialog.close(self)
