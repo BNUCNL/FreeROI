@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
 from ..algorithm.tools import get_curr_hemi, get_curr_overlay
+from ..algorithm.meshtool import get_n_ring_neighbor
 
 
 class SurfaceRGDialog(QtGui.QDialog):
 
-    rg_types = ['srg', 'arg']
+    rg_types = ['srg', 'arg', 'crg']
 
     def __init__(self, model, tree_view_control, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
@@ -94,6 +95,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.seeds_edit = seeds_edit
         self.rg_type_combo = rg_type_combo
         self.group_idx_combo = group_idx_combo
+        self.scalar_button = scalar_button
 
         self.hemi = self._get_curr_hemi()
         # FIXME 'white' should be replaced with surf_type in the future
@@ -135,6 +137,12 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _set_rg_type(self):
         self.rg_type = str(self.rg_type_combo.currentText())
+        if self.rg_type == 'crg':
+            self.stop_edit.setEnabled(False)
+            self.scalar_button.setEnabled(False)
+        else:
+            self.stop_edit.setEnabled(True)
+            self.scalar_button.setEnabled(True)
 
     def _set_seeds_edit_text(self):
 
@@ -200,7 +208,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             else:
                 self.X = overlay.get_data()
 
-        rg = RegionGrow(self.seeds_id, self.stop_criteria)
+        rg = RegionGrow()
         if self.rg_type == 'arg':
             # ------------------select a assessment function-----------------
             assess_type, ok = QtGui.QInputDialog.getItem(
@@ -215,8 +223,8 @@ class SurfaceRGDialog(QtGui.QDialog):
                 rg.set_assessment(assess_type)
                 self._surf_view.surfRG_flag = False
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-                rg_regions, evolved_regions, region_assessments =\
-                    rg.arg_parcel(whole_results=True)
+                rg_result, evolved_regions, region_assessments =\
+                    rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
                 # plot diagrams
                 for r_idx, r in enumerate(evolved_regions):
@@ -236,18 +244,22 @@ class SurfaceRGDialog(QtGui.QDialog):
         elif self.rg_type == 'srg':
             self._surf_view.surfRG_flag = False
             rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-            rg_regions = rg.srg_parcel()
+            rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria)
+        elif self.rg_type == 'crg':
+            if self.mask is None:
+                ol = self._get_curr_overlay()
+                data = ol.get_data()
+                data = np.mean(data, 1)
+                self.mask = data.reshape((data.shape[0],))
+                idx = np.where(self.mask < ol.get_min())
+                self.mask[idx] = 0
+            edge_list = get_n_ring_neighbor(self.surf.get_faces(), mask=self.mask)
+            rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
         else:
-            raise RuntimeError("The region growing type must be arg or srg at present!")
+            raise RuntimeError("The region growing type must be arg, srg and crg at present!")
 
+        self._show_result(rg_result)
         self.close()
-
-        # add RG's result as tree items
-        for r in rg_regions:
-            labeled_vertices = r.get_vertices()
-            data = np.zeros((self.hemi_vtx_number,), np.int)
-            data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data)
 
     def _get_curr_hemi(self):
 
@@ -276,6 +288,21 @@ class SurfaceRGDialog(QtGui.QDialog):
                     QtGui.QMessageBox.Yes
             )
         return ol
+
+    def _show_result(self, rg_result):
+        """
+        Add RG's result as tree items
+        """
+        for r in rg_result:
+            if self.rg_type == 'srg' or self.rg_type == 'arg':
+                labeled_vertices = r.get_vertices()
+            elif self.rg_type == 'crg':
+                labeled_vertices = list(r)
+            else:
+                raise RuntimeError("The region growing type must be arg, srg and crg at present!")
+            data = np.zeros((self.hemi_vtx_number,), np.int)
+            data[labeled_vertices] = 1
+            self.model.add_item(self.tree_view_control.currentIndex(), data)
 
     def close(self):
 
