@@ -10,7 +10,7 @@ from mayavi import mlab
 import numpy as np
 
 from treemodel import TreeModel
-from ..algorithm.tools import toggle_color
+from ..algorithm.tools import toggle_color, bfs
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -63,7 +63,6 @@ class SurfaceView(QWidget):
 
     # Signals
     seed_picked = QtCore.pyqtSignal()
-    scribing = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(SurfaceView, self).__init__(parent)
@@ -88,11 +87,13 @@ class SurfaceView(QWidget):
         self.faces = None
         self.rgba_lut = None
         self.gcf_flag = True
-        self.surfRG_flag = False
+        self.seed_flag = False
         self.scribing_flag = False
         self.edge_list = None
         self.point_id = None
         self.old_hemi = None
+        self.plot_start = None
+        self.path = []
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -185,8 +186,9 @@ class SurfaceView(QWidget):
             if self.scribing_flag:  # plot line
                 if self.edge_list is None:
                     self.create_edge_list()
-                self.scribing.emit()
-            elif self.surfRG_flag:  # get seed
+                self._plot_line()
+
+            if self.seed_flag:  # get seed
                 self.seed_picked.emit()
 
             # plot point
@@ -198,6 +200,18 @@ class SurfaceView(QWidget):
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
+
+    def _plot_line(self):
+        if self.plot_start is None:
+            self.plot_start = self.point_id
+            self.path.append(self.plot_start)
+        else:
+            new_path = bfs(self.edge_list, self.plot_start, self.point_id)
+            new_path.pop(0)
+            self.path.extend(new_path)
+            self.plot_start = self.point_id
+            for v_id in self.path:
+                toggle_color(self.tmp_lut[v_id])
 
     # user-oriented methods
     # -----------------------------------------------------------------
