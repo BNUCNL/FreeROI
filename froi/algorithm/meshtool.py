@@ -532,6 +532,50 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False, mask=None):
         return n_ring_neighbors
 
 
+def get_vtx_neighbor(vtx, faces, n=1, ordinal=False, mask=None):
+    """
+    Get one vertex's n-ring neighbor vertices
+
+    Parameters
+    ----------
+    vtx : integer
+        a vertex's id
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    n : integer
+        specify which ring should be got
+    ordinal : bool
+        True: get the n_th ring neighbor
+        False: get the n ring neighbor
+    mask : 1-D numpy array
+        specify a area where the ROI is in.
+
+    Return
+    ------
+    neighbors : set
+        contain neighbors of the vtx
+    """
+    n_ring_neighbors = _get_vtx_neighbor(vtx, faces, mask)
+    n_th_ring_neighbors = n_ring_neighbors.copy()
+
+    for i in range(n-1):
+
+        neighbors_tmp = set()
+        for neighbor in n_th_ring_neighbors:
+            neighbors_tmp.update(_get_vtx_neighbor(neighbor, faces, mask))
+
+        if i == 0:
+            neighbors_tmp.discard(vtx)
+
+        n_th_ring_neighbors = neighbors_tmp.difference(n_ring_neighbors)
+        n_ring_neighbors.update(n_th_ring_neighbors)
+
+    if ordinal:
+        return n_th_ring_neighbors
+    else:
+        return n_ring_neighbors
+
+
 def _get_vtx_neighbor(vtx, faces, mask=None):
     """
     Get one vertex's 1-ring neighbor vertices

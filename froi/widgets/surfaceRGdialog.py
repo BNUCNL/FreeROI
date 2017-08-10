@@ -78,16 +78,16 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         # layout
         grid_layout = QtGui.QGridLayout()
-        grid_layout.addWidget(group_idx_label, 0, 0)
-        grid_layout.addWidget(self._group_idx_combo, 0, 1)
-        grid_layout.addWidget(seeds_label, 1, 0)
-        grid_layout.addWidget(self._seeds_edit, 1, 1)
-        grid_layout.addWidget(self._stop_label, 2, 0)
-        grid_layout.addWidget(self._stop_edit, 2, 1)
-        grid_layout.addWidget(ring_label, 3, 0)
-        grid_layout.addWidget(self._ring_spin, 3, 1)
-        grid_layout.addWidget(rg_type_label, 4, 0)
-        grid_layout.addWidget(self._rg_type_combo, 4, 1)
+        grid_layout.addWidget(rg_type_label, 0, 0)
+        grid_layout.addWidget(self._rg_type_combo, 0, 1)
+        grid_layout.addWidget(group_idx_label, 1, 0)
+        grid_layout.addWidget(self._group_idx_combo, 1, 1)
+        grid_layout.addWidget(seeds_label, 2, 0)
+        grid_layout.addWidget(self._seeds_edit, 2, 1)
+        grid_layout.addWidget(self._stop_label, 3, 0)
+        grid_layout.addWidget(self._stop_edit, 3, 1)
+        grid_layout.addWidget(ring_label, 4, 0)
+        grid_layout.addWidget(self._ring_spin, 4, 1)
         grid_layout.addWidget(self._scalar_button, 5, 0)
         grid_layout.addWidget(self._mask_button, 5, 1)
         grid_layout.addWidget(self._cutoff_button1, 6, 0)
@@ -290,9 +290,9 @@ class SurfaceRGDialog(QtGui.QDialog):
                 mask = data.reshape((data.shape[0],))
                 idx = np.where(mask < ol.get_min())
                 mask[idx] = 0
-                edge_list = get_n_ring_neighbor(self.surf.get_faces(), mask=mask)
+                edge_list = get_n_ring_neighbor(self.surf.get_faces(), n=self.n_ring, mask=mask)
             else:
-                edge_list = get_n_ring_neighbor(self.surf.get_faces())
+                edge_list = get_n_ring_neighbor(self.surf.get_faces(), n=self.n_ring)
 
             for cut_vtx in self.cut_line:
                 edge_list[cut_vtx] = set()
