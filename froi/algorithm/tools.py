@@ -138,7 +138,7 @@ def surface_plot(edge_list, start, end, coords):
 
 
 # ------------common graph theory tools------------
-def bfs(edge_list, start, end):
+def bfs(edge_list, start, end, deep_limit=np.inf):
     """
     Return a one of the shortest paths between start and end in a graph.
     The shortest path means a route that goes through the fewest vertices.
@@ -155,13 +155,17 @@ def bfs(edge_list, start, end):
         path's start vertex's id
     end : integer
         path's end vertex's id
+    deep_limit : integer
+        Limit the search depth to keep off too much computation.
+        The deepest depth is specified by deep_limit.
+        If the search depth reach the limitation without finding the end vertex, it returns False.
 
     Returns
     -------
     List
         one of the shortest paths
-    False : bool
-        There is no path between start and end
+        If the list is empty, it means we can't find a path between
+        the start and end vertices within the limit of deep_limit.
     """
 
     if start == end:
@@ -174,6 +178,8 @@ def bfs(edge_list, start, end):
     while path_queue:
 
         tmp_path = path_queue.pop(0)
+        if len(tmp_path) > deep_limit:
+            return []
         last_node = tmp_path[-1]
 
         for link_node in edge_list[last_node]:
@@ -191,4 +197,4 @@ def bfs(edge_list, start, end):
                 # ready for deeper search
                 path_queue.append(tmp_path + [link_node])
 
-    return False
+    return []

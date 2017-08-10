@@ -206,10 +206,21 @@ class SurfaceView(QWidget):
             self.plot_start = self.point_id
             self.path.append(self.plot_start)
         else:
-            new_path = bfs(self.edge_list, self.plot_start, self.point_id)
-            new_path.pop(0)
-            self.path.extend(new_path)
-            self.plot_start = self.point_id
+            new_path = bfs(self.edge_list, self.plot_start, self.point_id,
+                           deep_limit=50)
+            if new_path:
+                self.plot_start = self.point_id
+                new_path.pop(0)
+                self.path.extend(new_path)
+            else:
+                QMessageBox.warning(
+                    self,
+                    'Warning',
+                    'There is no line linking the start and end vertices.\n'
+                    'Or the line is too long.\nPlease select the end vertex again.',
+                    QMessageBox.Yes
+                )
+
             for v_id in self.path:
                 toggle_color(self.tmp_lut[v_id])
 
