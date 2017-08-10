@@ -758,7 +758,13 @@ class ScalarData(object):
 
         """
         self.name = name
-        self.data = data
+        if data.ndim == 1:
+            self.data = data.reshape((data.shape[0], 1))
+        elif data.ndim == 2:
+            self.data = data
+        else:
+            raise ValueError("The data stored by ScalarData must be 2D")
+
         if min and isinstance(min, float):
             self.min = min
         else:
@@ -834,6 +840,65 @@ class ScalarData(object):
         else:
             raise ValueError("Value must be an integer between 0 and 1.")
 
+    def save2nifti(self, file_path):
+        """Save to a nifti file."""
+        # Define nifti1 datatype codes
+        NIFTI_TYPE_UINT8 = 2  # unsigned char
+        NIFTI_TYPE_INT16 = 4  # signed short
+        NIFTI_TYPE_INT32 = 8  # signed int.
+        NIFTI_TYPE_FLOAT32 = 16  # 32 bit float.
+        NIFTI_TYPE_COMPLEX64 = 32  # 64 bit complex = 2 32 bit floats
+        NIFTI_TYPE_FLOAT64 = 64  # 64 bit float = double.
+        NIFTI_TYPE_RGB24 = 128  # 3 8 bit bytes.
+        NIFTI_TYPE_INT8 = 256  # signed char.
+        NIFTI_TYPE_UINT16 = 512  # unsigned short.
+        NIFTI_TYPE_UINT32 = 768  # unsigned int.
+        NIFTI_TYPE_INT64 = 1024  # signed long long.
+        NIFTI_TYPE_UINT64 = 1280  # unsigned long long.
+        NIFTI_TYPE_FLOAT128 = 1536  # 128 bit float = long double.
+        NIFTI_TYPE_COMPLEX128 = 1792  # 128 bit complex = 2 64 bit floats.
+        NIFTI_TYPE_COMPLEX256 = 2048  # 256 bit complex = 2 128 bit floats
+        NIFTI_TYPE_RGBA32 = 2304  # 4 8 bit bytes.
+
+        # Detect the data type of the input data.
+        data_type = {
+            np.uint8: NIFTI_TYPE_UINT8,
+            np.uint16: NIFTI_TYPE_UINT16,
+            np.uint32: NIFTI_TYPE_UINT32,
+            np.float32: NIFTI_TYPE_FLOAT32,
+            np.int16: NIFTI_TYPE_INT16,
+            np.int32: NIFTI_TYPE_INT32,
+            np.int8: NIFTI_TYPE_INT8
+            }
+        if sys.maxint > 2 ** 32:  # The platform is 64 bit
+            data_type[np.float128] = NIFTI_TYPE_FLOAT128
+            data_type[np.float64] = NIFTI_TYPE_FLOAT64
+            data_type[np.int64] = NIFTI_TYPE_INT64
+            data_type[np.uint64] = NIFTI_TYPE_UINT64
+            data_type[np.complex64] = NIFTI_TYPE_COMPLEX64
+            data_type[np.complex128] = NIFTI_TYPE_COMPLEX128
+            data_type[np.complex256] = NIFTI_TYPE_COMPLEX256
+
+        header = nib.Nifti1Header()
+        if self.data.shape[1] == 1:
+            new_shape = (self.data.shape[0], 1, 1)
+        else:
+            new_shape = (self.data.shape[0], 1, 1, self.data.shape[1])
+        data = self.data.reshape(new_shape)
+
+        if data.dtype.type in data_type:
+            header['datatype'] = data_type[data.dtype.type]
+        header['cal_max'] = data.max()
+        header['cal_min'] = data.min()
+        image = nib.Nifti1Image(data, None, header)
+        nib.nifti1.save(image, file_path)
+
+    def save2label(self, file_path):
+        X = np.where(self.data[:, 0] != 0)[0]
+        header = str("the number of vertex: " + str(len(X)))
+        np.savetxt(file_path, X, fmt='%d',
+                   header=header, comments="# ascii, label vertexes\n")
+
 
 class Hemisphere(object):
     """Hemisphere: container for surface data and scalar data."""
@@ -854,12 +919,11 @@ class Hemisphere(object):
         self.surf = {}
         self.bin_curv = None
         self.overlay_list = []
-        self.overlay_idx = []
         self.alpha = 1.0
         self.colormap = "gray"
         self.visible = True
 
-        self.add_surfs(surf_path, surf_type)
+        self.add_surfs(surf_path, surf_type, offset=1.0)
         self.name = self.surf[surf_type].name
 
     def _add_surface(self, surf_path, surf_type, offset=None):
@@ -895,30 +959,31 @@ class Hemisphere(object):
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, fpath, surf_type):
+    def load_overlay(self, source, surf_type):
         """Load scalar data as an overlay."""
-        fname = os.path.basename(fpath)
-        data = read_data(fpath, self.surf[surf_type].get_vertices_num())
-        self.overlay_list.append(ScalarData(fname, data))
-        self.overlay_idx.append(len(self.overlay_idx))
+        if isinstance(source, np.ndarray):
+            name = 'new_overlay'
+            self.overlay_list.append(ScalarData(name, source))
+        else:
+            name = os.path.basename(source).split('.')[0]
+            data = read_data(source, self.surf[surf_type].get_vertices_num())
+            self.overlay_list.append(ScalarData(name, data))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
         if not self.is_top_layer(idx):
-            current_pos = self.overlay_idx.index(idx)
-            self.overlay_idx[current_pos], self.overlay_idx[current_pos+1] = \
-            self.overlay_idx[current_pos+1], self.overlay_idx[current_pos]
+            self.overlay_list[idx], self.overlay_list[idx+1] = \
+                self.overlay_list[idx+1], self.overlay_list[idx]
 
     def overlay_down(self, idx):
         """Move the `idx` overlay layer down."""
         if not self.is_bottom_layer(idx):
-            current_pos = self.overlay_idx.index(idx)
-            self.overlay_idx[current_pos], self.overlay_idx[current_pos-1] = \
-            self.overlay_idx[current_pos-1], self.overlay_idx[current_pos]
+            self.overlay_list[idx], self.overlay_list[idx-1] = \
+                self.overlay_list[idx-1], self.overlay_list[idx]
 
     def is_top_layer(self, idx):
-        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
-            if self.overlay_idx[-1] == idx:
+        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
+            if len(self.overlay_list)-1 == idx:
                 return True
             else:
                 return False
@@ -926,8 +991,8 @@ class Hemisphere(object):
             print 'Invalid input!'
 
     def is_bottom_layer(self, idx):
-        if isinstance(idx, int) and idx >= 0 and idx < len(self.overlay_idx):
-            if self.overlay_idx[0] == idx:
+        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
+            if idx == 0:
                 return True
             else:
                 return False
@@ -978,20 +1043,20 @@ class Hemisphere(object):
         """
 
         data = ol.get_data()
-        if data.ndim == 2:
-            data = np.mean(data, 1)
+        data = np.mean(data, 1)
+        data = data.reshape((data.shape[0],))
 
         return aq.array2qrgba(data, ol.get_alpha()*255, ol.get_colormap(),
                               (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
 
     def get_composite_rgb(self):
 
-        start_render_index = self._get_start_render_index()
+        # start_render_index = self._get_start_render_index()
+        start_render_index = 0
 
         # get rgba arrays according to each overlay
         rgba_list = []
-        for idx in self.overlay_idx[start_render_index:]:
-            ol = self.overlay_list[idx]
+        for ol in self.overlay_list[start_render_index:]:
             if ol.is_visible():
                 rgba_list.append(self.get_rgba(ol))
 
@@ -1004,71 +1069,6 @@ class Hemisphere(object):
 
         return aq.qcomposition(rgba_list)
 
-    def _read_scalar_data(self, filepath):
-        """Load in scalar data from an image.
-
-        Parameters
-        ----------
-        filepath : str
-            path to scalar data file
-
-        Returns
-        -------
-        scalar_data : numpy array
-            flat numpy array of scalar data
-        """
-        try:
-            scalar_data = nib.load(filepath).get_data()
-            shape = scalar_data.shape
-            if len(shape) == 4:
-                scalar_data_list = []
-                for index in range(shape[3]):
-                    scalar_data_list.append(np.ravel(scalar_data[:, :, :, index], order='F'))
-            else:
-                scalar_data_list = [np.ravel(scalar_data, order="F")]
-            return scalar_data_list
-
-        except ImageFileError:
-            ext = os.path.splitext(filepath)[1]
-            if ext == ".mgz":
-                openfile = gzip.open
-            elif ext == ".mgh":
-                openfile = open
-            else:
-                raise ValueError("Scalar file format must be readable "
-                                "by Nibabel or .mg{hz} format")
-
-        fobj = openfile(filepath, "rb")
-        # We have to use np.fromstring here as gzip fileobjects don't work
-        # with np.fromfile; same goes for try/finally instead of with statement
-        try:
-            v = np.fromstring(fobj.read(4), ">i4")[0]
-            if v != 1:
-                # I don't actually know what versions this code will read, so to be
-                # on the safe side, let's only let version 1 in for now.
-                # Scalar data might also be in curv format (e.g. lh.thickness)
-                # in which case the first item in the file is a magic number.
-                raise NotImplementedError("Scalar data file version not supported")
-            ndim1 = np.fromstring(fobj.read(4), ">i4")[0]
-            ndim2 = np.fromstring(fobj.read(4), ">i4")[0]
-            ndim3 = np.fromstring(fobj.read(4), ">i4")[0]
-            nframes = np.fromstring(fobj.read(4), ">i4")[0]
-            datatype = np.fromstring(fobj.read(4), ">i4")[0]
-            # Set the number of bytes per voxel and numpy data type according to
-            # FS codes
-            databytes, typecode = {0: (1, ">i1"), 1: (4, ">i4"), 3: (4, ">f4"),
-                                   4: (2, ">h")}[datatype]
-            # Ignore the rest of the header here, just seek to the data
-            fobj.seek(284)
-            nbytes = ndim1 * ndim2 * ndim3 * nframes * databytes
-            # Read in all the data, keep it in flat representation
-            # (is this ever a problem?)
-            scalar_data = np.fromstring(fobj.read(nbytes), typecode)
-        finally:
-            fobj.close()
-
-        return scalar_data
-
     def _get_start_render_index(self):
         """
         If an overlay's opacity is 1.0(i.e. completely opaque) and need to cover a whole
@@ -1078,11 +1078,11 @@ class Hemisphere(object):
             The index that the render starts at.
         """
 
-        for index in self.overlay_idx[-1::-1]:
-            scalar = self.overlay_list[index]
-            if "label" not in scalar.get_name() and scalar.get_alpha() == 1. and scalar.is_visible()\
-                    and scalar.get_min() <= np.min(scalar.get_data()):
-                return self.overlay_idx.index(index)
+        for ol in self.overlay_list[-1::-1]:
+            # FIXME There may be even no 'label' in a label's name, so we need use other method to recognize a label.
+            if "label" not in ol.get_name() and ol.get_alpha() == 1. and ol.is_visible()\
+                    and ol.get_min() <= np.min(ol.get_data()):
+                return self.overlay_list.index(ol)
 
         # 0 means that the render will start with the bottom overlay.
         return 0

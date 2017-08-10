@@ -7,7 +7,6 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import cdist, pdist
 from scipy.stats import pearsonr
-from networkx import Graph
 
 
 def _fast_cross_3d(x, y):
@@ -462,16 +461,24 @@ def ffmpeg(dst, frame_path, framerate=24, codec='mpeg4', bitrate='1M'):
         raise RuntimeError(err)
 
 
-def get_n_ring_neighbor(faces, n=1, ordinal=False):
+def get_n_ring_neighbor(faces, n=1, ordinal=False, mask=None):
     """
-    get n ring nerghbor from faces array
-    :param faces: the array of shape [n_triangles, 3]
-    :param n: integer
+    get n ring neighbor from faces array
+
+    Parameters
+    ----------
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    n : integer
         specify which ring should be got
-    :param ordinal: bool
+    ordinal : bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
-    :return: list
+    mask : 1-D numpy array
+        specify a area where the ROI is in.
+    Returns
+    -------
+    lists
         each index of the list represents a vertex number
         each element is a set which includes neighbors of corresponding vertex
     """
@@ -480,8 +487,21 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
     # find 1_ring neighbors' id for each vertex
     coo_w = mesh_edges(faces)
     csr_w = coo_w.tocsr()
-    n_ring_neighbors = [csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]] for i in range(n_vtx)]
-    n_ring_neighbors = [set(i) for i in n_ring_neighbors]
+    if mask is None:
+        vtx_iter = range(n_vtx)
+        n_ring_neighbors = [csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]] for i in vtx_iter]
+        n_ring_neighbors = [set(i) for i in n_ring_neighbors]
+    else:
+        mask_id = np.nonzero(mask)[0]
+        vtx_iter = mask_id
+        n_ring_neighbors = [set(csr_w.indices[csr_w.indptr[i]:csr_w.indptr[i+1]])
+                            if mask[i] != 0 else set() for i in range(n_vtx)]
+        for vtx in vtx_iter:
+            neighbor_set = n_ring_neighbors[vtx]
+            neighbor_iter = list(neighbor_set)
+            for i in neighbor_iter:
+                if mask[i] == 0:
+                    neighbor_set.discard(i)
 
     if n > 1:
         # find n_ring neighbors
@@ -495,10 +515,10 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
                     neighbor_set.update(one_ring_neighbors[v_id])
 
             if i == 0:
-                for v_id in range(n_vtx):
+                for v_id in vtx_iter:
                     n_th_ring_neighbors[v_id].remove(v_id)
 
-            for v_id in range(n_vtx):
+            for v_id in vtx_iter:
                 n_th_ring_neighbors[v_id] -= n_ring_neighbors[v_id]  # get the (i+2)_th ring neighbors
                 n_ring_neighbors[v_id] |= n_th_ring_neighbors[v_id]  # get the (i+2) ring neighbors
     elif n == 1:
@@ -510,6 +530,36 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False):
         return n_th_ring_neighbors
     else:
         return n_ring_neighbors
+
+
+def _get_vtx_neighbor(vtx, faces, mask=None):
+    """
+    Get one vertex's 1-ring neighbor vertices
+
+    Parameters
+    ----------
+    vtx : integer
+        a vertex's id
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    mask : 1-D numpy array
+        specify a area where the ROI is in.
+
+    Return
+    ------
+    neighbors : set
+        contain neighbors of the vtx
+    """
+    row_indices, _ = np.where(faces == vtx)
+    neighbors = set(np.unique(faces[row_indices]))
+    neighbors.discard(vtx)
+    if mask is not None:
+        neighbor_iter = list(neighbors)
+        for i in neighbor_iter:
+            if mask[i] == 0:
+                neighbors.discard(i)
+
+    return neighbors
 
 
 def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
