@@ -19,9 +19,16 @@ for name in API_NAMES:
     sip.setapi(name, API_VERSION)
 
 from PyQt4.QtGui import QApplication
+from PyQt4.QtCore import QModelIndex
 
 from froi import utils as froi_utils
 from froi.main import BpMainWindow
+
+
+def _check_arg_len(arg, length):
+    if len(arg) != length:
+        print 'Input error, please check it out.'
+        sys.exit()
 
 
 def main():
@@ -38,39 +45,39 @@ def main():
 
     parser = argparse.ArgumentParser(description='FreeROI GUI',
                                      prog='freeroi',
-                                     usage='%(prog)s [-img Nifti-file '
+                                     usage='%(prog)s [-data data-file '
                                            '-lt low-threshold-value '
                                            '-ht high-threshold-value '
-                                           '-c colormap] [-img ...] '
+                                           '-c colormap] [-data ...] '
                                            '[-n new_volume_name] '
                                            '[-label label-configuration] '
                                            '[-h]\n'
                                            'Attention: -n parameter could not '
                                            'be used alone')
-    parser.add_argument('-img',
-                        dest='img_list',
-                        metavar='Nifti-file',
+    parser.add_argument('-data',
+                        dest='data_list',
+                        metavar='structure or function data',
                         required=False,
                         action='append',
-                        help='specify a nifti file you want to see')
+                        help='specify data you want to see')
     parser.add_argument('-lt',
                         dest='low_thresh',
                         metavar='low-threshold-value',
                         required=False,
                         type=float,
                         action='append',
-                        help='Low threshold value when image display')
+                        help='Low threshold value when visualize data')
     parser.add_argument('-ht',
                         dest='high_thresh',
                         metavar='high-threshold-value',
                         required=False,
                         type=float,
                         action='append',
-                        help='High threshold value when image display')
+                        help='High threshold value when visualize data')
     parser.add_argument('-c',
                         dest='colormap',
                         metavar='colormap',
-                        choices=['gray', 
+                        choices=['gray',
                                  'red2yellow',
                                  'blue2cyanblue',
                                  'red',
@@ -79,20 +86,26 @@ def main():
                                  'rainbow'] + config_file,
                         required=False,
                         action='append',
-                        help='Specify the colormap the image would display in')
+                        help='Specify the colormap the data would display in')
     parser.add_argument('-n',
-                        dest='new_vol_names',
-                        metavar='new_volume_name',
+                        dest='new_names',
+                        metavar='new_items_name',
                         required=False,
                         action='append',
-                        help='Specify a new volume name')
+                        help="Specify new items' name")
     parser.add_argument('-label',
                         dest='label_config',
                         metavar='reference_label_configuration',
                         choices=config_file,
                         required=False,
                         help='Specify a label configuration name')
-    
+    parser.add_argument('-type',
+                        dest='type',
+                        metavar='data type',
+                        choices=['surface', 'volume'],
+                        required=False,
+                        help='Specify data type')
+
     args = parser.parse_args()
 
     # Start GUI
@@ -104,15 +117,32 @@ def main():
     win.show()
 
     # add images
-    if not args.img_list is None:
-        if len(args.img_list) != len(args.low_thresh) or \
-           len(args.img_list) != len(args.high_thresh) or \
-           len(args.img_list) != len(args.colormap):
-               print 'Input error, please check it out.'
-               sys.exit()
+    if args.data_list:
+
+        num_data = len(args.data_list)
+        if args.low_thresh:
+            _check_arg_len(args.low_thresh, num_data)
         else:
+            args.low_thresh = [None] * num_data
+        if args.high_thresh:
+            _check_arg_len(args.high_thresh, num_data)
+        else:
+            args.high_thresh = [None] * num_data
+        if args.colormap:
+            _check_arg_len(args.colormap, num_data)
+        else:
+            args.colormap = ['gray'] * num_data
+
+        # force users to specify data type
+        if not args.type:
+            while True:
+                args.type = raw_input("Which type dose the function data belong to? (surface or volume):")
+                if args.type in ('surface', 'volume'):
+                    break
+
+        if args.type == 'volume':
             try:
-                win._add_img(args.img_list[0], 
+                win._add_img(args.data_list[0],
                              view_min=args.low_thresh[0],
                              view_max=args.high_thresh[0],
                              colormap=args.colormap[0])
@@ -121,30 +151,49 @@ def main():
             except:
                 print 'Load first image error!'
                 sys.exit()
-            for i in range(1,len(args.img_list)):
+            for i, data in enumerate(args.data_list[1:], 1):
                 colormap = args.colormap[i]
-                if colormap not in ['gray', 'red2yellow', 'blue2cyanblue', 
+                if colormap not in ['gray', 'red2yellow', 'blue2cyanblue',
                                     'red', 'green', 'blue', 'rainbow']:
-                    colormap = \
-                    win._label_config_center.get_label_config_by_name(colormap)
+                    colormap = win._label_config_center.get_label_config_by_name(colormap)
                 try:
-                    win._add_img(args.img_list[i], view_min=args.low_thresh[i],
-                                 view_max=args.high_thresh[i], 
+                    win._add_img(data,
+                                 view_min=args.low_thresh[i],
+                                 view_max=args.high_thresh[i],
                                  colormap=colormap)
                 except:
-                    print 'Load image ' + args.img_list[i] + ' error!'
+                    print 'Load image ' + data + ' error!'
                     raise
-                    sys.exit()
-            if args.new_vol_names:
-                for i in range(len(args.new_vol_names)):
+            if args.new_names:
+                for new_name in args.new_names:
                     try:
-                        win._new_image(data=None, name=args.new_vol_names[i],
+                        win._new_image(data=None, name=new_name,
                                        colormap='gray')
                     except:
-                        print 'Could not create volume ' + args.new_vol_names[i]
+                        print 'Could not create volume ' + new_name
                         raise
-                        sys.exit()
+        else:
+            try:
+                win._add_surface_img(args.data_list[0], QModelIndex())
+            except:
+                print 'Load surface failed!'
+                raise
+
+            index = win.surface_model.index(0, 0, QModelIndex())
+            for i, data in enumerate(args.data_list[1:], 1):
+                try:
+                    win._add_surface_img(source=data, index=index,
+                                         vmin=args.low_thresh[i],
+                                         vmax=args.high_thresh[i],
+                                         colormap=args.colormap[i])
+                except:
+                    print 'Load {} failed!'.format(data)
+                    raise
+            if args.new_names:
+                print 'can not create new blank overlay for surface data at present!'
+                sys.exit()
+
     sys.exit(app.exec_())
-            
+
 if __name__ == '__main__':
     main()
