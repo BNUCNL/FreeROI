@@ -752,7 +752,7 @@ class ScalarData(object):
     A container for thickness, curv, sig, and label dataset.
 
     """
-    def __init__(self, name, data, min=None, max=None, colormap='red2yellow'):
+    def __init__(self, name, data, vmin=None, vmax=None, colormap=None):
         """Initialization.
         TODO: colormap configs should be added to the function.
 
@@ -765,17 +765,20 @@ class ScalarData(object):
         else:
             raise ValueError("The data stored by ScalarData must be 2D")
 
-        if min and isinstance(min, float):
-            self.min = min
+        if vmin and isinstance(vmin, float):
+            self.vmin = vmin
         else:
-            self.min = np.min(data)
-        if max and isinstance(max, float):
-            self.max = max
+            self.vmin = np.min(data)
+        if vmax and isinstance(vmax, float):
+            self.vmax = vmax
         else:
-            self.max = np.max(data)
+            self.vmax = np.max(data)
+        if colormap is None:
+            self.colormap = 'red2yellow'
+        else:
+            self.colormap = colormap
 
         self.visible = True
-        self.colormap = colormap
         self.alpha = 1.0
         self.colorbar = True
 
@@ -786,10 +789,10 @@ class ScalarData(object):
         return self.name
     
     def get_min(self):
-        return self.min
+        return self.vmin
 
     def get_max(self):
-        return self.max
+        return self.vmax
 
     def get_colormap(self):
         return self.colormap
@@ -806,17 +809,17 @@ class ScalarData(object):
     def set_name(self, name):
         self.name = name
 
-    def set_min(self, min):
+    def set_min(self, vmin):
         try:
-            self.min = float(min)
+            self.vmin = float(vmin)
         except ValueError:
-            print "min must be a number."
+            print "vmin must be a number."
 
-    def set_max(self, max):
+    def set_max(self, vmax):
         try:
-            self.max = float(max)
+            self.vmax = float(vmax)
         except ValueError:
-            print "max must be a number."
+            print "vmax must be a number."
 
     def set_colormap(self, colormap_name):
         self.colormap = colormap_name
@@ -959,15 +962,17 @@ class Hemisphere(object):
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, source, surf_type):
+    def load_overlay(self, source, surf_type, vmin=None, vmax=None, colormap=None):
         """Load scalar data as an overlay."""
         if isinstance(source, np.ndarray):
             name = 'new_overlay'
-            self.overlay_list.append(ScalarData(name, source))
+            data = source
         else:
             name = os.path.basename(source).split('.')[0]
             data = read_data(source, self.surf[surf_type].get_vertices_num())
-            self.overlay_list.append(ScalarData(name, data))
+        self.overlay_list.append(ScalarData(name, data,
+                                            vmin=vmin, vmax=vmax,
+                                            colormap=colormap))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""

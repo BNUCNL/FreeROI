@@ -770,13 +770,17 @@ class BpMainWindow(QMainWindow):
                 register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
                 register_volume_dialog.exec_()
 
-    def _add_surface_img(self, source, offset=None):
+    def _add_surface_img(self, source, index=None, offset=None,
+                         vmin=None, vmax=None, colormap=None):
         """ Add surface image."""
         # If model is NULL, then re-initialize it.
         if not self.surface_model:
             self.surface_model = TreeModel([])
             self.surface_tree_view = SurfaceTreeView(self.surface_model)
             self.surface_tree_view_control = self.surface_tree_view.get_treeview()
+
+        if index is None:
+            index = self.surface_tree_view_control.currentIndex()
 
         # Save previous opened directory (except `standard` directory)
         file_path = source
@@ -797,7 +801,9 @@ class BpMainWindow(QMainWindow):
                                 'Warning',
                                 'You must choose the brain surface file first!',
                                 QMessageBox.Yes)
-        elif self.surface_model.add_item(self.surface_tree_view_control.currentIndex(), file_path):
+        elif self.surface_model.add_item(index, file_path,
+                                         vmin=vmin, vmax=vmax,
+                                         colormap=colormap):
             # Initial the tabwidget.
             if not self.tabWidget:
                 self._init_tab_widget()

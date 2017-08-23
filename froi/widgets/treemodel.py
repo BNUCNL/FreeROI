@@ -235,7 +235,7 @@ class TreeModel(QAbstractItemModel):
         else:
             return False
 
-    def add_item(self, index, source):
+    def add_item(self, index, source, vmin=None, vmax=None, colormap=None):
         if not index.isValid():
             add_item = Hemisphere(source)
             self.insertRow(index.row(), add_item, index)
@@ -243,16 +243,15 @@ class TreeModel(QAbstractItemModel):
         else:
             parent = index.parent()
             if not parent.isValid():
-                # add_item = Hemisphere(source)
-                item = index.internalPointer()
-                item.load_overlay(source, 'white')  # FIXME 'white' should be replaced with surf_type
-                add_item = None
+                hemi_item = index.internalPointer()
             else:
-                parent_item = parent.internalPointer()
-                parent_item.load_overlay(source, 'white')  # FIXME 'white' should be replaced with surf_type
-                add_item = None
+                hemi_item = parent.internalPointer()
+            hemi_item.load_overlay(source, 'white',
+                                   vmin=vmin, vmax=vmax,
+                                   colormap=colormap)  # FIXME 'white' should be replaced with surf_type
+            add_item = None
             self.insertRow(index.row(), add_item, parent)
-            self.repaint_surface.emit()
+        self.repaint_surface.emit()
         return True
 
     def del_item(self, index):
