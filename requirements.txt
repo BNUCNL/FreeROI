@@ -3,3 +3,4 @@ nose
 numpy
 scikits-image
 scipy
+pyqt==4.10

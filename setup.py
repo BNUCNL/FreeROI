@@ -2,30 +2,50 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import sys
-import os
-from distutils.core import setup, Extension
-
+import os.path
 import numpy
-
+from distutils.core import setup, Extension
 import sipdistutils
-import PyQt4.pyqtconfig
 
 
-config = PyQt4.pyqtconfig.Configuration()
+try:
+    import PyQt4.pyqtconfig
+    pyqtcfg = PyQt4.pyqtconfig.Configuration()
+except ImportError:
+    print 'No module named pyqtconfig found in PyQt4'
+    import PyQt4.QtCore
+    # won't work for SIP v5
+    import sipconfig
+    cfg = sipconfig.Configuration()
+    sip_dir = cfg.default_sip_dir
+    for p in (os.path.join(sip_dir, 'PyQt4'), sip_dir):
+        if os.path.exists(os.path.join(p, 'QtCore', 'QtCoremod.sip')):
+            sip_dir = p
+            break
+    cfg = {
+        'pyqt_version': PyQt4.QtCore.PYQT_VERSION,
+        'pyqt_version_str': PyQt4.QtCore.PYQT_VERSION_STR,
+        'pyqt_sip_flags': PyQt4.QtCore.PYQT_CONFIGURATION['sip_flags'],
+        'pyqt_mod_dir': cfg.default_mod_dir,
+        'pyqt_sip_dir': sip_dir,
+        'pyqt_bin_dir': cfg.default_bin_dir}
+    pyqtcfg = sipconfig.Configuration([cfg])
+
+print("pyqt_version:%06.0x" % pyqtcfg.pyqt_version)
+print("pyqt_version_num:%d" % pyqtcfg.pyqt_version)
+print("pyqt_version_str:%s" % pyqtcfg.pyqt_version_str)
 
 #-- PyQt4 library configuration
-
 # Replace the following with
 #  qt_inc_dir = "path/to/Qt/include"
 #  qt_lib_dir = "path/to/Qt/lib"
-qt_inc_dir = "/Users/sealhuang/miniconda2/include"
-qt_lib_dir = "/Users/sealhuang/miniconda2/lib"
+qt_inc_dir = "/nfs/cell_a/workshop/huanglijie/miniconda2/include"
+qt_lib_dir = "/nfs/cell_a/workshop/huanglijie/miniconda2/lib"
 # when automatically extracted paths don't fit your installation.
 # (Note that you should use a compatible compiler and Qt version
 # as was used for building PyQt.)
-#qt_inc_dir = config.qt_inc_dir
-#qt_lib_dir = config.qt_lib_dir
-
+#qt_inc_dir = pyqtcfg.qt_inc_dir
+#qt_lib_dir = pyqtcfg.qt_lib_dir
 #--
 
 qt_lib_dirs = [qt_lib_dir]
@@ -62,11 +82,31 @@ qimageview.library_dirs.extend(qt_lib_dirs)
 
 class build_ext(sipdistutils.build_ext):
     def _sip_compile(self, sip_bin, source, sbf):
-        import PyQt4.pyqtconfig
-        config = PyQt4.pyqtconfig.Configuration()
+        try:
+            import PyQt4.pyqtconfig
+            pyqtcfg = PyQt4.pyqtconfig.Configuration()
+        except ImportError:
+            print 'No module named pyqtconfig found in PyQt4'
+            import PyQt4.QtCore
+            # won't work for SIP v5
+            import sipconfig
+            cfg = sipconfig.Configuration()
+            sip_dir = cfg.default_sip_dir
+            for p in (os.path.join(sip_dir, 'PyQt4'), sip_dir):
+                if os.path.exists(os.path.join(p, 'QtCore', 'QtCoremod.sip')):
+                    sip_dir = p
+                    break
+            cfg = {
+                'pyqt_version': PyQt4.QtCore.PYQT_VERSION,
+                'pyqt_version_str': PyQt4.QtCore.PYQT_VERSION_STR,
+                'pyqt_sip_flags': PyQt4.QtCore.PYQT_CONFIGURATION['sip_flags'],
+                'pyqt_mod_dir': cfg.default_mod_dir,
+                'pyqt_sip_dir': sip_dir,
+                'pyqt_bin_dir': cfg.default_bin_dir}
+            pyqtcfg = sipconfig.Configuration([cfg])
         self.spawn([sip_bin, '-c', self.build_temp, '-b', sbf] +
-                   config.pyqt_sip_flags.split() +
-                   ['-I', config.pyqt_sip_dir, source])
+                   pyqtcfg.pyqt_sip_flags.split() +
+                   ['-I', pyqtcfg.pyqt_sip_dir, source])
 
 # Read version from local froi/version.py without pulling in
 # froi/__init__.py
