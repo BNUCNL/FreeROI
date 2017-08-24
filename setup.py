@@ -39,13 +39,11 @@ print("pyqt_version_str:%s" % pyqtcfg.pyqt_version_str)
 # Replace the following with
 #  qt_inc_dir = "path/to/Qt/include"
 #  qt_lib_dir = "path/to/Qt/lib"
-qt_inc_dir = "/nfs/cell_a/workshop/huanglijie/miniconda2/include"
-qt_lib_dir = "/nfs/cell_a/workshop/huanglijie/miniconda2/lib"
 # when automatically extracted paths don't fit your installation.
 # (Note that you should use a compatible compiler and Qt version
 # as was used for building PyQt.)
-#qt_inc_dir = pyqtcfg.qt_inc_dir
-#qt_lib_dir = pyqtcfg.qt_lib_dir
+qt_inc_dir = pyqtcfg.qt_inc_dir
+qt_lib_dir = pyqtcfg.qt_lib_dir
 #--
 
 qt_lib_dirs = [qt_lib_dir]
