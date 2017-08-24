@@ -186,7 +186,7 @@ def main():
                         help="specify the structure data's parent directory")
     args = parser.parse_args()
 
-    sess_working_dir = os.getcwd()
+    sess_working_dir = os.path.dirname(__file__)
     freeroi = os.path.join(sess_working_dir, 'freeroi')
 
     while True:

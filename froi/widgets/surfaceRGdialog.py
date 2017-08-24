@@ -30,7 +30,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.rg_type = 'arg'
         self.mask = None
         self.seeds_id = []
-        self.stop_criteria = 500
+        self.stop_criteria = [500]
         self.n_ring = 1
         self.group_idx = 'new'  # specify current seed group's index
         self.cut_line = []  # a list of vertices' id which plot a line
@@ -52,7 +52,7 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         self._stop_label = QtGui.QLabel("stop_criteria:")
         self._stop_edit = QtGui.QLineEdit()
-        self._stop_edit.setText(str(self.stop_criteria))
+        self._stop_edit.setText(str(self.stop_criteria[0]))
 
         ring_label = QtGui.QLabel("n_ring:")
         self._ring_spin = QtGui.QSpinBox()

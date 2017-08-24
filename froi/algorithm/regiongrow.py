@@ -598,7 +598,11 @@ class RegionGrow(object):
                 # update region_size
                 if not evolving_regions[i].neighbors:
                     # If the seed has no neighbor, stop its growing.
-                    region_size[i] = stop_criteria
+                    try:
+                        region_size[i] = stop_criteria[i]
+                    except IndexError:
+                        # It means that the user uses one stop criteria for all evolving regions.
+                        region_size[i] = stop_criteria[0]
 
         return evolving_regions, region_assessments
 
