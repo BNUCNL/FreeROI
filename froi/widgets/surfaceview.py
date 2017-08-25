@@ -178,6 +178,7 @@ class SurfaceView(QWidget):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
         self.point_id = picker_obj.point_id
+        self.surface_model.set_point_id(self.point_id)
 
         if self.point_id != -1:
 
