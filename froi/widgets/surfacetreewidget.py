@@ -229,7 +229,9 @@ class SurfaceTreeView(QWidget):
 
             # min/max value
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
+            self._view_min.setCursorPosition(0)
             self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setCursorPosition(0)
 
             # colormap combo box setting
             cur_colormap = self._model.data(index, Qt.UserRole + 3)
@@ -245,6 +247,7 @@ class SurfaceTreeView(QWidget):
             # cursor clicked information
             self._id_edit.setText(str(self._model.get_point_id()))
             self._value_edit.setText(str(self._model.data(index, Qt.UserRole + 4)))
+            self._value_edit.setCursorPosition(0)
 
             self._tree_view.setFocus()
 
@@ -257,6 +260,7 @@ class SurfaceTreeView(QWidget):
         value = self._view_min.text()
         if value == '':
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
+            self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
 
@@ -266,6 +270,7 @@ class SurfaceTreeView(QWidget):
         value = self._view_max.text()
         if value == '':
             self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)
 

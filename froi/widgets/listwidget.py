@@ -250,8 +250,9 @@ class LayerView(QWidget):
 
             # min/max value
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
-            self._view_max.setText(str(
-                self._model.data(index, Qt.UserRole + 1)))
+            self._view_min.setCursorPosition(0)
+            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setCursorPosition(0)
         
             # colormap combo box setting
             cur_colormap = self._model.data(index, Qt.UserRole + 3)
@@ -288,6 +289,7 @@ class LayerView(QWidget):
         value = self._view_min.text()
         if value == '':
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
+            self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
 
@@ -297,6 +299,7 @@ class LayerView(QWidget):
         value = self._view_max.text()
         if value == '':
             self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)
 
@@ -367,6 +370,7 @@ class LayerView(QWidget):
         self._coord_z.setValue(int(xyz[2]))
         value = self._model.get_current_value([xyz[0], xyz[1], xyz[2]])
         self._coord_value.setText(str(value))
+        self._coord_value.setCursorPosition(0)
         space_xyz = self._model.get_space_pos()
         self._space_x.setText(str(around(space_xyz[0], decimals=2)))
         self._space_y.setText(str(around(space_xyz[1], decimals=2)))
