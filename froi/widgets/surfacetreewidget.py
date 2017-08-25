@@ -129,6 +129,23 @@ class SurfaceTreeView(QWidget):
         scalar_group_box = QGroupBox('Overlay display settings')
         scalar_group_box.setLayout(scalar_layout)
 
+        # initialize widgets for cursor information
+        id_label = QLabel('id:')
+        self._id_edit = QLineEdit()
+        self._id_edit.setReadOnly(True)
+        value_label = QLabel('value:')
+        self._value_edit = QLineEdit()
+        self._value_edit.setReadOnly(True)
+
+        # layout for cursor position information
+        cursor_layout = QHBoxLayout()
+        cursor_layout.addWidget(id_label)
+        cursor_layout.addWidget(self._id_edit)
+        cursor_layout.addWidget(value_label)
+        cursor_layout.addWidget(self._value_edit)
+        cursor_group_box = QGroupBox('Cursor')
+        cursor_group_box.setLayout(cursor_layout)
+
         # -- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
@@ -136,6 +153,7 @@ class SurfaceTreeView(QWidget):
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(surface_group_box)
         self.layout().addWidget(scalar_group_box)
+        self.layout().addWidget(cursor_group_box)
 
         # -- right click context show
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -169,6 +187,9 @@ class SurfaceTreeView(QWidget):
 
         # When layout changed, refresh display.
         self._model.layoutChanged.connect(self._disp_current_para)
+
+        # When vertex id changes, refresh display.
+        self._model.idChanged.connect(self._disp_current_para)
 
         # Config setting actions
         self._view_min.editingFinished.connect(self._set_view_min)
@@ -220,6 +241,10 @@ class SurfaceTreeView(QWidget):
             # alpha slider setting
             current_alpha = self._model.data(index, Qt.UserRole + 2) * 100
             self._visibility.setValue(current_alpha)
+
+            # cursor clicked information
+            self._id_edit.setText(str(self._model.get_point_id()))
+            self._value_edit.setText(str(self._model.data(index, Qt.UserRole + 4)))
 
             self._tree_view.setFocus()
 

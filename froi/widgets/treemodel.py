@@ -13,11 +13,14 @@ class TreeModel(QAbstractItemModel):
     """Definition of class TreeModel."""
     # customized signals
     repaint_surface = pyqtSignal()
+    idChanged = pyqtSignal()
 
     def __init__(self, hemisphere_list, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
         self._data = hemisphere_list
+
+        self._point_id = 0
 
     def get_data(self):
         return self._data
@@ -80,6 +83,11 @@ class TreeModel(QAbstractItemModel):
                 return item.get_alpha()
             elif role == Qt.UserRole + 3:
                 return item.get_colormap()
+            elif role == Qt.UserRole + 4:
+                if self._point_id == -1:
+                    return None
+                if item.bin_curv is not None:
+                    return item.bin_curv[self._point_id]
         else:
             if role == Qt.UserRole:
                 return item.get_min()
@@ -89,6 +97,10 @@ class TreeModel(QAbstractItemModel):
                 return item.get_alpha()
             elif role == Qt.UserRole + 3:
                 return item.get_colormap()
+            elif role == Qt.UserRole + 4:
+                if self._point_id == -1:
+                    return None
+                return item.get_data()[self._point_id][0]
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
            return item.get_name()
@@ -260,4 +272,11 @@ class TreeModel(QAbstractItemModel):
         self.removeRow(index.row(), index.parent())
         self.repaint_surface.emit()
         return True
+
+    def set_point_id(self, point_id):
+        self._point_id = point_id
+        self.idChanged.emit()
+
+    def get_point_id(self):
+        return self._point_id
 
