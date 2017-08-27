@@ -65,11 +65,17 @@ def surf_sess(args, freeroi):
         # ------------------
         if subj_name == 'self':
             struc = os.path.join(struc_par, sess, 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_file:
+                ref = os.path.join(args.ref_par, sess, args.ref_file[0])
         elif subj_name == 'file':
             sess_index = sessid.index(sess)
             struc = os.path.join(struc_par, subjid[sess_index], 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_file:
+                ref = os.path.join(args.ref_par, subjid[sess_index], args.ref_file[0])
         else:
             struc = os.path.join(struc_par, subj_name, 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_file:
+                ref = os.path.join(args.ref_par, subj_name, args.ref_file[0])
         print struc
 
         # get function data
@@ -85,8 +91,14 @@ def surf_sess(args, freeroi):
                               '-ht', ifunc[2],
                               '-c', ifunc[3]]
             if args.ref_file:
-                args_list = ['-data', args.ref_file[0], '-lt',  args.ref_file[1],
-                             '-ht',  args.ref_file[2], '-c',  args.ref_file[3]] + args_list
+                if args.ref_par:
+                    print ref
+                    args_list = ['-data', ref, '-lt',  args.ref_file[1],
+                                 '-ht',  args.ref_file[2], '-c',  args.ref_file[3]] + args_list
+                else:
+                    print args.ref_file[0]
+                    args_list = ['-data', args.ref_file[0], '-lt',  args.ref_file[1],
+                                 '-ht',  args.ref_file[2], '-c',  args.ref_file[3]] + args_list
             subprocess.call(['cd', func_dir], shell=True)
             cmd_list = [freeroi, '-data', struc, '-lt', '0',
                         '-ht', '0', '-c', 'gray'] + args_list
@@ -179,11 +191,17 @@ def main():
                         metavar='output function data name',
                         required=False,
                         help='specify the output function data name')
+    # FIXME parameters(--struc_par and --ref_par mainly used for surface)
     parser.add_argument('--struc_par',
                         dest='struc_par',
                         metavar="structure data's parent directory",
                         required=False,
                         help="specify the structure data's parent directory")
+    parser.add_argument('--ref_par',
+                        dest='ref_par',
+                        metavar="reference data's parent directory",
+                        required=False,
+                        help="specify the reference data's parent directory")
     args = parser.parse_args()
 
     sess_working_dir = os.path.dirname(__file__)

@@ -31,6 +31,17 @@ def _check_arg_len(arg, length):
         sys.exit()
 
 
+def _thresh_float(arg):
+    new_arg = []
+    for thresh in arg:
+        try:
+            tmp = float(thresh)
+        except ValueError:
+            tmp = None
+        new_arg.append(tmp)
+    return new_arg
+
+
 def main():
     """Main entrance."""
     # get data directory
@@ -64,14 +75,12 @@ def main():
                         dest='low_thresh',
                         metavar='low-threshold-value',
                         required=False,
-                        type=float,
                         action='append',
                         help='Low threshold value when visualize data')
     parser.add_argument('-ht',
                         dest='high_thresh',
                         metavar='high-threshold-value',
                         required=False,
-                        type=float,
                         action='append',
                         help='High threshold value when visualize data')
     parser.add_argument('-c',
@@ -122,10 +131,12 @@ def main():
         num_data = len(args.data_list)
         if args.low_thresh:
             _check_arg_len(args.low_thresh, num_data)
+            args.low_thresh = _thresh_float(args.low_thresh)
         else:
             args.low_thresh = [None] * num_data
         if args.high_thresh:
             _check_arg_len(args.high_thresh, num_data)
+            args.high_thresh = _thresh_float(args.high_thresh)
         else:
             args.high_thresh = [None] * num_data
         if args.colormap:
