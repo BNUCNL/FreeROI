@@ -8,6 +8,7 @@ import numpy as _np
 from PyQt4 import QtGui as _qt
 
 from qimageview import qimageview as _qimageview
+from tools import normalize_arr
 
 if _sys.byteorder == 'little':
     _bgra = (0, 1, 2, 3)
@@ -123,26 +124,9 @@ def _normalize255(array, normalize, scale_length=255.0):
     if not normalize:
         return array
 
-    if normalize is True:
-        normalize = array.min(), array.max()
-    elif _np.isscalar(normalize):
-        normalize = (0, normalize)
-    elif isinstance(normalize, tuple) and (normalize[0] == normalize[1]):
-        normalize = array.min(), array.max()
-    nmin, nmax = normalize
-
-    if nmin:
-        array = array - nmin
-
-    if nmax == nmin:
-        # If the original array's elements are same, return zero array.
-        return _np.round(array)
-    else:
-        scale = scale_length / (nmax - nmin)
-        if scale != 1.0:
-            array = array * scale
-        array[_np.logical_and(array > 0, array < 1)] = 1
-        return _np.round(array)
+    new_arr = normalize_arr(array, normalize, scale_length)
+    new_arr[_np.logical_and(new_arr > 0, new_arr < 1)] = 1
+    return _np.round(new_arr)
 
 
 def gray2qimage(array, normalize=False):

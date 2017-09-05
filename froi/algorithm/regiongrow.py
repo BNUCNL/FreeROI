@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist, pdist
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
-from tools import ConstVariable
+from tools import ConstVariable, slide_win_smooth
 
 const = ConstVariable()
 const.ASSESS_STEP = 1
@@ -415,7 +415,7 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False):
+    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=1):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
@@ -430,6 +430,7 @@ class RegionGrow(object):
         whole_results : bool
             If true, then return max_assess_regions, evolved_regions and region_assessments.
             If false, then just return max_assess_region.
+        half_width : integer
 
         Returns
         -------
@@ -448,6 +449,7 @@ class RegionGrow(object):
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
 
+            region_assessments[r_idx] = slide_win_smooth(region_assessments[r_idx], half_width)
             index = np.argmax(region_assessments[r_idx])
             end_index = (index+1)*const.ASSESS_STEP
 

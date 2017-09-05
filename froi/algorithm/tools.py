@@ -24,6 +24,34 @@ def func_timer(func, *args, **kwargs):
     return func_return
 
 
+def normalize_arr(array, normalize, scale_length=255.0):
+    """Normalize the array."""
+
+    # If normalize is in (None, False, 0), return the original array.
+    if not normalize:
+        return array
+
+    if normalize is True:
+        normalize = array.min(), array.max()
+    elif np.isscalar(normalize):
+        normalize = (0, normalize)
+    elif isinstance(normalize, tuple) and (normalize[0] == normalize[1]):
+        normalize = array.min(), array.max()
+    nmin, nmax = normalize
+
+    if nmin:
+        array = array - nmin
+
+    if nmax == nmin:
+        # If the original array's elements are same, return zero array.
+        return array
+    else:
+        scale = float(scale_length) / (nmax - nmin)
+        if scale != 1.0:
+            array = array * scale
+        return array
+
+
 class ConstVariable(object):
 
     class ConstError(TypeError):
@@ -198,3 +226,27 @@ def bfs(edge_list, start, end, deep_limit=np.inf):
                 path_queue.append(tmp_path + [link_node])
 
     return []
+
+
+# ----------------signal processing----------------
+def slide_win_smooth(seq, half_width=0):
+    """
+    smooth a sequence by slide window
+    :param seq: numpy.ndarray or other sequences
+    :param half_width: integer
+        The half width of the slide window
+    :return: seq_smoothed: 1-D numpy.ndarray
+    """
+    if not isinstance(seq, np.ndarray):
+        seq = np.array(seq)
+    if seq.ndim != 1:
+        raise ValueError("The function only supports for 1-D sequence at present!")
+    if 2*half_width >= len(seq):
+        raise RuntimeError("The half_width is too big!")
+
+    seq_smoothed = np.array(seq, dtype=np.float64)
+    for idx in range(half_width, len(seq)-half_width):
+        seq_smoothed[idx] = np.mean(seq[idx-half_width:idx+half_width+1])
+
+    return seq_smoothed
+
