@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
-from ..algorithm.tools import get_curr_hemi, get_curr_overlay
+from ..algorithm.tools import get_curr_hemi, get_curr_overlay, normalize_arr
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -259,7 +259,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 # plot diagrams
                 for r_idx, r in enumerate(evolved_regions):
                     plt.figure(r_idx)
-                    plt.plot(region_assessments[r_idx], 'b*')
+                    plt.plot(normalize_arr(region_assessments[r_idx], True, 1.0), 'b.-')
                     plt.xlabel('contrast step/component')
                     plt.ylabel('assessed value')
                 plt.show()
