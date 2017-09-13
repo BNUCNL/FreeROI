@@ -7,9 +7,33 @@ data. Its goal is to provide a user-friendly interface for neuroimaging
 researchers to visualize and analyze their data, especially in defining region
 of interest (ROI) for ROI analysis.
 
-* Website: <http://bnucnl.github.io>
+# Quickstart
 
-# Installation
+The easiest way to configure your local python environment to support FreeROI is to use the [Anaconda python distribution](https://store.continuum.io/cshop/anaconda/). Download and install anaconda (Python 2.7), then run the following command to install all required and related packages.
+
+```
+$ conda install numpy scipy nose scikits-image pyqt=4
+```
+
+In addition, one non-standard package (nibabel) for reading and writing fMRI data should be installed:
+
+```
+$ pip install nibabel
+```
+
+To install FreeROI from the github repository, call the following commands. For both commands, replace `<your_directory>` with the folder where you would like to store the FreeROI source code.
+
+```
+$ git clone http://github.com/BNUCNL/FreeROI <your_directory>
+$ cd <your_directory>
+$ python setup.py install
+```
+
+This should work on most platform (i.e., Mac or Linux PCs). You can also skip Anaconda and customize your python environment, please see next section.
+
+For Windows users, an exectable version is [available](http://sourceforge.net/projects/freeroi/files/?source=navbar). Unzip the package, and store the directory in a place which path has no Chinese characters. Double click *freeroi.exe* to run the program.
+
+# DIY on your platform
 
 Currently supports the following systems:
 
@@ -18,17 +42,11 @@ Currently supports the following systems:
 * mac osx
 * windows
 
-Notes: For Windows users, an exectable version is
-[available](http://sourceforge.net/projects/freeroi/files/?source=navbar).
-Unzip the package, and store the directory in a place which path has no 
-Chinese characters. Double click *freeroi.exe* to run the program.
-
 ## Dependency
 
 * Python 2.7
 * pip >= 1.4.1
 * Qt4 >= 4.7
-
 
 ## Install Qt4
 
@@ -87,6 +105,10 @@ After download the source code, you only to execte:
 ```
 python setup.py install
 ```
+
+# Documentation
+
+Please find more complete documentation for FreeROI at this [page](http://bnucnl.github.io). The documentation for FreeROI is currently incomplete, but will be imporoved in the coming days, weeks, or months.
 
 # License
 
