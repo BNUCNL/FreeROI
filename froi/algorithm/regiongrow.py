@@ -177,7 +177,7 @@ class Region(object):
         self_signal = np.atleast_2d(self.mean_signal())
         dist = cdist(neighbor_signals, self_signal)
 
-        # suitable for activity value this kind of data
+        # TODO only suitable for activity value this kind of data
         R_and_N_signals = neighbor_signals + self_signal
         normalize_scale = R_and_N_signals - np.min(R_and_N_signals) + 1
         dist = dist / normalize_scale
