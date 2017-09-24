@@ -25,7 +25,12 @@ class SurfaceTreeView(QWidget):
                         'green',
                         'blue',
                         'rainbow',
-                        'single ROI']
+                        'single ROI',
+                        'rocket',
+                        'mako',
+                        'icefire',
+                        'vlag',
+                        'jet']
 
     def __init__(self, model, parent=None):
         """TreeView initialization."""
@@ -82,8 +87,8 @@ class SurfaceTreeView(QWidget):
         self._surface_name = QLineEdit()
         surface_colormap_label = QLabel('Colormap:')
         self._surface_colormap = QComboBox()
-        colormaps = self.builtin_colormap
-        self._surface_colormap.addItems(colormaps)
+        self._surface_colormap.addItems(self.builtin_colormap)
+        self._surface_colormap.setEditable(True)
 
         # layout for Surface settings
         surface_layout = QGridLayout()
@@ -113,8 +118,8 @@ class SurfaceTreeView(QWidget):
         self._view_min = QLineEdit()
         scalar_colormap_label = QLabel('Colormap:')
         self._scalar_colormap = QComboBox()
-        colormaps = self.builtin_colormap
-        self._scalar_colormap.addItems(colormaps)
+        self._scalar_colormap.addItems(self.builtin_colormap)
+        self._scalar_colormap.setEditable(True)
 
         # layout for ScalarData settings
         scalar_layout = QGridLayout()

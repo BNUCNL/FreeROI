@@ -175,8 +175,13 @@ class Region(object):
 
         neighbor_signals = np.array([region.mean_signal() for region in self.neighbors])
         self_signal = np.atleast_2d(self.mean_signal())
-
         dist = cdist(neighbor_signals, self_signal)
+
+        # TODO only suitable for activity value this kind of data
+        R_and_N_signals = neighbor_signals + self_signal
+        normalize_scale = R_and_N_signals - np.min(R_and_N_signals) + 1
+        dist = dist / normalize_scale
+
         index = np.argmin(np.array(dist))
 
         return self.neighbors[index], dist[index]
