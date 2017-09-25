@@ -6,6 +6,8 @@
 import sys as _sys
 import numpy as _np
 from PyQt4 import QtGui as _qt
+from matplotlib import cm as mpl_cm
+from froi import colormap as surfer_cm
 
 from qimageview import qimageview as _qimageview
 from tools import normalize_arr
@@ -26,8 +28,6 @@ def gray(array, alpha):
 
     new_array_shape = array.shape + (4,)
     new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
-    array[array <= 0] = 0
-    array[array > 255] = 255
     new_array[..., 0] = array
     new_array[..., 1] = array
     new_array[..., 2] = array
@@ -41,8 +41,6 @@ def red2yellow(array, alpha):
 
     new_array_shape = array.shape + (4,)
     new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
-    array[array <= 0] = 0
-    array[array > 255] = 255
     new_array[..., 0] = 255 * array.clip(0, 1)
     new_array[..., 1] = array
     new_array[..., 2] = 0
@@ -56,8 +54,6 @@ def blue2cyanblue(array, alpha):
 
     new_array_shape = array.shape + (4,)
     new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
-    array[array <= 0] = 0
-    array[array > 255] = 255
     new_array[..., 0] = 0
     new_array[..., 1] = array
     new_array[..., 2] = 255 * array.clip(0, 1)
@@ -211,6 +207,8 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
         if colormap != 'rainbow':
             if colormap != 'single ROI':
                 array = _normalize255(array, normalize)
+                pysurfer_cmaps = ['rocket', 'mako', 'icefire', 'vlag']
+                pysurfer_cmaps.extend([cmap+'_r' for cmap in pysurfer_cmaps])
                 if colormap == 'gray':
                     new_array = gray(array, alpha)
                 elif colormap == 'red2yellow':
@@ -224,7 +222,28 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
                 elif colormap == 'blue':
                     new_array = blue(array, alpha)
                 else:
-                    raise RuntimeError("There is no colormap about '{}'.".format(colormap))
+                    if colormap in pysurfer_cmaps:
+                        cmap = getattr(surfer_cm, colormap)
+                    else:
+                        try:
+                            # Try to get a named matplotlib colormap
+                            cmap = mpl_cm.get_cmap(colormap)
+                        except (TypeError, ValueError):
+                            raise ValueError("There is no colormap about '{}'.".format(colormap))
+                    # Convert from a matplotlib colormap to a lut array
+                    lut_255 = (cmap(_np.linspace(0, 1, 256)) * 255).astype(_np.int)
+
+                    new_array_shape = array.shape + (4,)
+                    new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
+                    if array.ndim == 1:
+                        for i in range(array.shape[0]):
+                            new_array[i, :] = lut_255[array[i]]
+                    else:
+                        for i in range(array.shape[0]):
+                            for j in range(array.shape[1]):
+                                new_array[i, j, :] = lut_255[array[i, j]]
+                    new_array[..., 3] = alpha * array.clip(0, 1)
+
             else:
                 new_array = single_roi(array, alpha, roi)
         else:

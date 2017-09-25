@@ -90,16 +90,17 @@ def surf_sess(args, freeroi):
                               '-lt', ifunc[1],
                               '-ht', ifunc[2],
                               '-c', ifunc[3]]
-            for ref_file in args.ref_list:
-                if args.ref_par:
-                    ref = os.path.join(ref_subj, ref_file[0])
-                    print ref
-                    args_list = ['-data', ref, '-lt',  ref_file[1],
-                                 '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
-                else:
-                    print ref_file[0]
-                    args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
-                                 '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+            if args.ref_list:
+                for ref_file in args.ref_list:
+                    if args.ref_par:
+                        ref = os.path.join(ref_subj, ref_file[0])
+                        print ref
+                        args_list = ['-data', ref, '-lt',  ref_file[1],
+                                     '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+                    else:
+                        print ref_file[0]
+                        args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
+                                     '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
             subprocess.call(['cd', func_dir], shell=True)
             cmd_list = [freeroi, '-data', struc, '-lt', '0',
                         '-ht', '0', '-c', 'gray'] + args_list
@@ -143,9 +144,10 @@ def vol_sess(args, freeroi):
                               '-lt', ifunc[1],
                               '-ht', ifunc[2],
                               '-c', ifunc[3]]
-            for ref_file in args.ref_list:
-                args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
-                             '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+            if args.ref_list:
+                for ref_file in args.ref_list:
+                    args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
+                                 '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
             subprocess.call(['cd', func_dir], shell=True)
             cmd_list = [freeroi, '-data', template_file, '-lt', '3000',
                         '-ht', '8000', '-c', 'gray'] + args_list

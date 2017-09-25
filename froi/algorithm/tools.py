@@ -49,7 +49,7 @@ def normalize_arr(array, normalize, scale_length=255.0):
         scale = float(scale_length) / (nmax - nmin)
         if scale != 1.0:
             array = array * scale
-        return array
+        return array.clip(0, scale_length)
 
 
 class ConstVariable(object):
