@@ -1,10 +1,11 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Cursor
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
-from ..algorithm.tools import get_curr_hemi, get_curr_overlay, normalize_arr
+from ..algorithm.tools import get_curr_hemi, get_curr_overlay, normalize_arr, VlineMover
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -253,15 +254,33 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-                rg_result, evolved_regions, region_assessments =\
+                rg_result, self.evolved_regions, region_assessments, self.assess_step =\
                     rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
-                # plot diagrams
-                for r_idx, r in enumerate(evolved_regions):
-                    plt.figure(r_idx)
-                    plt.plot(normalize_arr(region_assessments[r_idx], True, 1.0), 'b.-')
-                    plt.xlabel('contrast step/component')
-                    plt.ylabel('assessed value')
+                # -----------------plot diagrams------------------
+                num_axes = len(self.evolved_regions)
+                fig, self.axes = plt.subplots(num_axes)
+                if num_axes == 1:
+                    self.axes = np.array([self.axes])
+                self.vline_movers = []  # store vline movers
+                self.cursors = []  # store cursors, the instance of Cursor must work with a reference
+                for r_idx, r in enumerate(self.evolved_regions):
+                    # plot assessment curve
+                    self.axes[r_idx].plot(normalize_arr(region_assessments[r_idx], True, 1.0), 'b.-')
+                    self.axes[r_idx].set_title('curve for seed {}'.format(r_idx))
+                    self.axes[r_idx].set_ylabel('assessed value')
+
+                    # initialize vline
+                    max_index = np.argmax(region_assessments[r_idx])
+                    vline = self.axes[r_idx].axvline(max_index)
+                    # instance VlineMover
+                    self.vline_movers.append(VlineMover(vline, True))
+
+                    # add widgets for self.axes[r_idx]
+                    self.cursors.append(Cursor(self.axes[r_idx], ls='dashed', lw=0.5, c='g'))
+                fig.canvas.set_window_title('assessment curves')
+                fig.canvas.mpl_connect('button_press_event', self._on_clicked)
+                plt.xlabel('contrast step/component', figure=fig)
                 plt.show()
             else:
                 QtGui.QMessageBox.warning(
@@ -343,6 +362,26 @@ class SurfaceRGDialog(QtGui.QDialog):
                 labeled_vertices = list(r)
             else:
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
+            data = np.zeros((self.hemi_vtx_number,), np.int)
+            data[labeled_vertices] = 1
+            self.model.add_item(self.tree_view_control.currentIndex(), data)
+
+    def _on_clicked(self, event):
+        if event.button == 3:
+            # do something on right click
+            # find current evolved region
+            r_idx = np.where(self.axes == event.inaxes)[0][0]
+            r = self.evolved_regions[r_idx]
+
+            # get vertices included in the evolved region
+            index = self.vline_movers[r_idx].x[0]
+            end_index = int((index+1) * self.assess_step)
+            labeled_vertices = set()
+            for region in r.get_component()[:end_index]:
+                labeled_vertices.update(region.get_vertices())
+            labeled_vertices = list(labeled_vertices)
+
+            # visualize these labeled vertices
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
             self.model.add_item(self.tree_view_control.currentIndex(), data)
