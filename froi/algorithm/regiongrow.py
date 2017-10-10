@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist, pdist
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
-from tools import ConstVariable, slide_win_smooth
+from tools import slide_win_smooth
 
 
 def region_growing(image,coordinate,number):
@@ -417,7 +417,7 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=5, assess_step=1):
+    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=0, assess_step=1):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 

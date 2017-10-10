@@ -92,7 +92,8 @@ def main():
                                  'red',
                                  'green',
                                  'blue',
-                                 'rainbow'] + config_file,
+                                 'rainbow',
+                                 'jet'] + config_file,
                         required=False,
                         action='append',
                         help='Specify the colormap the data would display in')
