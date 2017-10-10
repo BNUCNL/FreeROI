@@ -250,3 +250,22 @@ def slide_win_smooth(seq, half_width=0):
 
     return seq_smoothed
 
+
+# --------------matplotlib plot tools--------------
+class VlineMover(object):
+    def __init__(self, vline, x_round=False):
+        self.vline = vline
+        self.x_round = x_round
+        self.ax = vline.axes
+        self.x = vline.get_xdata()
+        self.y = vline.get_ydata()
+        self.cid = vline.figure.canvas.mpl_connect('button_press_event', self)
+
+    def __call__(self, event):
+        if event.button == 1 and event.inaxes == self.ax:
+            if self.x_round:
+                self.x = [round(event.xdata)] * 2
+            else:
+                self.x = [event.xdata] * 2
+            self.vline.set_data(self.x, self.y)
+            self.vline.figure.canvas.draw()

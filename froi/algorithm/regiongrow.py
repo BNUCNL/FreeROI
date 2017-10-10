@@ -6,10 +6,7 @@ from scipy.spatial.distance import cdist, pdist
 from ..core.dataobject import SurfaceDataset
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
-from tools import ConstVariable, slide_win_smooth
-
-const = ConstVariable()
-const.ASSESS_STEP = 1
+from tools import slide_win_smooth
 
 
 def region_growing(image,coordinate,number):
@@ -420,7 +417,7 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=1):
+    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=0, assess_step=1):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
@@ -436,6 +433,8 @@ class RegionGrow(object):
             If true, then return max_assess_regions, evolved_regions and region_assessments.
             If false, then just return max_assess_region.
         half_width : integer
+        assess_step : integer
+            do one assessment per 'assess_step' components
 
         Returns
         -------
@@ -446,23 +445,24 @@ class RegionGrow(object):
             Include all evolved regions after self._compute()
         region_assessment : list
             All assessment values for corresponding evolved region
+        assess_step : integer
         """
 
         # call methods of the class
-        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria)
+        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria, assess_step)
         max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
 
             region_assessments[r_idx] = slide_win_smooth(region_assessments[r_idx], half_width)
             index = np.argmax(region_assessments[r_idx])
-            end_index = (index+1)*const.ASSESS_STEP
+            end_index = (index+1) * assess_step
 
-            for region in r.component[:end_index]:
+            for region in r.get_component()[:end_index]:
                 max_assess_regions[r_idx].merge(region)
 
         if whole_results:
-            return max_assess_regions, evolved_regions, region_assessments
+            return max_assess_regions, evolved_regions, region_assessments, assess_step
         else:
             return max_assess_regions
 
@@ -485,7 +485,7 @@ class RegionGrow(object):
             Include all evolved regions after self._compute()
         """
         # call methods of the class
-        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria, assessment=False)
+        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria)
         return evolved_regions
 
     @staticmethod
@@ -519,7 +519,7 @@ class RegionGrow(object):
                 outmost_vtx = region.difference(region_old)
         return connected_regions
 
-    def _compute(self, seeds_id, stop_criteria, assessment=True):
+    def _compute(self, seeds_id, stop_criteria, assess_step=0):
         """
         do region growing
         """
@@ -591,9 +591,9 @@ class RegionGrow(object):
                 evolving_regions[r].merge(target_neighbor)
                 region_size[r] = region_size[r] + target_neighbor.size()
 
-                if assessment:
+                if assess_step:
                     # compute assessments
-                    if len(evolving_regions[r].get_component()) % const.ASSESS_STEP == 0:
+                    if len(evolving_regions[r].get_component()) % assess_step == 0:
                         assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
                         print 'Evolving region{} size: {}'.format(r, evolving_regions[r].size())

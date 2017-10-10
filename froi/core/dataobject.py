@@ -896,11 +896,17 @@ class ScalarData(object):
         image = nib.Nifti1Image(data, None, header)
         nib.nifti1.save(image, file_path)
 
-    def save2label(self, file_path):
-        X = np.where(self.data[:, 0] != 0)[0]
-        header = str("the number of vertex: " + str(len(X)))
-        np.savetxt(file_path, X, fmt='%d',
-                   header=header, comments="# ascii, label vertexes\n")
+    def save2label(self, file_path, hemi_coords):
+        """
+        save overlay to a text file adapted to freesurfer label file format
+        """
+        vertices = np.where(self.data[:, 0] != 0)[0]
+        coords = hemi_coords[vertices]
+        unknow = np.zeros_like(vertices, np.float16)
+        X = np.c_[vertices, coords, unknow]
+        header = str(len(vertices))
+        np.savetxt(file_path, X, fmt=['%d', '%f', '%f', '%f', '%f'],
+                   header=header, comments="#!ascii, label vertexes\n")
 
 
 class Hemisphere(object):
