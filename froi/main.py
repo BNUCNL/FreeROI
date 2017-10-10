@@ -13,8 +13,8 @@ from PyQt4.QtGui import *
 
 from version import __version__
 from core.labelconfig import LabelConfig
-from core.dataobject import Hemisphere
-from utils import get_icon_dir, get_data_dir
+from algorithm.tools import get_curr_hemi
+from utils import get_icon_dir
 from widgets.listwidget import LayerView
 from widgets.gridwidget import GridView
 from widgets.orthwidget import OrthView
@@ -986,7 +986,9 @@ class BpMainWindow(QMainWindow):
                 self._temp_dir = os.path.dirname(path)
 
             if filter == 'FS label(*.label)':
-                overlay.save2label(path)
+                hemi = get_curr_hemi(index)
+                coords = hemi.surf['white'].get_coords()
+                overlay.save2label(path, coords)
             else:
                 overlay.save2nifti(path)
 

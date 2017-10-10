@@ -1,11 +1,11 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Cursor
+from matplotlib.widgets import Cursor, Slider
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
-from ..algorithm.tools import get_curr_hemi, get_curr_overlay, normalize_arr, VlineMover
+from ..algorithm.tools import get_curr_hemi, get_curr_overlay, slide_win_smooth, VlineMover
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -35,6 +35,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.n_ring = 1
         self.group_idx = 'new'  # specify current seed group's index
         self.cut_line = []  # a list of vertices' id which plot a line
+        self.r_idx_sm = None
+        self.smoothness = None
 
         self._init_gui()
         self._create_actions()
@@ -254,7 +256,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-                rg_result, self.evolved_regions, region_assessments, self.assess_step =\
+                rg_result, self.evolved_regions, self.region_assessments, self.assess_step =\
                     rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
                 # -----------------plot diagrams------------------
@@ -262,25 +264,28 @@ class SurfaceRGDialog(QtGui.QDialog):
                 fig, self.axes = plt.subplots(num_axes)
                 if num_axes == 1:
                     self.axes = np.array([self.axes])
-                self.vline_movers = []  # store vline movers
-                self.cursors = []  # store cursors, the instance of Cursor must work with a reference
+                self.vline_movers = np.zeros_like(self.axes)  # store vline movers
+                self.cursors = np.zeros_like(self.axes)  # store cursors, hold references
+                self.slider_axes = np.zeros_like(self.axes)
+                self.sm_sliders = []  # store smooth sliders, hold references
                 for r_idx, r in enumerate(self.evolved_regions):
                     # plot assessment curve
-                    self.axes[r_idx].plot(normalize_arr(region_assessments[r_idx], True, 1.0), 'b.-')
-                    self.axes[r_idx].set_title('curve for seed {}'.format(r_idx))
-                    self.axes[r_idx].set_ylabel('assessed value')
+                    self.r_idx_sm = r_idx
+                    self.smoothness = 0
+                    self._sm_update_axes()
 
-                    # initialize vline
-                    max_index = np.argmax(region_assessments[r_idx])
-                    vline = self.axes[r_idx].axvline(max_index)
-                    # instance VlineMover
-                    self.vline_movers.append(VlineMover(vline, True))
+                    # add slider
+                    ax_pos = self.axes[r_idx].get_position()
+                    slider_ax = fig.add_axes([ax_pos.x1-0.3, ax_pos.y0+0.005, 0.3, 0.015])
+                    sm_slider = Slider(slider_ax, 'smoothness', 0, 10, 0, '%d', dragging=False)
+                    sm_slider.on_changed(self._on_smooth_changed)
+                    self.slider_axes[r_idx] = slider_ax
+                    self.sm_sliders.append(sm_slider)
 
-                    # add widgets for self.axes[r_idx]
-                    self.cursors.append(Cursor(self.axes[r_idx], ls='dashed', lw=0.5, c='g'))
+                    # axes hold off
+                    self.axes[r_idx].hold(False)
                 fig.canvas.set_window_title('assessment curves')
                 fig.canvas.mpl_connect('button_press_event', self._on_clicked)
-                plt.xlabel('contrast step/component', figure=fig)
                 plt.show()
             else:
                 QtGui.QMessageBox.warning(
@@ -367,7 +372,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             self.model.add_item(self.tree_view_control.currentIndex(), data)
 
     def _on_clicked(self, event):
-        if event.button == 3:
+        if event.button == 3 and event.inaxes in self.axes:
             # do something on right click
             # find current evolved region
             r_idx = np.where(self.axes == event.inaxes)[0][0]
@@ -385,6 +390,43 @@ class SurfaceRGDialog(QtGui.QDialog):
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
             self.model.add_item(self.tree_view_control.currentIndex(), data)
+        elif event.button == 1 and event.inaxes in self.slider_axes:
+            # do something on left click
+            # find current evolved region
+            self.r_idx_sm = np.where(self.slider_axes == event.inaxes)[0][0]
+            if self.smoothness is not None:
+                # indicate that self._on_click is performed later than self._on_smooth_changed
+                # to ensure that self.r_idx_sm is got before smoothing
+                self._sm_update_axes()
+
+    def _on_smooth_changed(self, val):
+        self.smoothness = int(val)
+        if self.r_idx_sm is not None:
+            # indicate that self._on_click is performed earlier than self._on_smooth_changed
+            # to ensure that self.r_idx_sm is got before smoothing
+            self._sm_update_axes()
+
+    def _sm_update_axes(self):
+        smoothed_curve = slide_win_smooth(self.region_assessments[self.r_idx_sm], self.smoothness)
+        self.axes[self.r_idx_sm].plot(smoothed_curve, 'b.-')
+        self.axes[self.r_idx_sm].set_title('curve for seed {}'.format(self.r_idx_sm))
+        if self.r_idx_sm == len(self.axes)-1:
+            self.axes[self.r_idx_sm].set_xlabel('contrast step/component')
+        self.axes[self.r_idx_sm].set_ylabel('assessed value')
+
+        # initialize vline
+        max_index = np.argmax(smoothed_curve)
+        vline = self.axes[self.r_idx_sm].axvline(max_index)
+        # instance VlineMover
+        self.vline_movers[self.r_idx_sm] = VlineMover(vline, True)
+
+        # add widgets for self.axes[r_idx]
+        # add cursor
+        self.cursors[self.r_idx_sm] = Cursor(self.axes[self.r_idx_sm], ls='dashed', lw=0.5, c='g')
+
+        # reset
+        self.r_idx_sm = None
+        self.smoothness = None
 
     def close(self):
 
