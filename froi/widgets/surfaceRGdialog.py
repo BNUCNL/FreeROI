@@ -120,7 +120,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                                                     'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
         if not fpath:
             return
-        self.mask = read_data(fpath, self.hemi_vtx_number)
+        self.mask, _ = read_data(fpath, self.hemi_vtx_number)
 
     def _scalar_dialog(self):
 
@@ -130,7 +130,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             return
         self.X = np.zeros((self.hemi_vtx_number,))
         for fpath in fpaths:
-            data = read_data(fpath, self.hemi_vtx_number)
+            data, _ = read_data(fpath, self.hemi_vtx_number)
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
@@ -369,7 +369,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data)
+            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
 
     def _on_clicked(self, event):
         if event.button == 3 and event.inaxes in self.axes:
@@ -389,7 +389,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             # visualize these labeled vertices
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data)
+            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
         elif event.button == 1 and event.inaxes in self.slider_axes:
             # do something on left click
             # find current evolved region
