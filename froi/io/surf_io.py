@@ -88,12 +88,14 @@ def read_data(fpath, n_vtx_limit=None):
 
     (dir, fname) = os.path.split(fpath)
     suffix = fname.split('.')[-1]
+    islabel = False
     if suffix in ('curv', 'thickness'):
         data = nib.freesurfer.read_morph_data(fpath)
         data = data.astype(np.float64)
 
     elif suffix == 'label':
         data = nib.freesurfer.read_label(fpath)
+        islabel = True
 
     elif suffix in ('nii', 'gz', 'mgh', 'mgz'):  # FIXME remove the support for the 'gz'
         data = read_scalar_data(fpath)
@@ -121,7 +123,7 @@ def read_data(fpath, n_vtx_limit=None):
     if data.dtype.byteorder == '>':
         data.byteswap(True)
 
-    return data
+    return data, islabel
 
 
 def node_attr2text(fpath, graph, attrs, fmt='%d', comments='#!ascii\n', **kwargs):

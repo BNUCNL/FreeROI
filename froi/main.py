@@ -633,7 +633,7 @@ class BpMainWindow(QMainWindow):
                                                 'Add new volume file',
                                                 temp_dir,
                                                 "Nifti files (*.nii *.nii.gz)")
-        if not file_name == '':
+        if file_name != '':
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
             else:
@@ -649,7 +649,7 @@ class BpMainWindow(QMainWindow):
         file_name = QFileDialog.getOpenFileName(self,
                                                 'Add new surface file',
                                                 temp_dir)
-        if not file_name == '':
+        if file_name != '':
             if sys.platform == 'win32':
                 file_path = unicode(file_name).encode('gb2312')
             else:
