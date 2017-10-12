@@ -157,7 +157,8 @@ class SurfaceView(QWidget):
 
         if visible_hemis:
             # generate the triangular mesh
-            scalars = np.array(range(vertex_number))
+            self.c_id2v_id = range(vertex_number)  # idx is color index, element is vtx number
+            scalars = np.array(self.c_id2v_id)
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
                 if hemi.overlay_list:
@@ -168,13 +169,13 @@ class SurfaceView(QWidget):
                         scalars = top_ol.get_data()[:, 0].copy()  # raw data shape is (n_vtx, 1)
                         iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
                         sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
-                        sorted_idx = [pair[0] for pair in sorted_iv_pairs]
-                        self.rgba_lut = self.rgba_lut[sorted_idx]
+                        self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]
+                        self.rgba_lut = self.rgba_lut[self.c_id2v_id]
                         self.is_cbar = True
                         # TODO use the raw scalar data to create the colorbar
                         # scalar2idx = normalize_arr(scalars, True, len(scalars)-1)
                         # scalars = scalar2idx.astype(np.int32)
-                        scalars[sorted_idx] = np.array(range(vertex_number))
+                        scalars[self.c_id2v_id] = np.array(range(vertex_number))
 
             mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                                  self.coords[:, 1],
@@ -221,7 +222,8 @@ class SurfaceView(QWidget):
                 self.seed_picked.emit()
 
             # plot point
-            toggle_color(self.tmp_lut[self.point_id])
+            c_id = self.c_id2v_id.index(self.point_id)
+            toggle_color(self.tmp_lut[c_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
 
     def _picker_callback_left(self, picker_obj):
@@ -256,7 +258,8 @@ class SurfaceView(QWidget):
                 )
 
             for v_id in self.path:
-                toggle_color(self.tmp_lut[v_id])
+                c_id = self.c_id2v_id.index(v_id)
+                toggle_color(self.tmp_lut[c_id])
 
     # user-oriented methods
     # -----------------------------------------------------------------
