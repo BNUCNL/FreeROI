@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Cursor
+from matplotlib.widgets import Slider, MultiCursor
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
@@ -286,13 +286,12 @@ class SurfaceRGDialog(QtGui.QDialog):
                     sm_slider.on_changed(self._on_smooth_changed)
                     self.slider_axes[r_idx] = slider_ax
                     self.sm_sliders.append(sm_slider)
-                    # add cursor
-                    self.cursors[r_idx][1] = Cursor(self.axes[r_idx][1],
-                                                    ls='dashed', lw=0.5, c='g')
 
                     # axes hold off
                     self.axes[r_idx][0].hold(False)
                 self.axes[-1][1].set_xlabel('contrast step/component')
+                self.cursor = MultiCursor(fig.canvas, self.axes.ravel(),
+                                          ls='dashed', lw=0.5, c='g', horizOn=True)
                 fig.canvas.set_window_title('assessment curves')
                 fig.canvas.mpl_connect('button_press_event', self._on_clicked)
                 plt.show()
@@ -428,11 +427,6 @@ class SurfaceRGDialog(QtGui.QDialog):
         vline = self.axes[self.r_idx_sm][0].axvline(max_index)
         # instance VlineMover
         self.vline_movers[self.r_idx_sm] = VlineMover(vline, True)
-
-        # add widgets for self.axes[r_idx]
-        # add cursor
-        self.cursors[self.r_idx_sm][0] = Cursor(self.axes[self.r_idx_sm][0],
-                                                ls='dashed', lw=0.5, c='g')
 
         # reset
         self.r_idx_sm = None
