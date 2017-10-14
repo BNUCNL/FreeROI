@@ -752,10 +752,16 @@ class ScalarData(object):
     A container for thickness, curv, sig, and label dataset.
 
     """
-    def __init__(self, name, data, vmin=None, vmax=None, colormap=None):
-        """Initialization.
-        TODO: colormap configs should be added to the function.
-
+    def __init__(self, name, data, vmin=None, vmax=None, colormap=None, islabel=False):
+        """
+        :param name: string
+            data name
+        :param data: numpy array
+        :param vmin: float
+            threshold for overlay display
+        :param vmax: float
+            saturation point for overlay display
+        :param colormap:
         """
         self.name = name
         if data.ndim == 1:
@@ -765,22 +771,25 @@ class ScalarData(object):
         else:
             raise ValueError("The data stored by ScalarData must be 2D")
 
+        q1, q3 = np.percentile(self.data, [25, 75])
+        iqr = q3 - q1
+
         if vmin and isinstance(vmin, float):
             self.vmin = vmin
         else:
-            self.vmin = np.min(data)
+            self.vmin = q1 - 2 * iqr
         if vmax and isinstance(vmax, float):
             self.vmax = vmax
         else:
-            self.vmax = np.max(data)
+            self.vmax = q3 + 2 * iqr
         if colormap is None:
-            self.colormap = 'red2yellow'
+            self.colormap = 'jet'
         else:
             self.colormap = colormap
 
         self.visible = True
         self.alpha = 1.0
-        self.colorbar = True
+        self._islabel = islabel
 
     def get_data(self):
         return self.data
@@ -803,8 +812,8 @@ class ScalarData(object):
     def is_visible(self):
         return self.visible
 
-    def is_colorbar(self):
-        return self.colorbar
+    def is_label(self):
+        return self._islabel
 
     def set_name(self, name):
         self.name = name
@@ -827,12 +836,6 @@ class ScalarData(object):
     def set_visible(self, status):
         if isinstance(status, bool):
             self.visible = status
-        else:
-            raise ValueError("Input must a bool.")
-
-    def set_colorbar(self, status):
-        if isinstance(status, bool):
-            self.colorbar = status
         else:
             raise ValueError("Input must a bool.")
 
@@ -968,17 +971,17 @@ class Hemisphere(object):
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, source, surf_type, vmin=None, vmax=None, colormap=None):
+    def load_overlay(self, source, surf_type, vmin=None, vmax=None, colormap=None, islabel=False):
         """Load scalar data as an overlay."""
         if isinstance(source, np.ndarray):
             name = 'new_overlay'
             data = source
         else:
             name = os.path.basename(source).split('.')[0]
-            data = read_data(source, self.surf[surf_type].get_vertices_num())
+            data, islabel = read_data(source, self.surf[surf_type].get_vertices_num())
         self.overlay_list.append(ScalarData(name, data,
                                             vmin=vmin, vmax=vmax,
-                                            colormap=colormap))
+                                            colormap=colormap, islabel=islabel))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
@@ -1062,8 +1065,8 @@ class Hemisphere(object):
 
     def get_composite_rgb(self):
 
-        # start_render_index = self._get_start_render_index()
-        start_render_index = 0
+        start_render_index = self._get_start_render_index()
+        # start_render_index = 0
 
         # get rgba arrays according to each overlay
         rgba_list = []
@@ -1090,8 +1093,7 @@ class Hemisphere(object):
         """
 
         for ol in self.overlay_list[-1::-1]:
-            # FIXME There may be even no 'label' in a label's name, so we need use other method to recognize a label.
-            if "label" not in ol.get_name() and ol.get_alpha() == 1. and ol.is_visible()\
+            if not ol.is_label() and ol.get_alpha() == 1. and ol.is_visible()\
                     and ol.get_min() <= np.min(ol.get_data()):
                 return self.overlay_list.index(ol)
 

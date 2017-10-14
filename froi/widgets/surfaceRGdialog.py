@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Cursor, Slider
+from matplotlib.widgets import Slider, MultiCursor
 
 from ..io.surf_io import read_data
 from ..algorithm.regiongrow import RegionGrow
@@ -120,7 +120,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                                                     'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
         if not fpath:
             return
-        self.mask = read_data(fpath, self.hemi_vtx_number)
+        self.mask, _ = read_data(fpath, self.hemi_vtx_number)
 
     def _scalar_dialog(self):
 
@@ -130,7 +130,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             return
         self.X = np.zeros((self.hemi_vtx_number,))
         for fpath in fpaths:
-            data = read_data(fpath, self.hemi_vtx_number)
+            data, _ = read_data(fpath, self.hemi_vtx_number)
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
@@ -256,34 +256,42 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-                rg_result, self.evolved_regions, self.region_assessments, self.assess_step =\
+                rg_result, self.evolved_regions, self.region_assessments, self.assess_step, r_outer_value =\
                     rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
                 # -----------------plot diagrams------------------
                 num_axes = len(self.evolved_regions)
-                fig, self.axes = plt.subplots(num_axes)
+                fig, self.axes = plt.subplots(num_axes, 2)
                 if num_axes == 1:
                     self.axes = np.array([self.axes])
-                self.vline_movers = np.zeros_like(self.axes)  # store vline movers
+                self.vline_movers = np.zeros_like(self.axes[:, 0])  # store vline movers
                 self.cursors = np.zeros_like(self.axes)  # store cursors, hold references
-                self.slider_axes = np.zeros_like(self.axes)
+                self.slider_axes = np.zeros_like(self.axes[:, 0])
                 self.sm_sliders = []  # store smooth sliders, hold references
                 for r_idx, r in enumerate(self.evolved_regions):
+                    # plot region outer boundary assessment curve
+                    self.axes[r_idx][1].plot(r_outer_value[r_idx], 'b.-')
+                    self.axes[r_idx][1].set_ylabel('amplitude')
+                    self.axes[r_idx][1].set_title('outer boundary value for seed {}'.format(r_idx))
+
                     # plot assessment curve
                     self.r_idx_sm = r_idx
                     self.smoothness = 0
                     self._sm_update_axes()
 
                     # add slider
-                    ax_pos = self.axes[r_idx].get_position()
-                    slider_ax = fig.add_axes([ax_pos.x1-0.3, ax_pos.y0+0.005, 0.3, 0.015])
+                    ax_pos = self.axes[r_idx][0].get_position()
+                    slider_ax = fig.add_axes([ax_pos.x1-0.15, ax_pos.y0+0.005, 0.15, 0.015])
                     sm_slider = Slider(slider_ax, 'smoothness', 0, 10, 0, '%d', dragging=False)
                     sm_slider.on_changed(self._on_smooth_changed)
                     self.slider_axes[r_idx] = slider_ax
                     self.sm_sliders.append(sm_slider)
 
                     # axes hold off
-                    self.axes[r_idx].hold(False)
+                    self.axes[r_idx][0].hold(False)
+                self.axes[-1][1].set_xlabel('contrast step/component')
+                self.cursor = MultiCursor(fig.canvas, self.axes.ravel(),
+                                          ls='dashed', lw=0.5, c='g', horizOn=True)
                 fig.canvas.set_window_title('assessment curves')
                 fig.canvas.mpl_connect('button_press_event', self._on_clicked)
                 plt.show()
@@ -369,13 +377,13 @@ class SurfaceRGDialog(QtGui.QDialog):
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data)
+            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
 
     def _on_clicked(self, event):
-        if event.button == 3 and event.inaxes in self.axes:
+        if event.button == 3 and event.inaxes in self.axes[:, 0]:
             # do something on right click
             # find current evolved region
-            r_idx = np.where(self.axes == event.inaxes)[0][0]
+            r_idx = np.where(self.axes[:, 0] == event.inaxes)[0][0]
             r = self.evolved_regions[r_idx]
 
             # get vertices included in the evolved region
@@ -389,7 +397,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             # visualize these labeled vertices
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data)
+            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
         elif event.button == 1 and event.inaxes in self.slider_axes:
             # do something on left click
             # find current evolved region
@@ -408,21 +416,17 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _sm_update_axes(self):
         smoothed_curve = slide_win_smooth(self.region_assessments[self.r_idx_sm], self.smoothness)
-        self.axes[self.r_idx_sm].plot(smoothed_curve, 'b.-')
-        self.axes[self.r_idx_sm].set_title('curve for seed {}'.format(self.r_idx_sm))
+        self.axes[self.r_idx_sm][0].plot(smoothed_curve, 'b.-')
+        self.axes[self.r_idx_sm][0].set_title('curve for seed {}'.format(self.r_idx_sm))
         if self.r_idx_sm == len(self.axes)-1:
-            self.axes[self.r_idx_sm].set_xlabel('contrast step/component')
-        self.axes[self.r_idx_sm].set_ylabel('assessed value')
+            self.axes[self.r_idx_sm][0].set_xlabel('contrast step/component')
+        self.axes[self.r_idx_sm][0].set_ylabel('assessed value')
 
         # initialize vline
         max_index = np.argmax(smoothed_curve)
-        vline = self.axes[self.r_idx_sm].axvline(max_index)
+        vline = self.axes[self.r_idx_sm][0].axvline(max_index)
         # instance VlineMover
         self.vline_movers[self.r_idx_sm] = VlineMover(vline, True)
-
-        # add widgets for self.axes[r_idx]
-        # add cursor
-        self.cursors[self.r_idx_sm] = Cursor(self.axes[self.r_idx_sm], ls='dashed', lw=0.5, c='g')
 
         # reset
         self.r_idx_sm = None

@@ -10,7 +10,7 @@ from mayavi import mlab
 import numpy as np
 
 from treemodel import TreeModel
-from ..algorithm.tools import toggle_color, bfs
+from ..algorithm.tools import toggle_color, bfs, normalize_arr
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -94,6 +94,8 @@ class SurfaceView(QWidget):
         self.old_hemi = None
         self.plot_start = None
         self.path = []
+        self.is_cbar = False
+        self.cbar = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -114,6 +116,8 @@ class SurfaceView(QWidget):
         if self.surf is not None:
             self.surf.remove()
             self.surf = None
+        if self.cbar is not None:
+            self.cbar.visible = False
 
         # flag
         first_hemi_flag = True
@@ -153,7 +157,26 @@ class SurfaceView(QWidget):
 
         if visible_hemis:
             # generate the triangular mesh
-            scalars = np.array(range(vertex_number))
+            self.c_id2v_id = range(vertex_number)  # idx is color index, element is vtx number
+            scalars = np.array(self.c_id2v_id)
+            if len(visible_hemis) == 1:
+                hemi = visible_hemis[0]
+                if hemi.overlay_list:
+                    top_ol = hemi.overlay_list[-1]
+                    if not top_ol.is_label() and top_ol.get_alpha() == 1. and top_ol.is_visible()\
+                            and top_ol.get_min() <= np.min(top_ol.get_data()):
+                        # colorbar is only meaningful for this situation
+                        scalars = top_ol.get_data()[:, 0].copy()  # raw data shape is (n_vtx, 1)
+                        iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
+                        sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
+                        self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]
+                        self.rgba_lut = self.rgba_lut[self.c_id2v_id]
+                        self.is_cbar = True
+                        # TODO use the raw scalar data to create the colorbar
+                        # scalar2idx = normalize_arr(scalars, True, len(scalars)-1)
+                        # scalars = scalar2idx.astype(np.int32)
+                        scalars[self.c_id2v_id] = np.array(range(vertex_number))
+
             mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                                  self.coords[:, 1],
                                                                                  self.coords[:, 2],
@@ -165,6 +188,7 @@ class SurfaceView(QWidget):
             # generate the surface
             self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
             self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
+            # self.surf.module_manager.scalar_lut_manager.load_lut_from_list(self.rgba_lut/255.)  # bad speed
 
         # add point picker observer
         if self.gcf_flag:
@@ -173,6 +197,11 @@ class SurfaceView(QWidget):
             fig.on_mouse_pick(self._picker_callback_left)
             # fig.scene.scene.interactor.add_observer('MouseMoveEvent', self._move_callback)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
+
+        # add colorbar
+        if self.is_cbar:
+            self.cbar = mlab.colorbar(self.surf)
+            self.is_cbar = False
 
     def _picker_callback(self, picker_obj, evt):
 
@@ -193,7 +222,8 @@ class SurfaceView(QWidget):
                 self.seed_picked.emit()
 
             # plot point
-            toggle_color(self.tmp_lut[self.point_id])
+            c_id = self.c_id2v_id.index(self.point_id)
+            toggle_color(self.tmp_lut[c_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
 
     def _picker_callback_left(self, picker_obj):
@@ -228,7 +258,8 @@ class SurfaceView(QWidget):
                 )
 
             for v_id in self.path:
-                toggle_color(self.tmp_lut[v_id])
+                c_id = self.c_id2v_id.index(v_id)
+                toggle_color(self.tmp_lut[c_id])
 
     # user-oriented methods
     # -----------------------------------------------------------------
