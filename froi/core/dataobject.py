@@ -771,17 +771,14 @@ class ScalarData(object):
         else:
             raise ValueError("The data stored by ScalarData must be 2D")
 
-        q1, q3 = np.percentile(self.data, [25, 75])
-        iqr = q3 - q1
-
         if vmin and isinstance(vmin, float):
             self.vmin = vmin
         else:
-            self.vmin = q1 - 2 * iqr
+            self.vmin = np.min(data)
         if vmax and isinstance(vmax, float):
             self.vmax = vmax
         else:
-            self.vmax = q3 + 2 * iqr
+            self.vmax = np.max(data)
         if colormap is None:
             self.colormap = 'jet'
         else:
