@@ -130,7 +130,7 @@ class SurfaceView(QWidget):
         for hemi in visible_hemis:
 
             # get geometry's information
-            geo = hemi.surf['white']  # FIXME 'white' should be replaced with var: surf_type
+            geo = hemi.surfaces['inflated']  # FIXME 'inflated' should be replaced with var: surf_type
             hemi_coords = geo.get_coords()
             hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
             hemi_nn = geo.get_nn()

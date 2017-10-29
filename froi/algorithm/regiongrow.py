@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
 
-from ..core.dataobject import SurfaceDataset
+from ..core.dataobject import GeometryData
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
 from tools import slide_win_smooth
@@ -359,8 +359,8 @@ class RegionGrow(object):
 
         Parameters
         ----------
-        surf : SurfaceDataset
-            a instance of the class SurfaceDataset
+        surf : GeometryData
+            a instance of the class GeometryData
         vtx_signal : numpy array
             NxM array, N is the number of vertices,
             M is the number of measurements or time points.
@@ -374,8 +374,8 @@ class RegionGrow(object):
             else the surface will be partitioned to n_parcel parcels.
         """
 
-        if not isinstance(surf, SurfaceDataset):
-            raise TypeError("The argument surf must be a instance of SurfaceDataset!")
+        if not isinstance(surf, GeometryData):
+            raise TypeError("The argument surf must be a instance of GeometryData!")
 
         n_vtx = surf.get_vertices_num()
         self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
