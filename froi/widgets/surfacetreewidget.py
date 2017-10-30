@@ -402,9 +402,9 @@ if __name__ == '__main__':
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
     h1 = Hemisphere(sub1)
-    h1.add_surfs(sub1, 'white')
-    h1.load_overlays(s1, 'white')
-    h1.load_overlays(s2, 'pial')
+    h1.load_surface(sub1, 'inflated')
+    h1.load_overlay(s1)
+    h1.load_overlay(s2)
     h2 = Hemisphere(surf2)
     h2.load_overlay(s3)
     h2.load_overlay(s4)

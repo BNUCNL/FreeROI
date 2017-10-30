@@ -3,7 +3,7 @@ from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, MultiCursor
 
-from ..io.surf_io import read_data
+from ..io.surf_io import read_scalar_data
 from ..algorithm.regiongrow import RegionGrow
 from ..algorithm.tools import get_curr_hemi, get_curr_overlay, slide_win_smooth, VlineMover
 from ..algorithm.meshtool import get_n_ring_neighbor
@@ -21,8 +21,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.model = model
 
         self.hemi = self._get_curr_hemi()
-        # FIXME 'white' should be replaced with surf_type in the future
-        self.surf = self.hemi.surf['white']
+        # FIXME 'inflated' should be replaced with surf_type in the future
+        self.surf = self.hemi.surfaces['inflated']
         self.hemi_vtx_number = self.surf.get_vertices_num()
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
@@ -120,7 +120,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                                                     'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
         if not fpath:
             return
-        self.mask, _ = read_data(fpath, self.hemi_vtx_number)
+        self.mask, _ = read_scalar_data(fpath, self.hemi_vtx_number)
 
     def _scalar_dialog(self):
 
@@ -130,7 +130,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             return
         self.X = np.zeros((self.hemi_vtx_number,))
         for fpath in fpaths:
-            data, _ = read_data(fpath, self.hemi_vtx_number)
+            data, _ = read_scalar_data(fpath, self.hemi_vtx_number)
             self.X = np.c_[self.X, data]
         self.X = np.delete(self.X, 0, 1)
 
@@ -377,7 +377,8 @@ class SurfaceRGDialog(QtGui.QDialog):
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
+            self.model.add_item(self.tree_view_control.currentIndex(), data,
+                                islabel=True, colormap='blue')
 
     def _on_clicked(self, event):
         if event.button == 3 and event.inaxes in self.axes[:, 0]:
@@ -397,7 +398,8 @@ class SurfaceRGDialog(QtGui.QDialog):
             # visualize these labeled vertices
             data = np.zeros((self.hemi_vtx_number,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data, islabel=True)
+            self.model.add_item(self.tree_view_control.currentIndex(), data,
+                                islabel=True, colormap='blue')
         elif event.button == 1 and event.inaxes in self.slider_axes:
             # do something on left click
             # find current evolved region

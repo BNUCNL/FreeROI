@@ -12,14 +12,12 @@ import sys
 import nibabel as nib
 import numpy as np
 from nibabel.spatialimages import ImageFileError
-from nibabel.gifti import giftiio as g_io
-import gzip
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
-from ..io.surf_io import read_data
+from ..io.surf_io import read_scalar_data
 from labelconfig import LabelConfig
 
 
@@ -615,7 +613,7 @@ class VolumeDataset(object):
         return dup_img
 
 
-class SurfaceDataset(object):
+class GeometryData(object):
     """Container for surface object in FreeROI GUI system.
 
     Attributes
@@ -653,13 +651,18 @@ class SurfaceDataset(object):
             print 'surf file does not exist!'
             return None
         self.surf_path = surf_path
-        (self.surf_dir, self.name) = os.path.split(surf_path)
-        name_split = self.name.split('.')
+        self.surf_dir, name = os.path.split(surf_path)
+        name_split = name.split('.')
         self.suffix = name_split[-1]
         if self.suffix in ('pial', 'inflated', 'white'):
-            self.hemi = name_split[0]
+            # FreeSurfer style geometry filename
+            self.hemi_rl = name_split[0]
         elif self.suffix == 'gii':
-            self.hemi = name_split[1]
+            # CIFTI style geometry filename
+            if name_split[1] == 'L':
+                self.hemi_rl = 'lh'
+            elif name_split[1] == 'R':
+                self.hemi_rl = 'rh'
         else:
             raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
         self.offset = offset
@@ -672,13 +675,13 @@ class SurfaceDataset(object):
         if self.suffix in ('pial', 'inflated', 'white'):
             self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
         elif self.suffix == 'gii':
-            gii_data = g_io.read(self.surf_path).darrays
+            gii_data = nib.gifti.read(self.surf_path).darrays
             self.coords, self.faces = gii_data[0].data, gii_data[1].data
         else:
             raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
 
         if self.offset is not None:
-            if self.hemi in ('lh', 'L'):
+            if self.hemi_rl == 'lh':
                 self.coords[:, 0] -= (np.max(self.coords[:, 0]) + self.offset)
             else:
                 self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
@@ -690,7 +693,7 @@ class SurfaceDataset(object):
         :return:
             binarized curvature
         """
-        curv_name = '{}.curv'.format(self.hemi)
+        curv_name = '{}.curv'.format(self.hemi_rl)
         curv_path = os.path.join(self.surf_dir, curv_name)
         if not os.path.exists(curv_path):
             return None
@@ -699,22 +702,9 @@ class SurfaceDataset(object):
 
         return bin_curv
 
-    def find_1_ring_neighbor(self):
-
-        n_vtx = self.coords.shape[0]
-        self.one_ring_neighbor = [set() for i in range(n_vtx)]
-
-        for face in self.faces:
-            for v_id in face:
-                self.one_ring_neighbor[v_id].update(set(face))
-
-        for v_id in range(n_vtx):
-            self.one_ring_neighbor[v_id].remove(v_id)
-
-    def save_geometry(self):
+    def save(self, fpath):
         """Save geometry information."""
-        nib.freesurfer.write_geometry(self.surf_path,
-                                      self.coords, self.faces)
+        nib.freesurfer.write_geometry(fpath, self.coords, self.faces)
 
     def get_vertices_num(self):
         """Get vertices number of the surface."""
@@ -752,7 +742,8 @@ class ScalarData(object):
     A container for thickness, curv, sig, and label dataset.
 
     """
-    def __init__(self, name, data, vmin=None, vmax=None, colormap=None, islabel=False):
+    def __init__(self, name, data, vmin=None, vmax=None, colormap='jet', alpha=1.0,
+                 visible=True, islabel=False):
         """
         :param name: string
             data name
@@ -763,88 +754,78 @@ class ScalarData(object):
             saturation point for overlay display
         :param colormap:
         """
-        self.name = name
+        self._name = name
         if data.ndim == 1:
-            self.data = data.reshape((data.shape[0], 1))
+            self._data = data.reshape((data.shape[0], 1))
         elif data.ndim == 2:
-            self.data = data
+            self._data = data
         else:
             raise ValueError("The data stored by ScalarData must be 2D")
 
-        q1, q3 = np.percentile(self.data, [25, 75])
-        iqr = q3 - q1
-
         if vmin and isinstance(vmin, float):
-            self.vmin = vmin
+            self._vmin = vmin
         else:
-            self.vmin = q1 - 2 * iqr
+            self._vmin = np.min(data)
         if vmax and isinstance(vmax, float):
-            self.vmax = vmax
+            self._vmax = vmax
         else:
-            self.vmax = q3 + 2 * iqr
-        if colormap is None:
-            self.colormap = 'jet'
-        else:
-            self.colormap = colormap
+            self._vmax = np.max(data)
 
-        self.visible = True
-        self.alpha = 1.0
+        self._colormap = colormap
+        self._alpha = alpha
+        self._visible = visible
         self._islabel = islabel
 
     def get_data(self):
-        return self.data
+        return self._data
 
     def get_name(self):
-        return self.name
-    
-    def get_min(self):
-        return self.vmin
-
-    def get_max(self):
-        return self.vmax
-
-    def get_colormap(self):
-        return self.colormap
-
-    def get_alpha(self):
-        return self.alpha
-
-    def is_visible(self):
-        return self.visible
-
-    def is_label(self):
-        return self._islabel
+        return self._name
 
     def set_name(self, name):
-        self.name = name
+        if isinstance(name, str):
+            self._name = name
+        else:
+            raise TypeError("The name of data must be a string")
+    
+    def get_min(self):
+        return self._vmin
 
     def set_min(self, vmin):
-        try:
-            self.vmin = float(vmin)
-        except ValueError:
-            print "vmin must be a number."
+        self._vmin = float(vmin)
+
+    def get_max(self):
+        return self._vmax
 
     def set_max(self, vmax):
-        try:
-            self.vmax = float(vmax)
-        except ValueError:
-            print "vmax must be a number."
+        self._vmax = float(vmax)
 
-    def set_colormap(self, colormap_name):
-        self.colormap = colormap_name
+    def get_colormap(self):
+        return self._colormap
 
-    def set_visible(self, status):
-        if isinstance(status, bool):
-            self.visible = status
-        else:
-            raise ValueError("Input must a bool.")
+    def set_colormap(self, colormap):
+        self._colormap = colormap
+
+    def get_alpha(self):
+        return self._alpha
 
     def set_alpha(self, alpha):
         if 0 <= alpha <= 1:
-            if self.alpha != alpha:
-                self.alpha = alpha
+            self._alpha = alpha
         else:
-            raise ValueError("Value must be an integer between 0 and 1.")
+            raise ValueError("alpha must be a number between 0 and 1.")
+
+    def is_visible(self):
+        return self._visible
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            self._visible = status
+        else:
+            raise TypeError("Visible status must be a bool.")
+
+    def is_label(self):
+        return self._islabel
 
     def save2nifti(self, file_path):
         """Save to a nifti file."""
@@ -926,62 +907,54 @@ class Hemisphere(object):
             applied. If != 0.0, an additional offset will be used.
 
         """
-        # self.surf = SurfaceDataset(surf_path, offset)
-        surf_type = 'white'
-        self.surf = {}
-        self.bin_curv = None
+        # FIXME to contain more surface type
+        surf_type = 'inflated'
+        self.surfaces = {}
+        self.load_surface(surf_path, surf_type, offset=1.0)
+
         self.overlay_list = []
-        self.alpha = 1.0
-        self.colormap = "gray"
-        self.visible = True
+        self._name = self.surfaces[surf_type].hemi_rl
+        self._visible = True
+        self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
+        self.bin_curv = self.surfaces[surf_type].get_bin_curv()
 
-        self.add_surfs(surf_path, surf_type, offset=1.0)
-        self.name = self.surf[surf_type].name
-
-    def _add_surface(self, surf_path, surf_type, offset=None):
+    def load_surface(self, surf_path, surf_type, offset=None):
         """Add surface data"""
-        self.surf[surf_type] = SurfaceDataset(surf_path, offset)
-        self.bin_curv = self.surf[surf_type].get_bin_curv()
+        if surf_type in self.surfaces.keys():
+            print 'Invalid Operation! The surface type is already exist!'
+        else:
+            self.surfaces[surf_type] = GeometryData(surf_path, offset)
 
     def del_surfs(self, surf_type):
         """Del surface data"""
         try:
-            self.surf[surf_type]
+            self.surfaces[surf_type]
         except KeyError:
             print "The surface data is not exist!"
         else:
-            del self.surf[surf_type]
-
-    def add_surfs(self, surf_path, surf_type, offset=None):
-        """Add surf data"""
-        try:
-            self.surf[surf_type]
-        except KeyError:
-            self._add_surface(surf_path, surf_type, offset)
-        else:
-            print "The surface data is already exist!"
+            del self.surfaces[surf_type]
 
     def update_surfs(self, surf_path, surf_type, offset=None):
         """Update surf data, if not exist, ask user to confirm"""
         try:
-            self.surf[surf_type]
+            self.surfaces[surf_type]
         except KeyError:
             pass
             # Here should be a dialog for confirm, whether adding data or not
         else:
             self._add_surface(surf_path, surf_type, offset)
 
-    def load_overlay(self, source, surf_type, vmin=None, vmax=None, colormap=None, islabel=False):
+    def load_overlay(self, source, vmin=None, vmax=None, colormap='jet', alpha=1.0,
+                     visible=True, islabel=False):
         """Load scalar data as an overlay."""
         if isinstance(source, np.ndarray):
             name = 'new_overlay'
             data = source
         else:
             name = os.path.basename(source).split('.')[0]
-            data, islabel = read_data(source, self.surf[surf_type].get_vertices_num())
-        self.overlay_list.append(ScalarData(name, data,
-                                            vmin=vmin, vmax=vmax,
-                                            colormap=colormap, islabel=islabel))
+            data, islabel = read_scalar_data(source, self.surfaces.values()[0].get_vertices_num())
+        self.overlay_list.append(ScalarData(name, data, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
+                                            visible=visible, islabel=islabel))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
@@ -1013,39 +986,17 @@ class Hemisphere(object):
         else:
             print 'Invalid input!'
 
-    def overlay_count(self):
-        return len(self.overlay_list)
-
-    def get_alpha(self):
-        return self.alpha
-
-    def get_colormap(self):
-        return self.colormap
-
     def is_visible(self):
-        return self.visible
-
-    def set_alpha(self, alpha):
-        if 0 <= alpha <= 1:
-            if self.alpha != alpha:
-                self.alpha = alpha
-        else:
-            raise ValueError("Value must be an integer between 0 and 1.")
-
-    def set_colormap(self, colormap_name):
-        self.colormap = colormap_name
+        return self._visible
 
     def set_visible(self, status):
         if isinstance(status, bool):
-            if status:
-                self.visible = True
-            else:
-                self.visible = False
+            self._visible = status
         else:
-            raise ValueError("Input must a bool.")
+            raise TypeError("Visible status must be a bool.")
 
-    def get_name(self):
-        return self.name
+    def overlay_count(self):
+        return len(self.overlay_list)
 
     def get_rgba(self, ol):
         """
@@ -1078,10 +1029,25 @@ class Hemisphere(object):
         if self.bin_curv is not None:
             background = aq.array2qrgba(self.bin_curv, 255.0, 'gray', (-1, 1.5))
         else:
-            background = np.ones((self.surf['white'].get_vertices_num(), 4)) * 127.5
+            background = np.ones((self.surfaces['inflated'].get_vertices_num(), 4)) * 127.5
         rgba_list.insert(0, background)
 
         return aq.qcomposition(rgba_list)
+
+    def get_name(self):
+        return self._name
+
+    def set_name(self, name):
+        if isinstance(name, str):
+            self._name = name
+        else:
+            raise TypeError("The name of data must be a string")
+
+    def get_colormap(self):
+        return self._colormap_geo
+
+    def set_colormap(self, colormap):
+        self._colormap_geo = colormap
 
     def _get_start_render_index(self):
         """
