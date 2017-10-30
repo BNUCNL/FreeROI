@@ -446,11 +446,13 @@ class RegionGrow(object):
         region_assessment : list
             All assessment values for corresponding evolved region
         assess_step : integer
-        r_outer_value : list
+        r_outer_mean : list
+        r_inner_min: list
         """
 
         # call methods of the class
-        evolved_regions, region_assessments, r_outer_value = self._compute(seeds_id, stop_criteria, assess_step)
+        evolved_regions, region_assessments, r_outer_mean, r_inner_min\
+            = self._compute(seeds_id, stop_criteria, assess_step)
         max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
@@ -463,7 +465,7 @@ class RegionGrow(object):
                 max_assess_regions[r_idx].merge(region)
 
         if whole_results:
-            return max_assess_regions, evolved_regions, region_assessments, assess_step, r_outer_value
+            return max_assess_regions, evolved_regions, region_assessments, assess_step, r_outer_mean, r_inner_min
         else:
             return max_assess_regions
 
@@ -560,8 +562,9 @@ class RegionGrow(object):
         # ------initialize other variables-------
         n_seed = len(evolving_regions)
         region_size = np.array([region.size() for region in evolving_regions])
-        region_assessments = [[] for i in range(n_seed)]
-        r_outer_boundary_value = [[] for i in range(n_seed)]
+        region_assessments = [[] for _ in range(n_seed)]
+        r_outer_mean = [[] for _ in range(n_seed)]  # mean value of the region's outer boundary
+        r_inner_min = [[] for _ in range(n_seed)]  # minimum value in the region
 
         # Positive infinity and negative infinity evaluate to True, because they are not equal to zero.
         dist = np.empty(n_seed)
@@ -599,7 +602,9 @@ class RegionGrow(object):
                         assessed_value = self._assess_func(evolving_regions[r])
                         region_assessments[r].append(assessed_value)
                         outer_signals = [i.mean_signal() for i in evolving_regions[r].get_neighbors()]
-                        r_outer_boundary_value[r].append(np.mean(outer_signals))
+                        inner_signals = [i.mean_signal() for i in evolving_regions[r].get_component()]
+                        r_outer_mean[r].append(np.mean(outer_signals))
+                        r_inner_min[r].append(np.mean(inner_signals))
                         print 'Evolving region{} size: {}'.format(r, evolving_regions[r].size())
 
             for i in r_index:
@@ -615,7 +620,7 @@ class RegionGrow(object):
                         # It means that the user uses one stop criteria for all evolving regions.
                         region_size[i] = stop_criteria[0]
 
-        return evolving_regions, region_assessments, r_outer_boundary_value
+        return evolving_regions, region_assessments, r_outer_mean, r_inner_min
 
     def get_regions(self):
         return self.regions, self.v_id2r_id
