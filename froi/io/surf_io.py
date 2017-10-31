@@ -56,7 +56,7 @@ def read_mgh_mgz(filepath):
     return data
 
 
-def read_scalar_data(fpath, n_vtx=None):
+def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
 
     fname = os.path.basename(fpath)
     suffix0 = fname.split('.')[-1]
@@ -67,20 +67,38 @@ def read_scalar_data(fpath, n_vtx=None):
         data = data.astype(np.float64)
 
     elif suffix0 == 'label':
-        data = nib.freesurfer.read_label(fpath)
         islabel = True
+        _data = nib.freesurfer.read_label(fpath)
+        if n_vtx is None:
+            raise RuntimeError("Reading label as scalar data need specify the number of vertices.")
+        else:
+            if np.max(_data) < n_vtx:
+                label_array = np.zeros(n_vtx, np.int)
+                label_array[_data] = 1
+                data = np.array([label_array]).T
+            else:
+                raise RuntimeError('vertices number mismatch!')
 
     elif suffix0 == 'nii':
-        _data = nib.load(fpath).get_data()
-        if suffix1 in ('dscalar', 'dtseries'):
-            # data = np.array(_data).T
-            raise RuntimeError('Unsupported data type.')
-        elif suffix1 == 'dlabel':
-            # data = np.array(_data.ravel())
-            # islabel = True
-            raise RuntimeError('Unsupported data type.')
+        nii_file = nib.load(fpath)
+        if suffix1 in ('dscalar', 'dtseries', 'dlabel'):
+            if suffix1 == 'dlabel':
+                islabel = True
+
+            _data = nii_file.get_data()
+            brain_model = [i for i in nii_file.header.get_index_map(1).brain_models
+                           if i.brain_structure == brain_structure][0]
+
+            offset = brain_model.index_offset
+            count = brain_model.index_count
+            vertices = list(brain_model.vertex_indices)
+            n_vtx = brain_model.surface_number_of_vertices
+            data = np.zeros((n_vtx, _data.shape[0]), np.float64)
+            for row in range(_data.shape[0]):
+                data[vertices, row] = _data[row][offset:offset+count]
         else:
             Warning('The data will be regarded as a nifti file.')
+            _data = nii_file.get_data()
             data = []
             if _data.ndim == 4:
                 for idx in range(_data.shape[3]):
@@ -103,27 +121,12 @@ def read_scalar_data(fpath, n_vtx=None):
         data = read_mgh_mgz(fpath)
         data = data.astype(np.float64)
 
-    elif suffix0 == 'gii':
-        gii_data = nib.gifti.read(fpath).darrays
-        data = gii_data[0].data
-
     else:
         raise RuntimeError('Unsupported data type.')
 
-    if n_vtx is None:
-        if islabel:
-            raise RuntimeError("Reading label as scalar data need specify the number of vertices.")
-    else:
-        if islabel:
-            if np.max(data) <= n_vtx:
-                label_array = np.zeros(n_vtx, np.int)
-                label_array[data] = 1
-                data = np.array([label_array]).T
-            else:
-                raise RuntimeError('vertices number mismatch!')
-        else:
-            if data.shape[0] != n_vtx:
-                raise RuntimeError('vertices number mismatch!')
+    if n_vtx is not None:
+        if data.shape[0] != n_vtx:
+            raise RuntimeError('vertices number mismatch!')
 
     if data.dtype.byteorder == '>':
         data.byteswap(True)

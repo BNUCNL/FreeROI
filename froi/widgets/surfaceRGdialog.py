@@ -21,8 +21,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.model = model
 
         self.hemi = self._get_curr_hemi()
-        # FIXME 'inflated' should be replaced with surf_type in the future
-        self.surf = self.hemi.surfaces['inflated']
+        # FIXME 'inflated' should be replaced with geo_type in the future
+        self.surf = self.hemi.geometries['inflated']
         self.hemi_vtx_number = self.surf.get_vertices_num()
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
