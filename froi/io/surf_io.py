@@ -2,47 +2,19 @@ import os
 import gzip
 import numpy as np
 import nibabel as nib
-from nibabel.gifti import giftiio as g_io
-from nibabel.spatialimages import ImageFileError
 
 from ..algorithm.graph_tool import node_attr2array
 
 
-def read_scalar_data(filepath):
-    """
-    Load in scalar data from an image.
+def read_mgh_mgz(filepath):
 
-    Parameters
-    ----------
-    filepath : str
-        path to scalar data file
-
-    Returns
-    -------
-    scalar_data : numpy array
-        NxM array, N is the number of vertices,
-        M is the number of time points.
-    """
-    try:
-        data = nib.load(filepath).get_data()
-        scalar_data = []
-        if data.ndim == 4:
-            for idx in range(data.shape[3]):
-                scalar_data.append(np.ravel(data[..., idx], order='F'))
-        else:
-            scalar_data.append(np.ravel(data, order="F"))
-        scalar_data = np.array(scalar_data).T
-        return scalar_data
-
-    except ImageFileError:
-        ext = os.path.splitext(filepath)[1]
-        if ext == ".mgz":
-            openfile = gzip.open
-        elif ext == ".mgh":
-            openfile = open
-        else:
-            raise ValueError("Scalar file format must be readable "
-                             "by Nibabel or .mg{hz} format")
+    ext = os.path.splitext(filepath)[1]
+    if ext == ".mgz":
+        openfile = gzip.open
+    elif ext == ".mgh":
+        openfile = open
+    else:
+        raise ValueError("The data must be a mgh or mgz file!")
 
     fobj = openfile(filepath, "rb")
     # We have to use np.fromstring here as gzip fileobjects don't work
@@ -69,56 +41,92 @@ def read_scalar_data(filepath):
         nbytes = ndim1 * ndim2 * ndim3 * nframes * databytes
         # Read in all the data, keep it in flat representation
         # (is this ever a problem?)
-        data = np.fromstring(fobj.read(nbytes), typecode)
+        _data = np.fromstring(fobj.read(nbytes), typecode)
     finally:
         fobj.close()
 
-    scalar_data = []
-    if data.ndim == 4:
-        for idx in range(data.shape[3]):
-            scalar_data.append(np.ravel(data[..., idx], order='F'))
+    data = []
+    if _data.ndim == 4:
+        for idx in range(_data.shape[3]):
+            data.append(np.ravel(_data[..., idx], order='F'))
     else:
-        scalar_data.append(np.ravel(data, order="F"))
-    scalar_data = np.array(scalar_data).T
+        data.append(np.ravel(_data, order="F"))
+    data = np.array(data).T
 
-    return scalar_data
+    return data
 
 
-def read_data(fpath, n_vtx_limit=None):
+def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
 
-    (dir, fname) = os.path.split(fpath)
-    suffix = fname.split('.')[-1]
+    fname = os.path.basename(fpath)
+    suffix0 = fname.split('.')[-1]
+    suffix1 = fname.split('.')[-2]
     islabel = False
-    if suffix in ('curv', 'thickness'):
+    if suffix0 in ('curv', 'thickness'):
         data = nib.freesurfer.read_morph_data(fpath)
         data = data.astype(np.float64)
 
-    elif suffix == 'label':
-        data = nib.freesurfer.read_label(fpath)
+    elif suffix0 == 'label':
         islabel = True
-
-    elif suffix in ('nii', 'gz', 'mgh', 'mgz'):  # FIXME remove the support for the 'gz'
-        data = read_scalar_data(fpath)
-        data = data.astype(np.float64)  # transform type of data into float64
-
-    elif suffix == 'gii':
-        gii_data = g_io.read(fpath).darrays
-        data = gii_data[0].data
-
-    else:
-        raise TypeError('Unsupported data type.')
-
-    if n_vtx_limit is not None:
-        if suffix == 'label':
-            if np.max(data) <= n_vtx_limit:
-                label_array = np.zeros(n_vtx_limit, np.int)
-                label_array[data] = 1
-                data = label_array
+        _data = nib.freesurfer.read_label(fpath)
+        if n_vtx is None:
+            raise RuntimeError("Reading label as scalar data need specify the number of vertices.")
+        else:
+            if np.max(_data) < n_vtx:
+                label_array = np.zeros(n_vtx, np.int)
+                label_array[_data] = 1
+                data = np.array([label_array]).T
             else:
                 raise RuntimeError('vertices number mismatch!')
+
+    elif suffix0 == 'nii':
+        nii_file = nib.load(fpath)
+        if suffix1 in ('dscalar', 'dtseries', 'dlabel'):
+            if suffix1 == 'dlabel':
+                islabel = True
+
+            _data = nii_file.get_data()
+            brain_model = [i for i in nii_file.header.get_index_map(1).brain_models
+                           if i.brain_structure == brain_structure][0]
+
+            offset = brain_model.index_offset
+            count = brain_model.index_count
+            vertices = list(brain_model.vertex_indices)
+            n_vtx = brain_model.surface_number_of_vertices
+            data = np.zeros((n_vtx, _data.shape[0]), np.float64)
+            for row in range(_data.shape[0]):
+                data[vertices, row] = _data[row][offset:offset+count]
         else:
-            if data.shape[0] != n_vtx_limit:
-                raise RuntimeError('vertices number mismatch!')
+            Warning('The data will be regarded as a nifti file.')
+            _data = nii_file.get_data()
+            data = []
+            if _data.ndim == 4:
+                for idx in range(_data.shape[3]):
+                    data.append(np.ravel(_data[..., idx], order='F'))
+            else:
+                data.append(np.ravel(_data, order="F"))
+            data = np.array(data).T
+
+    elif suffix0 == 'gz' and suffix1 == 'nii':
+        _data = nib.load(fpath).get_data()
+        data = []
+        if _data.ndim == 4:
+            for idx in range(_data.shape[3]):
+                data.append(np.ravel(_data[..., idx], order='F'))
+        else:
+            data.append(np.ravel(_data, order="F"))
+        data = np.array(data).T
+
+    elif suffix0 in ('mgh', 'mgz'):
+        data = read_mgh_mgz(fpath)
+        data = data.astype(np.float64)
+
+    else:
+        raise RuntimeError('Unsupported data type.')
+
+    if n_vtx is not None:
+        if data.shape[0] != n_vtx:
+            raise RuntimeError('vertices number mismatch!')
 
     if data.dtype.byteorder == '>':
         data.byteswap(True)

@@ -130,7 +130,7 @@ class SurfaceView(QWidget):
         for hemi in visible_hemis:
 
             # get geometry's information
-            geo = hemi.surf['white']  # FIXME 'white' should be replaced with var: surf_type
+            geo = hemi.geometries['inflated']  # FIXME 'inflated' should be replaced with var: geo_type
             hemi_coords = geo.get_coords()
             hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
             hemi_nn = geo.get_nn()
@@ -161,8 +161,8 @@ class SurfaceView(QWidget):
             scalars = np.array(self.c_id2v_id)
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
-                if hemi.overlay_list:
-                    top_ol = hemi.overlay_list[-1]
+                if hemi.overlays:
+                    top_ol = hemi.overlays[-1]
                     if not top_ol.is_label() and top_ol.get_alpha() == 1. and top_ol.is_visible()\
                             and top_ol.get_min() <= np.min(top_ol.get_data()):
                         # colorbar is only meaningful for this situation

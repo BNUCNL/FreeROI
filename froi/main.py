@@ -770,8 +770,8 @@ class BpMainWindow(QMainWindow):
                 register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
                 register_volume_dialog.exec_()
 
-    def _add_surface_img(self, source, index=None, offset=None,
-                         vmin=None, vmax=None, colormap=None):
+    def _add_surface_img(self, source, index=None, offset=None, vmin=None, vmax=None,
+                         colormap='jet', alpha=1.0, visible=True, islabel=False):
         """ Add surface image."""
         # If model is NULL, then re-initialize it.
         if not self.surface_model:
@@ -801,9 +801,8 @@ class BpMainWindow(QMainWindow):
                                 'Warning',
                                 'You must choose the brain surface file first!',
                                 QMessageBox.Yes)
-        elif self.surface_model.add_item(index, file_path,
-                                         vmin=vmin, vmax=vmax,
-                                         colormap=colormap):
+        elif self.surface_model.add_item(index, file_path, vmin=vmin, vmax=vmax, alpha=alpha,
+                                         colormap=colormap, visible=visible, islabel=islabel):
             # Initial the tabwidget.
             if not self.tabWidget:
                 self._init_tab_widget()
@@ -987,7 +986,7 @@ class BpMainWindow(QMainWindow):
 
             if filter == 'FS label(*.label)':
                 hemi = get_curr_hemi(index)
-                coords = hemi.surf['white'].get_coords()
+                coords = hemi.surf['inflated'].get_coords()
                 overlay.save2label(path, coords)
             else:
                 overlay.save2nifti(path)
