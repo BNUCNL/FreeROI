@@ -36,7 +36,7 @@ class TreeModel(QAbstractItemModel):
         else:
             hemi_item = parent.internalPointer()
             if hemi_item in self._data:
-                ol_item = hemi_item.overlay_list[hemi_item.overlay_count()-1-row]
+                ol_item = hemi_item.overlays[hemi_item.overlay_count()-1-row]
                 if ol_item:
                     return self.createIndex(row, column, ol_item)
                 else:
@@ -54,7 +54,7 @@ class TreeModel(QAbstractItemModel):
             return QModelIndex()
         else:
             for hemi in self._data:
-                if item in hemi.overlay_list:
+                if item in hemi.overlays:
                     return self.createIndex(self._data.index(hemi), 0, hemi)
 
     def rowCount(self, parent):
@@ -123,7 +123,7 @@ class TreeModel(QAbstractItemModel):
         item = index.internalPointer()
         if not item in self._data:
             for hemi in self._data:
-                if item in hemi.overlay_list:
+                if item in hemi.overlays:
                     break
             if hemi.is_visible():
                 result |= Qt.ItemIsEnabled
@@ -202,7 +202,7 @@ class TreeModel(QAbstractItemModel):
         if item in self._data:
             self._data.remove(item)
         else:
-            parent_item.overlay_list.remove(item)
+            parent_item.overlays.remove(item)
         self.endRemoveRows()
 
     def moveUp(self, index):
@@ -211,8 +211,8 @@ class TreeModel(QAbstractItemModel):
         parent = index.parent()
         self.beginMoveRows(parent, row, row, parent, row-1)
         for hemi in self._data:
-            if item in hemi.overlay_list:
-                idx = hemi.overlay_list.index(item)
+            if item in hemi.overlays:
+                idx = hemi.overlays.index(item)
                 hemi.overlay_up(idx)
         self.endMoveRows()
         self.repaint_surface.emit()
@@ -223,8 +223,8 @@ class TreeModel(QAbstractItemModel):
         parent = index.parent()
         self.beginMoveRows(parent, row+1, row+1, parent, row)
         for hemi in self._data:
-            if item in hemi.overlay_list:
-                idx = hemi.overlay_list.index(item)
+            if item in hemi.overlays:
+                idx = hemi.overlays.index(item)
                 hemi.overlay_down(idx)
         self.endMoveRows()
         self.repaint_surface.emit()

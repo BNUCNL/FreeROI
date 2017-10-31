@@ -618,7 +618,7 @@ class GeometryData(object):
 
     Attributes
     ----------
-    surf_path: string
+    geo_path: string
         Absolute path of surf file
     x: 1d array
         x coordinates of vertices
@@ -635,23 +635,24 @@ class GeometryData(object):
 
     """
 
-    def __init__(self, surf_path, offset=None):
-        """Surface
+    def __init__(self, geo_path, offset=None):
+        """
+        Surface Geometry
         
         Parameters
         ----------
-        surf_path: absolute surf file path
+        geo_path: absolute surf file path
         offset: float | None
             If 0.0, the surface will be offset such that medial wall
             is aligned with the origin. If None, no offset will be
             applied. If != 0.0, an additional offset will be used.
 
         """
-        if not os.path.exists(surf_path):
+        if not os.path.exists(geo_path):
             print 'surf file does not exist!'
             return None
-        self.surf_path = surf_path
-        self.surf_dir, name = os.path.split(surf_path)
+        self.geo_path = geo_path
+        self.surf_dir, name = os.path.split(geo_path)
         name_split = name.split('.')
         self.suffix = name_split[-1]
         if self.suffix in ('pial', 'inflated', 'white'):
@@ -663,19 +664,21 @@ class GeometryData(object):
                 self.hemi_rl = 'lh'
             elif name_split[1] == 'R':
                 self.hemi_rl = 'rh'
+            else:
+                self.hemi_rl = None
         else:
             raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
         self.offset = offset
 
         # load geometry
-        self.load_geometry()
+        self.load()
 
-    def load_geometry(self):
+    def load(self):
         """Load surface geometry."""
         if self.suffix in ('pial', 'inflated', 'white'):
-            self.coords, self.faces = nib.freesurfer.read_geometry(self.surf_path)
+            self.coords, self.faces = nib.freesurfer.read_geometry(self.geo_path)
         elif self.suffix == 'gii':
-            gii_data = nib.gifti.read(self.surf_path).darrays
+            gii_data = nib.gifti.read(self.geo_path).darrays
             self.coords, self.faces = gii_data[0].data, gii_data[1].data
         else:
             raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
@@ -895,54 +898,54 @@ class ScalarData(object):
 
 class Hemisphere(object):
     """Hemisphere: container for surface data and scalar data."""
-    def __init__(self, surf_path, offset=None):
-        """Hemisphere
+    def __init__(self, geo_path, offset=None):
+        """
+        Hemisphere
 
         Parameters
         ----------
-        surf_path: absolute surf file path
+        geo_path: absolute surf file path
         offset: float | None
             If 0.0, the surface will be offset such that medial wall
             is aligned with the origin. If None, no offset will be 
             applied. If != 0.0, an additional offset will be used.
-
         """
-        # FIXME to contain more surface type
-        surf_type = 'inflated'
-        self.surfaces = {}
-        self.load_surface(surf_path, surf_type, offset=1.0)
+        # FIXME to contain more geometry type
+        geo_type = 'inflated'
+        self.geometries = {}
+        self.load_geometry(geo_path, geo_type, offset=1.0)
 
-        self.overlay_list = []
-        self._name = self.surfaces[surf_type].hemi_rl
+        self.overlays = []
+        self._name = self.geometries[geo_type].hemi_rl
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
-        self.bin_curv = self.surfaces[surf_type].get_bin_curv()
+        self.bin_curv = self.geometries[geo_type].get_bin_curv()
 
-    def load_surface(self, surf_path, surf_type, offset=None):
+    def load_geometry(self, geo_path, geo_type, offset=None):
         """Add surface data"""
-        if surf_type in self.surfaces.keys():
+        if geo_type in self.geometries.keys():
             print 'Invalid Operation! The surface type is already exist!'
         else:
-            self.surfaces[surf_type] = GeometryData(surf_path, offset)
+            self.geometries[geo_type] = GeometryData(geo_path, offset)
 
-    def del_surfs(self, surf_type):
+    def del_surfs(self, geo_type):
         """Del surface data"""
         try:
-            self.surfaces[surf_type]
+            self.geometries[geo_type]
         except KeyError:
             print "The surface data is not exist!"
         else:
-            del self.surfaces[surf_type]
+            del self.geometries[geo_type]
 
-    def update_surfs(self, surf_path, surf_type, offset=None):
+    def update_surfs(self, geo_path, geo_type, offset=None):
         """Update surf data, if not exist, ask user to confirm"""
         try:
-            self.surfaces[surf_type]
+            self.geometries[geo_type]
         except KeyError:
             pass
             # Here should be a dialog for confirm, whether adding data or not
         else:
-            self._add_surface(surf_path, surf_type, offset)
+            self.load_geometry(geo_path, geo_type, offset)
 
     def load_overlay(self, source, vmin=None, vmax=None, colormap='jet', alpha=1.0,
                      visible=True, islabel=False):
@@ -952,25 +955,26 @@ class Hemisphere(object):
             data = source
         else:
             name = os.path.basename(source).split('.')[0]
-            data, islabel = read_scalar_data(source, self.surfaces.values()[0].get_vertices_num())
-        self.overlay_list.append(ScalarData(name, data, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
-                                            visible=visible, islabel=islabel))
+            data, islabel = read_scalar_data(source, self.geometries.values()[0].get_vertices_num(),
+                                             self.get_cifti_structure_name())
+        self.overlays.append(ScalarData(name, data, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
+                                        visible=visible, islabel=islabel))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
         if not self.is_top_layer(idx):
-            self.overlay_list[idx], self.overlay_list[idx+1] = \
-                self.overlay_list[idx+1], self.overlay_list[idx]
+            self.overlays[idx], self.overlays[idx+1] = \
+                self.overlays[idx+1], self.overlays[idx]
 
     def overlay_down(self, idx):
         """Move the `idx` overlay layer down."""
         if not self.is_bottom_layer(idx):
-            self.overlay_list[idx], self.overlay_list[idx-1] = \
-                self.overlay_list[idx-1], self.overlay_list[idx]
+            self.overlays[idx], self.overlays[idx-1] = \
+                self.overlays[idx-1], self.overlays[idx]
 
     def is_top_layer(self, idx):
-        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
-            if len(self.overlay_list)-1 == idx:
+        if isinstance(idx, int) and 0 <= idx < len(self.overlays):
+            if len(self.overlays)-1 == idx:
                 return True
             else:
                 return False
@@ -978,7 +982,7 @@ class Hemisphere(object):
             print 'Invalid input!'
 
     def is_bottom_layer(self, idx):
-        if isinstance(idx, int) and 0 <= idx < len(self.overlay_list):
+        if isinstance(idx, int) and 0 <= idx < len(self.overlays):
             if idx == 0:
                 return True
             else:
@@ -996,14 +1000,14 @@ class Hemisphere(object):
             raise TypeError("Visible status must be a bool.")
 
     def overlay_count(self):
-        return len(self.overlay_list)
+        return len(self.overlays)
 
     def get_rgba(self, ol):
         """
         Return a RGBA array according to scalar_data, alpha and colormap.
 
         :param ol:
-            The element in self.overlay_list.
+            The element in self.overlays.
         :return: array
         """
 
@@ -1021,7 +1025,7 @@ class Hemisphere(object):
 
         # get rgba arrays according to each overlay
         rgba_list = []
-        for ol in self.overlay_list[start_render_index:]:
+        for ol in self.overlays[start_render_index:]:
             if ol.is_visible():
                 rgba_list.append(self.get_rgba(ol))
 
@@ -1029,10 +1033,18 @@ class Hemisphere(object):
         if self.bin_curv is not None:
             background = aq.array2qrgba(self.bin_curv, 255.0, 'gray', (-1, 1.5))
         else:
-            background = np.ones((self.surfaces['inflated'].get_vertices_num(), 4)) * 127.5
+            background = np.ones((self.geometries['inflated'].get_vertices_num(), 4)) * 127.5
         rgba_list.insert(0, background)
 
         return aq.qcomposition(rgba_list)
+
+    def get_cifti_structure_name(self):
+        if self._name == 'lh':
+            return 'CIFTI_STRUCTURE_CORTEX_LEFT'
+        elif self._name == 'rh':
+            return 'CIFTI_STRUCTURE_CORTEX_RIGHT'
+        else:
+            return 'Failed to recognize which hemisphere the data belong to!'
 
     def get_name(self):
         return self._name
@@ -1058,10 +1070,10 @@ class Hemisphere(object):
             The index that the render starts at.
         """
 
-        for ol in self.overlay_list[-1::-1]:
+        for ol in self.overlays[-1::-1]:
             if not ol.is_label() and ol.get_alpha() == 1. and ol.is_visible()\
                     and ol.get_min() <= np.min(ol.get_data()):
-                return self.overlay_list.index(ol)
+                return self.overlays.index(ol)
 
         # 0 means that the render will start with the bottom overlay.
         return 0

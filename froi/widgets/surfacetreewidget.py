@@ -329,10 +329,10 @@ class SurfaceTreeView(QWidget):
         if not index == -1:
             self._disp_current_para(index)
 
-    def _get_surface_index(self, surf_type):
+    def _get_surface_index(self, geo_type):
         """Check different type of surface exist or not."""
         for index in self._tree_view.selectedIndexes():
-            if index.data().endswith(surf_type):
+            if index.data().endswith(geo_type):
                 return index
         return -1
 
@@ -402,7 +402,7 @@ if __name__ == '__main__':
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
     h1 = Hemisphere(sub1)
-    h1.load_surface(sub1, 'inflated')
+    h1.load_geometry(sub1, 'inflated')
     h1.load_overlay(s1)
     h1.load_overlay(s2)
     h2 = Hemisphere(surf2)
@@ -414,7 +414,7 @@ if __name__ == '__main__':
 
     for h in hemisphere_list:
         print h.name
-        for ol in h.overlay_list:
+        for ol in h.overlays:
             print ol.name
 
     model = TreeModel(hemisphere_list)

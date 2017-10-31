@@ -21,8 +21,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.model = model
 
         self.hemi = self._get_curr_hemi()
-        # FIXME 'inflated' should be replaced with surf_type in the future
-        self.surf = self.hemi.surfaces['inflated']
+        # FIXME 'inflated' should be replaced with geo_type in the future
+        self.surf = self.hemi.geometries['inflated']
         self.hemi_vtx_number = self.surf.get_vertices_num()
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
@@ -256,8 +256,8 @@ class SurfaceRGDialog(QtGui.QDialog):
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
                 rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
-                rg_result, self.evolved_regions, self.region_assessments, self.assess_step, r_outer_value =\
-                    rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
+                rg_result, self.evolved_regions, self.region_assessments, self.assess_step, r_outer_mean, r_inner_min\
+                    = rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
                 # -----------------plot diagrams------------------
                 num_axes = len(self.evolved_regions)
@@ -270,9 +270,12 @@ class SurfaceRGDialog(QtGui.QDialog):
                 self.sm_sliders = []  # store smooth sliders, hold references
                 for r_idx, r in enumerate(self.evolved_regions):
                     # plot region outer boundary assessment curve
-                    self.axes[r_idx][1].plot(r_outer_value[r_idx], 'b.-')
+                    self.axes[r_idx][1].hold(True)
+                    self.axes[r_idx][1].plot(r_outer_mean[r_idx], 'b.-', label='r_outer_mean')
+                    self.axes[r_idx][1].plot(r_inner_min[r_idx], 'r.-', label='r_inner_min')
+                    self.axes[r_idx][1].legend()
                     self.axes[r_idx][1].set_ylabel('amplitude')
-                    self.axes[r_idx][1].set_title('outer boundary value for seed {}'.format(r_idx))
+                    self.axes[r_idx][1].set_title('related values for seed {}'.format(r_idx))
 
                     # plot assessment curve
                     self.r_idx_sm = r_idx
