@@ -887,7 +887,7 @@ class ScalarData(object):
         """
         save overlay to a text file adapted to freesurfer label file format
         """
-        vertices = np.where(self.data[:, 0] != 0)[0]
+        vertices = np.where(self._data[:, 0] != 0)[0]
         coords = hemi_coords[vertices]
         unknow = np.zeros_like(vertices, np.float16)
         X = np.c_[vertices, coords, unknow]
