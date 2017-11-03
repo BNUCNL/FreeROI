@@ -986,8 +986,8 @@ class BpMainWindow(QMainWindow):
 
             if filter == 'FS label(*.label)':
                 hemi = get_curr_hemi(index)
-                coords = hemi.surf['inflated'].get_coords()
-                overlay.save2label(path, coords)
+                coords = hemi.geometries['inflated'].get_coords()
+                overlay.save2label(path, hemi_coords=coords)
             else:
                 overlay.save2nifti(path)
 
