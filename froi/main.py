@@ -86,7 +86,7 @@ class BpMainWindow(QMainWindow):
 
         # pre-define model variables, one for volume dataset, another
         # for suface dataset
-        self.model = None
+        self.volume_model = None
         self.surface_model = None
 
         self.tabWidget = None
@@ -152,18 +152,23 @@ class BpMainWindow(QMainWindow):
             self.default_grid_scale_factor = 2.0
 
     def _init_tab_widget(self):
+        # set tab widget
         self.tabWidget = QTabWidget()
         self.tabWidget.setTabShape(QTabWidget.Rounded)
         self.tabWidget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.tabWidget.setMaximumWidth(280)
         self.tabWidget.currentChanged.connect(self._tabwidget_index_changed)
 
+        # set central widget
         central_widget = QWidget()
         layout = QHBoxLayout()
         central_widget.setLayout(layout)
         central_widget.layout().addWidget(self.tabWidget)
-        # central_widget.layout().addWidget(self.image_view)
         self.setCentralWidget(central_widget)
+
+        # add tool bar
+        self._add_toolbar()
+        # self.setUnifiedTitleAndToolBarOnMac(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -180,11 +185,11 @@ class BpMainWindow(QMainWindow):
         config.set('height', 'int', self.height())
         config.set('xpos', 'int', self.x())
         config.set('ypos', 'int', self.y())
-        if hasattr(self, 'model') and isinstance(self.model, VolumeListModel):
+        if hasattr(self, 'volume_model') and isinstance(self.volume_model, VolumeListModel):
             config.set('orth_scale', 'int',
-                       int(self.model.get_scale_factor('orth')*100))
+                       int(self.volume_model.get_scale_factor('orth')*100))
             config.set('grid_scale', 'int',
-                       int(self.model.get_scale_factor('grid')*100))
+                       int(self.volume_model.get_scale_factor('grid')*100))
         else:
             config.set('orth_scale', 'int',
                        int(self.default_orth_scale_factor * 100))
@@ -605,7 +610,7 @@ class BpMainWindow(QMainWindow):
     def _set_scale_factor(self, value):
         """Set scale factor."""
         value = float(value) / 100
-        self.model.set_scale_factor(value, self.image_view.display_type())
+        self.volume_model.set_scale_factor(value, self.image_view.display_type())
 
     def _add_template(self):
         """Open a dialog window and select a template file."""
@@ -658,10 +663,10 @@ class BpMainWindow(QMainWindow):
 
     def _duplicate_image(self):
         """Duplicate image."""
-        index = self.model.currentIndex()
-        dup_img = self.model._data[index.row()].duplicate()
-        self.model.insertRow(0, dup_img)
-        self.list_view.setCurrentIndex(self.model.index(0))
+        index = self.volume_model.currentIndex()
+        dup_img = self.volume_model._data[index.row()].duplicate()
+        self.volume_model.insertRow(0, dup_img)
+        self.list_view.setCurrentIndex(self.volume_model.index(0))
 
         # change button status
         self._actions['remove_image'].setEnabled(True)
@@ -670,11 +675,11 @@ class BpMainWindow(QMainWindow):
                  view_max=None, alpha=255, colormap='gray'):
         """ Add image."""
         # If model is NULL, then re-initialize it.
-        if not self.model:
+        if not self.volume_model:
             self._init_label_config_center()
-            self.model = VolumeListModel([], self._label_config_center)
-            self.model.set_scale_factor(self.default_grid_scale_factor, 'grid')
-            self.model.set_scale_factor(self.default_orth_scale_factor, 'orth')
+            self.volume_model = VolumeListModel([], self._label_config_center)
+            self.volume_model.set_scale_factor(self.default_grid_scale_factor, 'grid')
+            self.volume_model.set_scale_factor(self.default_orth_scale_factor, 'orth')
             self.painter_status = PainterStatus(ViewSettings())
 
         # Save previous opened directory (except `standard` directory)
@@ -690,20 +695,18 @@ class BpMainWindow(QMainWindow):
                                                            'standard')):
                 self._temp_dir = temp_dir
 
-        if self.model.addItem(file_path, None, name, header, view_min,
+        if self.volume_model.addItem(file_path, None, name, header, view_min,
                               view_max, alpha, colormap):
             # Take different acions in different case.
             # If only one data in VolumeList, then initialize views.
-            if self.model.rowCount() == 1:
+            if self.volume_model.rowCount() == 1:
                 # initialize views
                 self.list_view = LayerView(self._label_config_center)
-                self.list_view.setModel(self.model)
-                self._init_roi_dialog()
-                self.image_view = GridView(self.model, self.painter_status)
+                self.list_view.setModel(self.volume_model)
+                self._init_roi_dialog(self.volume_model)
+                self.list_view._list_view.selectionModel().currentChanged.connect(self.roidialog.clear_rois)
+                self.image_view = GridView(self.volume_model, self.painter_status)
 
-                # add a toolbar
-                self._add_toolbar()
-                #self.setUnifiedTitleAndToolBarOnMac(True)
                 # change button status
                 self._actions['save_image'].setEnabled(True)
                 self._actions['duplicate_image'].setEnabled(True)
@@ -717,28 +720,29 @@ class BpMainWindow(QMainWindow):
                 self._actions['undo'].setEnabled(False)
                 self._actions['redo'].setEnabled(False)
                 self._functional_module_set_enabled(True)
-                if not self.model.is_mni_space():
+                if not self.volume_model.is_mni_space():
                     self._actions['atlas'].setEnabled(False)
+                self._spinbox.setEnabled(True)
                 # connect signals with slots
                 self.list_view.current_changed.connect(self._update_undo)
                 self.list_view.current_changed.connect(self._update_redo)
-                self.model.rowsInserted.connect(self._update_remove_image)
-                self.model.undo_stack_changed.connect(self._update_undo)
-                self.model.redo_stack_changed.connect(self._update_redo)
+                self.volume_model.rowsInserted.connect(self._update_remove_image)
+                self.volume_model.undo_stack_changed.connect(self._update_undo)
+                self.volume_model.redo_stack_changed.connect(self._update_redo)
                 # set current volume index
-                self.list_view.setCurrentIndex(self.model.index(0))
+                self.list_view.setCurrentIndex(self.volume_model.index(0))
                 # set crosshair as the center of the data
-                self.model.set_cross_pos([self.model.getY()/2,
-                                          self.model.getX()/2,
-                                          self.model.getZ()/2])
-                ## Enable cursor tracking
+                self.volume_model.set_cross_pos([self.volume_model.getY()/2,
+                                                 self.volume_model.getX()/2,
+                                                 self.volume_model.getZ()/2])
+                # Enable cursor tracking
                 # self.list_view._list_view.selectionModel().currentChanged.connect(
                 #                self._switch_cursor_status)
                 self._save_toolbar_status()
-            elif self.model.rowCount() > 1:
+            elif self.volume_model.rowCount() > 1:
                 self._actions['remove_image'].setEnabled(True)
                 # set current volume index
-                self.list_view.setCurrentIndex(self.model.index(0))
+                self.list_view.setCurrentIndex(self.volume_model.index(0))
 
             if not self.tabWidget:
                 self._init_tab_widget()
@@ -750,8 +754,7 @@ class BpMainWindow(QMainWindow):
             elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.list_view:
                 self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
 
-
-            if self.centralWidget().layout().indexOf(self.image_view) == -1: #Could not find the self.image_view
+            if self.centralWidget().layout().indexOf(self.image_view) == -1:  # Could not find the self.image_view
                 if self.centralWidget().layout().indexOf(self.surface_view) != -1:
                     self.centralWidget().layout().removeWidget(self.surface_view)
                     self.surface_view.setParent(None)
@@ -767,7 +770,7 @@ class BpMainWindow(QMainWindow):
                                      QMessageBox.Cancel,
                                      QMessageBox.Yes)
             if ret == QMessageBox.Yes:
-                register_volume_dialog = RegisterVolumeDialog(self.model, file_path)
+                register_volume_dialog = RegisterVolumeDialog(self.volume_model, file_path)
                 register_volume_dialog.exec_()
 
     def _add_surface_img(self, source, index=None, offset=None, vmin=None, vmax=None,
@@ -852,6 +855,7 @@ class BpMainWindow(QMainWindow):
         self.toolbar_status['redo'] = self._actions['redo'].isEnabled()
         self.toolbar_status['functional_module_set_enabled'] = self._actions['binarization'].isEnabled()
         self.toolbar_status['atlas'] = self._actions['atlas'].isEnabled()
+        self.toolbar_status['tool_bar_spinbox'] = self._spinbox.isEnabled()
 
     def _disable_toolbar(self):
         # Disable some toolbar controls
@@ -868,9 +872,10 @@ class BpMainWindow(QMainWindow):
         self._actions['undo'].setEnabled(False)
         self._actions['redo'].setEnabled(False)
         self._functional_module_set_enabled(False)
+        self._spinbox.setEnabled(False)
 
     def _restore_toolbar_status(self):
-        #Restore all toolbar controls
+        # Restore all toolbar controls
         self._actions['grid_view'].setEnabled(self.toolbar_status['grid_view'])
         self._actions['hand'].setEnabled(self.toolbar_status['hand'])
         self._actions['snapshot'].setEnabled(self.toolbar_status['snapshot'])
@@ -885,8 +890,9 @@ class BpMainWindow(QMainWindow):
         self._actions['undo'].setEnabled(self.toolbar_status['undo'])
         self._actions['redo'].setEnabled(self.toolbar_status['redo'])
         self._functional_module_set_enabled(self.toolbar_status['functional_module_set_enabled'])
-        if not self.model.is_mni_space():
+        if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(self.toolbar_status['atlas'])
+        self._spinbox.setEnabled(self.toolbar_status['tool_bar_spinbox'])
 
     def _tabwidget_index_changed(self):
         if self.tabWidget.count() == 2:
@@ -907,7 +913,7 @@ class BpMainWindow(QMainWindow):
 
     def _update_remove_image(self):
         """Update the display after removing an image."""
-        if self.model.rowCount() == 1:
+        if self.volume_model.rowCount() == 1:
             self._actions['remove_image'].setEnabled(False)
         else:
             self._actions['remove_image'].setEnabled(True)
@@ -916,8 +922,8 @@ class BpMainWindow(QMainWindow):
         """Create a new volume for brain parcellation."""
         if colormap is None:
             colormap = self._label_config_center.get_first_label_config()
-        self.model.new_image(data, name, None, colormap)
-        self.list_view.setCurrentIndex(self.model.index(0))
+        self.volume_model.new_image(data, name, None, colormap)
+        self.list_view.setCurrentIndex(self.volume_model.index(0))
 
         # change button status
         self._actions['remove_image'].setEnabled(True)
@@ -929,8 +935,8 @@ class BpMainWindow(QMainWindow):
     def _remove_image(self):
         """Remove current image."""
         row = self.list_view.currentRow()
-        self.model.delItem(row)
-        if self.model.rowCount() == 1:
+        self.volume_model.delItem(row)
+        if self.volume_model.rowCount() == 1:
             self._actions['remove_image'].setEnabled(False)
 
     def _save_image(self):
@@ -942,11 +948,11 @@ class BpMainWindow(QMainWindow):
             temp_dir = self._temp_dir
 
         if self.tabWidget.currentWidget() == self.list_view:
-            index = self.model.currentIndex()
+            index = self.volume_model.currentIndex()
             file_types = "Compressed NIFTI file(*.nii.gz);;NIFTI file(*.nii)"
             file_path = os.path.join(temp_dir,
-                                  str(self.model.data(index, Qt.DisplayRole)))
-            overlay = self.model._data[index.row()]
+                                     str(self.volume_model.data(index, Qt.DisplayRole)))
+            overlay = self.volume_model._data[index.row()]
         else:
             index = self.surface_tree_view_control.currentIndex()
             if not index.isValid():
@@ -996,7 +1002,7 @@ class BpMainWindow(QMainWindow):
         self.setCentralWidget(QWidget())
         self._set_scale_factor(self.default_grid_scale_factor)
         self.removeToolBar(self._toolbar)
-        self.model = None
+        self.volume_model = None
         self._actions['add_template'].setEnabled(True)
         self._actions['add_image'].setEnabled(True)
         self._actions['add_surface_image'].setEnabled(True)
@@ -1157,7 +1163,7 @@ class BpMainWindow(QMainWindow):
         if 'atlasdialog' in self.__dict__:
             self.atlasdialog.show()
         else:
-            self.atlasdialog = AtlasDialog(self.model, self)
+            self.atlasdialog = AtlasDialog(self.volume_model, self)
             self.atlasdialog.show()
 
     def _roi_batch_enable(self):
@@ -1193,27 +1199,25 @@ class BpMainWindow(QMainWindow):
 
     def _update_undo(self):
         """Update the undo status."""
-        if self.model.current_undo_available():
+        if self.volume_model.current_undo_available():
             self._actions['undo'].setEnabled(True)
         else:
             self._actions['undo'].setEnabled(False)
 
     def _update_redo(self):
         """Update the redo status."""
-        if self.model.current_redo_available():
+        if self.volume_model.current_redo_available():
             self._actions['redo'].setEnabled(True)
         else:
             self._actions['redo'].setEnabled(False)
 
-    def _init_roi_dialog(self):
+    def _init_roi_dialog(self, model):
         """Initialize ROI Dialog."""
         self._actions['label_management'].setEnabled(False)
-        self.roidialog = ROIDialog(self.model, self._label_config_center, self)
+        self.roidialog = ROIDialog(model, self._label_config_center, self)
         self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
         self.roidialog.roi_edit_enabled.connect(self._roi_edit_enable)
         self.roidialog.roi_batch_enabled.connect(self._roi_batch_enable)
-        self.list_view._list_view.selectionModel().currentChanged.connect(
-                self.roidialog.clear_rois)
 
     def _init_label_config_center(self):
         """Initialize LabelConfigCenter."""
@@ -1257,44 +1261,44 @@ class BpMainWindow(QMainWindow):
 
     def _undo(self):
         """The undo action."""
-        self.model.undo_current_image()
+        self.volume_model.undo_current_image()
 
     def _redo(self):
         """The redo action."""
-        self.model.redo_current_image()
+        self.volume_model.redo_current_image()
 
     def _regular_roi(self):
         """Generate regular(cube, sphere, etc.)  roi dialog."""
-        regular_roi_dialog = RegularROIDialog(self.model)
+        regular_roi_dialog = RegularROIDialog(self.volume_model)
         regular_roi_dialog.exec_()
 
     def _regular_roi_from_csv_file(self):
         """Generate regular(cube, sphere, etc.)  roi from csv file."""
-        regular_roi_from_csv_file = RegularROIFromCSVFileDialog(self.model)
+        regular_roi_from_csv_file = RegularROIFromCSVFileDialog(self.volume_model)
         regular_roi_from_csv_file.exec_()
 
     def _edge_detection(self):
         """Detect the image edge."""
-        edge_detection(self.model)
+        edge_detection(self.volume_model)
 
     def _roi_merge(self):
         """ROI merge dialog."""
-        new_dialog = ROIMergeDialog(self.model)
+        new_dialog = ROIMergeDialog(self.volume_model)
         new_dialog.exec_()
 
     def _r2i(self):
         """ROI to gwmi dialog."""
-        new_dialog = Roi2gwmiDialog(self.model)
+        new_dialog = Roi2gwmiDialog(self.volume_model)
         new_dialog.exec_()
 
     def _opening(self):
         """Opening Dialog which using the opening algorithm to process the image."""
-        new_dialog = OpenDialog(self.model)
+        new_dialog = OpenDialog(self.volume_model)
         new_dialog.exec_()
 
     def _voxelstats(self):
         """Voxel statistical analysis dialog."""
-        new_dialog = VoxelStatsDialog(self.model, self)
+        new_dialog = VoxelStatsDialog(self.volume_model, self)
         new_dialog.show()
 
     def _label_manage(self):
@@ -1315,7 +1319,7 @@ class BpMainWindow(QMainWindow):
                                                 "Label files (*.lbl)")
         if file_name:
             label_config = LabelConfig(str(file_name), False)
-            self.model.set_cur_label(label_config)
+            self.volume_model.set_cur_label(label_config)
 
     def _ld_glbl(self):
         """Local global label config file."""
@@ -1325,7 +1329,7 @@ class BpMainWindow(QMainWindow):
                                                 "Label files (*.lbl)")
         if file_name:
             label_config = LabelConfig(str(file_name), True)
-            self.model.set_global_label(label_config)
+            self.volume_model.set_global_label(label_config)
 
     def _grid_view(self):
         """Grid view option."""
@@ -1337,12 +1341,12 @@ class BpMainWindow(QMainWindow):
 
         self.centralWidget().layout().removeWidget(self.image_view)
         self.image_view.set_display_type('grid')
-        self.model.scale_changed.disconnect()
-        self.model.repaint_slices.disconnect()
-        self.model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
+        self.volume_model.scale_changed.disconnect()
+        self.volume_model.repaint_slices.disconnect()
+        self.volume_model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
         self.image_view.deleteLater()
-        self._spinbox.setValue(100 * self.model.get_scale_factor('grid'))
-        self.image_view = GridView(self.model, self.painter_status,
+        self._spinbox.setValue(100 * self.volume_model.get_scale_factor('grid'))
+        self.image_view = GridView(self.volume_model, self.painter_status,
                                    self._gridview_vertical_scrollbar_position)
         self.centralWidget().layout().addWidget(self.image_view)
 
@@ -1358,104 +1362,104 @@ class BpMainWindow(QMainWindow):
             self.image_view.get_vertical_srollbar_position()
         self.centralWidget().layout().removeWidget(self.image_view)
         self.image_view.set_display_type('orth')
-        self.model.scale_changed.disconnect()
-        self.model.repaint_slices.disconnect()
-        self.model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
+        self.volume_model.scale_changed.disconnect()
+        self.volume_model.repaint_slices.disconnect()
+        self.volume_model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
         self.image_view.deleteLater()
-        self._spinbox.setValue(100 * self.model.get_scale_factor('orth'))
-        self.image_view = OrthView(self.model, self.painter_status)
+        self._spinbox.setValue(100 * self.volume_model.get_scale_factor('orth'))
+        self.image_view = OrthView(self.volume_model, self.painter_status)
         self.centralWidget().layout().addWidget(self.image_view)
 
     def _display_cross_hover(self):
         """Display the cross hover on the image."""
-        if self.model._display_cross:
-            self.model.set_cross_status(False)
+        if self.volume_model._display_cross:
+            self.volume_model.set_cross_status(False)
             self._actions['cross_hover_view'].setText('Enable cross hover')
             self._actions['cross_hover_view'].setIcon(QIcon(os.path.join(self._icon_dir,'cross_hover_disable.png')))
         else:
-            self.model.set_cross_status(True)
+            self.volume_model.set_cross_status(True)
             self._actions['cross_hover_view'].setText('Disable cross hover')
             self._actions['cross_hover_view'].setIcon(QIcon(os.path.join(self._icon_dir,'cross_hover_enable.png')))
 
     def _reset_view(self):
         """Reset view parameters."""
         if self.image_view.display_type() == 'orth':
-            if not self.model.get_scale_factor('orth') == \
+            if not self.volume_model.get_scale_factor('orth') == \
                     self.default_orth_scale_factor:
                 self._spinbox.setValue(100 * self.default_orth_scale_factor)
             self.image_view.reset_view()
         elif self.image_view.display_type() == 'grid':
-            if not self.model.get_scale_factor('grid') == \
+            if not self.volume_model.get_scale_factor('grid') == \
                     self.default_grid_scale_factor:
                 self._spinbox.setValue(100 * self.default_grid_scale_factor)
 
     def _binarization(self):
         """Image binarization dialog."""
-        binarization_dialog = BinarizationDialog(self.model)
+        binarization_dialog = BinarizationDialog(self.volume_model)
         binarization_dialog.exec_()
 
     def _binaryerosion(self):
         """Image binaryerosion dialog."""
-        binaryerosion_dialog = BinaryerosionDialog(self.model)
+        binaryerosion_dialog = BinaryerosionDialog(self.volume_model)
         binaryerosion_dialog.exec_()
 
     def _binarydilation(self):
         """Image binarydilation dialog."""
-        binarydilation_dialog = BinarydilationDialog(self.model)
+        binarydilation_dialog = BinarydilationDialog(self.volume_model)
         binarydilation_dialog.exec_()
 
     def _greyerosion(self):
         """Image greyerosion dialog."""
-        greyerosiondialog = GreyerosionDialog(self.model)
+        greyerosiondialog = GreyerosionDialog(self.volume_model)
         greyerosiondialog.exec_()
 
     def _greydilation(self):
         """Image greydilation dialog."""
-        greydilation_dialog = GreydilationDialog(self.model)
+        greydilation_dialog = GreydilationDialog(self.volume_model)
         greydilation_dialog.exec_()
 
     def _intersect(self):
         """Image intersect dialog."""
-        intersect_dialog = IntersectDialog(self.model)
+        intersect_dialog = IntersectDialog(self.volume_model)
         intersect_dialog.exec_()
 
     def _meants(self):
         """Image meants dialog."""
-        new_dialog = MeanTSDialog(self.model)
+        new_dialog = MeanTSDialog(self.volume_model)
         new_dialog.exec_()
 
     def _local_max(self):
         """Compute image local max value dialog."""
-        new_dialog = LocalMaxDialog(self.model, self)
+        new_dialog = LocalMaxDialog(self.volume_model, self)
         new_dialog.exec_()
 
     def _inverse(self):
         """Inverse the given image."""
-        inverse_image(self.model)
+        inverse_image(self.volume_model)
 
     def _smooth(self):
         """Image smooth dialog."""
-        new_dialog = SmoothingDialog(self.model)
+        new_dialog = SmoothingDialog(self.volume_model)
         new_dialog.exec_()
 
     def _region_grow(self):
         """Image region grow dialog."""
-        new_dialog = GrowDialog(self.model, self)
+        new_dialog = GrowDialog(self.volume_model, self)
         new_dialog.exec_()
 
     def _watershed(self):
         """Image watershed dialog."""
-        new_dialog = WatershedDialog(self.model, self)
+        new_dialog = WatershedDialog(self.volume_model, self)
         new_dialog.exec_()
 
     def _slic(self):
         """Image supervoxel segmentation dialog."""
-        new_dialog = SLICDialog(self.model, self)
+        new_dialog = SLICDialog(self.volume_model, self)
         new_dialog.exec_()
 
     def _cluster(self):
         """Image cluster dialog."""
-        new_dialog = ClusterDialog(self.model, self)
+        new_dialog = ClusterDialog(self.volume_model, self)
         new_dialog.exec_()
 
     def _functional_module_set_enabled(self, status):
