@@ -90,8 +90,9 @@ class BpMainWindow(QMainWindow):
         self.surface_model = None
 
         self.tabWidget = None
-        self.toolbar_status = {}
-        self.image_view = None
+        self.volume_actions_status = {}
+        self.surface_actions_status = {}
+        self.volume_view = None
         self.surface_view = None
         self.list_view = None
         self.surface_tree_view = None
@@ -170,6 +171,29 @@ class BpMainWindow(QMainWindow):
         self._add_toolbar()
         # self.setUnifiedTitleAndToolBarOnMac(True)
 
+        # change actions status
+        self._actions['add_image'].setEnabled(True)
+        self._actions['new_image'].setEnabled(True)
+        self._actions['save_image'].setEnabled(True)
+        self._actions['close'].setEnabled(True)
+
+    def _init_vol_actions(self):
+        self._actions['duplicate_image'].setEnabled(True)
+        # self._actions['ld_lbl'].setEnabled(True)
+        # self._actions['ld_glbl'].setEnabled(True)
+        self._actions['orth_view'].setEnabled(True)
+        self._actions['cross_hover_view'].setEnabled(True)
+        self._actions['original_view'].setEnabled(True)
+        self._actions['remove_image'].setEnabled(False)
+        self._actions['undo'].setEnabled(False)
+        self._actions['redo'].setEnabled(False)
+        self._vol_func_module_set_enabled(True)
+        if not self.volume_model.is_mni_space():
+            self._actions['atlas'].setEnabled(False)
+
+    def _init_surf_actions(self):
+        self._surf_func_module_set_enabled(True)
+
     def _save_configuration(self):
         """Save GUI configuration to a file."""
         config_file = os.path.expanduser('~/.freeroi.conf')
@@ -218,23 +242,29 @@ class BpMainWindow(QMainWindow):
         self._actions['add_template'].triggered.connect(self._add_template)
         self._actions['add_template'].setEnabled(True)
 
-        # Add a new image action
-        self._actions['add_image'] = QAction(QIcon(os.path.join(
+        # Add a new volume image action
+        self._actions['add_volume_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
                                              self.tr("&Add volume file ... "),
                                              self)
-        self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
-        self._actions['add_image'].triggered.connect(self._add_image)
-        self._actions['add_image'].setEnabled(True)
+        self._actions['add_volume_image'].triggered.connect(self._add_volume_image)
+        self._actions['add_volume_image'].setEnabled(True)
 
         # Add a new surface image action
         self._actions['add_surface_image'] = QAction(QIcon(os.path.join(
                                                    self._icon_dir, 'add.png')),
                                              self.tr("&Add surface file ... "),
                                              self)
-        self._actions['add_surface_image'].setShortcut(self.tr("Ctrl+A"))
         self._actions['add_surface_image'].triggered.connect(self._add_surface_image)
         self._actions['add_surface_image'].setEnabled(True)
+
+        # Add a new image action
+        self._actions['add_image'] = QAction(QIcon(os.path.join(self._icon_dir, 'add.png')),
+                                             self.tr("&Add image ... "),
+                                             self)
+        self._actions['add_image'].setShortcut(self.tr("Ctrl+A"))
+        self._actions['add_image'].triggered.connect(self._add_image)
+        self._actions['add_image'].setEnabled(False)
 
         # Remove an image
         self._actions['remove_image'] = QAction(QIcon(os.path.join(
@@ -251,7 +281,7 @@ class BpMainWindow(QMainWindow):
                                             self.tr("&New image"),
                                             self)
         self._actions['new_image'].setShortcut(self.tr("Ctrl+N"))
-        self._actions['new_image'].triggered.connect(self.__new_image)
+        self._actions['new_image'].triggered.connect(self._new_image)
         self._actions['new_image'].setEnabled(False)
 
         # Duplicate image
@@ -280,7 +310,7 @@ class BpMainWindow(QMainWindow):
         #self._actions['ld_glbl'].setEnabled(False)
 
         # Close display
-        self._actions['close'] = QAction(self.tr("Close"), self)
+        self._actions['close'] = QAction(self.tr("Close tab"), self)
         self._actions['close'].setShortcut(self.tr("Ctrl+W"))
         self._actions['close'].triggered.connect(self._close_display)
         self._actions['close'].setEnabled(False)
@@ -610,7 +640,7 @@ class BpMainWindow(QMainWindow):
     def _set_scale_factor(self, value):
         """Set scale factor."""
         value = float(value) / 100
-        self.volume_model.set_scale_factor(value, self.image_view.display_type())
+        self.volume_model.set_scale_factor(value, self.volume_view.display_type())
 
     def _add_template(self):
         """Open a dialog window and select a template file."""
@@ -626,9 +656,15 @@ class BpMainWindow(QMainWindow):
                 template_path = unicode(template_name).encode('gb2312')
             else:
                 template_path = str(template_name)
-            self._add_img(template_path)
+            self._add_volume_img(template_path)
 
     def _add_image(self):
+        if self.tabWidget.currentWidget() == self.list_view:
+            self._add_volume_image()
+        else:
+            self._add_surface_image()
+
+    def _add_volume_image(self):
         """Add new item."""
         if self._temp_dir == None:
             temp_dir = QDir.currentPath()
@@ -643,7 +679,7 @@ class BpMainWindow(QMainWindow):
                 file_path = unicode(file_name).encode('gb2312')
             else:
                 file_path = str(file_name)
-            self._add_img(file_path)
+            self._add_volume_img(file_path)
 
     def _add_surface_image(self):
         """Add new surface image."""
@@ -671,8 +707,8 @@ class BpMainWindow(QMainWindow):
         # change button status
         self._actions['remove_image'].setEnabled(True)
 
-    def _add_img(self, source, name=None, header=None, view_min=None,
-                 view_max=None, alpha=255, colormap='gray'):
+    def _add_volume_img(self, source, name=None, header=None, view_min=None,
+                        view_max=None, alpha=255, colormap='gray'):
         """ Add image."""
         # If model is NULL, then re-initialize it.
         if not self.volume_model:
@@ -696,36 +732,19 @@ class BpMainWindow(QMainWindow):
                 self._temp_dir = temp_dir
 
         if self.volume_model.addItem(file_path, None, name, header, view_min,
-                              view_max, alpha, colormap):
-            # Take different acions in different case.
+                                     view_max, alpha, colormap):
             # If only one data in VolumeList, then initialize views.
             if self.volume_model.rowCount() == 1:
                 # initialize views
                 self.list_view = LayerView(self._label_config_center)
                 self.list_view.setModel(self.volume_model)
                 self._init_roi_dialog(self.volume_model)
-                self.list_view._list_view.selectionModel().currentChanged.connect(self.roidialog.clear_rois)
-                self.image_view = GridView(self.volume_model, self.painter_status)
+                self.volume_view = GridView(self.volume_model, self.painter_status)
 
-                # change button status
-                self._actions['save_image'].setEnabled(True)
-                self._actions['duplicate_image'].setEnabled(True)
-                #self._actions['ld_lbl'].setEnabled(True)
-                #self._actions['ld_glbl'].setEnabled(True)
-                self._actions['new_image'].setEnabled(True)
-                self._actions['close'].setEnabled(True)
-                self._actions['orth_view'].setEnabled(True)
-                self._actions['cross_hover_view'].setEnabled(True)
-                self._actions['original_view'].setEnabled(True)
-                self._actions['undo'].setEnabled(False)
-                self._actions['redo'].setEnabled(False)
-                self._functional_module_set_enabled(True)
-                if not self.volume_model.is_mni_space():
-                    self._actions['atlas'].setEnabled(False)
-                self._spinbox.setEnabled(True)
                 # connect signals with slots
                 self.list_view.current_changed.connect(self._update_undo)
                 self.list_view.current_changed.connect(self._update_redo)
+                self.list_view._list_view.selectionModel().currentChanged.connect(self.roidialog.clear_rois)
                 self.volume_model.rowsInserted.connect(self._update_remove_image)
                 self.volume_model.undo_stack_changed.connect(self._update_undo)
                 self.volume_model.redo_stack_changed.connect(self._update_redo)
@@ -738,30 +757,30 @@ class BpMainWindow(QMainWindow):
                 # Enable cursor tracking
                 # self.list_view._list_view.selectionModel().currentChanged.connect(
                 #                self._switch_cursor_status)
-                self._save_toolbar_status()
-            elif self.volume_model.rowCount() > 1:
-                self._actions['remove_image'].setEnabled(True)
-                # set current volume index
-                self.list_view.setCurrentIndex(self.volume_model.index(0))
 
             if not self.tabWidget:
                 self._init_tab_widget()
 
             if self.tabWidget.count() == 0:
                 self.tabWidget.addTab(self.list_view, "Volume")
+                self._init_vol_actions()
             elif self.tabWidget.count() == 1 and self.tabWidget.currentWidget() != self.list_view:
                 self.tabWidget.addTab(self.list_view, "Volume")
+                self.tabWidget.setCurrentIndex(1)
+                self._init_vol_actions()
             elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.list_view:
                 self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
 
-            if self.centralWidget().layout().indexOf(self.image_view) == -1:  # Could not find the self.image_view
+            if self.centralWidget().layout().indexOf(self.volume_view) == -1:  # Could not find the self.volume_view
                 if self.centralWidget().layout().indexOf(self.surface_view) != -1:
                     self.centralWidget().layout().removeWidget(self.surface_view)
                     self.surface_view.setParent(None)
-                self.centralWidget().layout().addWidget(self.image_view)
+                self.centralWidget().layout().addWidget(self.volume_view)
 
-            self._restore_toolbar_status()
-
+            if self.volume_model.rowCount() > 1:
+                self._actions['remove_image'].setEnabled(True)
+                # set current volume index
+                self.list_view.setCurrentIndex(self.volume_model.index(0))
             self.is_save_configure = True
         else:
             ret = QMessageBox.question(self,
@@ -812,8 +831,11 @@ class BpMainWindow(QMainWindow):
 
             if self.tabWidget.count() == 0:
                 self.tabWidget.addTab(self.surface_tree_view, "Surface")
+                self._init_surf_actions()
             elif self.tabWidget.count() == 1 and self.tabWidget.currentWidget() != self.surface_tree_view:
                 self.tabWidget.addTab(self.surface_tree_view, "Surface")
+                self.tabWidget.setCurrentIndex(1)
+                self._init_surf_actions()
             elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() != self.surface_tree_view:
                 self.tabWidget.setCurrentIndex(self.tabWidget.count() - self.tabWidget.currentIndex() - 1)
 
@@ -822,94 +844,97 @@ class BpMainWindow(QMainWindow):
                 self.surface_view = SurfaceView()
                 self.surface_view.set_model(self.surface_model)
 
-            if self.centralWidget().layout().indexOf(self.surface_view) == -1:  # Could not find the self.image_view
-                if self.centralWidget().layout().indexOf(self.image_view) != -1:
-                    self.centralWidget().layout().removeWidget(self.image_view)
-                    self.image_view.setParent(None)
+            if self.centralWidget().layout().indexOf(self.surface_view) == -1:  # Could not find the self.surface_view
+                if self.centralWidget().layout().indexOf(self.volume_view) != -1:
+                    self.centralWidget().layout().removeWidget(self.volume_view)
+                    self.volume_view.setParent(None)
                 self.centralWidget().layout().addWidget(self.surface_view)
 
-            self._disable_toolbar()
-            self._actions['scribing'].setEnabled(True)
-            self._actions['surf_region_grow'].setEnabled(True)
-            self._actions['save_image'].setEnabled(True)
+            self._actions['remove_image'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',
                                 'Cannot load ' + file_path + ' !',
                                 QMessageBox.Yes)
 
-    def _save_toolbar_status(self):
-        #Save the status
-        self.toolbar_status['grid_view'] = self._actions['grid_view'].isEnabled()
-        self.toolbar_status['hand'] = self._actions['hand'].isEnabled()
-        self.toolbar_status['snapshot'] = self._actions['snapshot'].isEnabled()
+    def _save_actions_status(self, actions_status):
+        actions_status['grid_view'] = self._actions['grid_view'].isEnabled()
+        actions_status['orth_view'] = self._actions['orth_view'].isEnabled()
+        actions_status['hand'] = self._actions['hand'].isEnabled()
+        actions_status['snapshot'] = self._actions['snapshot'].isEnabled()
+        actions_status['duplicate_image'] = self._actions['duplicate_image'].isEnabled()
+        actions_status['orth_view'] = self._actions['orth_view'].isEnabled()
+        actions_status['cross_hover_view'] = self._actions['cross_hover_view'].isEnabled()
+        actions_status['original_view'] = self._actions['original_view'].isEnabled()
+        actions_status['remove_image'] = self._actions['remove_image'].isEnabled()
+        actions_status['undo'] = self._actions['undo'].isEnabled()
+        actions_status['redo'] = self._actions['redo'].isEnabled()
+        # actions_status['functional_module_set_enabled'] = self._actions['binarization'].isEnabled()
+        actions_status['atlas'] = self._actions['atlas'].isEnabled()
 
-        self.toolbar_status['save_image'] = self._actions['save_image'].isEnabled()
-        self.toolbar_status['duplicate_image'] = self._actions['duplicate_image'].isEnabled()
-        self.toolbar_status['new_image'] = self._actions['new_image'].isEnabled()
-        self.toolbar_status['close'] = self._actions['close'].isEnabled()
-        self.toolbar_status['orth_view'] = self._actions['orth_view'].isEnabled()
-        self.toolbar_status['cross_hover_view'] = self._actions['cross_hover_view'].isEnabled()
-        self.toolbar_status['original_view'] = self._actions['original_view'].isEnabled()
-        self.toolbar_status['undo'] = self._actions['undo'].isEnabled()
-        self.toolbar_status['redo'] = self._actions['redo'].isEnabled()
-        self.toolbar_status['functional_module_set_enabled'] = self._actions['binarization'].isEnabled()
-        self.toolbar_status['atlas'] = self._actions['atlas'].isEnabled()
-        self.toolbar_status['tool_bar_spinbox'] = self._spinbox.isEnabled()
-
-    def _disable_toolbar(self):
-        # Disable some toolbar controls
+    def _disable_vol_actions(self):
+        # set enabled status volume-specific actions
         self._actions['grid_view'].setEnabled(False)
         self._actions['orth_view'].setEnabled(False)
         self._actions['hand'].setEnabled(False)
         self._actions['snapshot'].setEnabled(False)
         self._actions['duplicate_image'].setEnabled(False)
-        self._actions['new_image'].setEnabled(False)
-        self._actions['close'].setEnabled(False)
         self._actions['orth_view'].setEnabled(False)
         self._actions['cross_hover_view'].setEnabled(False)
         self._actions['original_view'].setEnabled(False)
         self._actions['undo'].setEnabled(False)
         self._actions['redo'].setEnabled(False)
-        self._functional_module_set_enabled(False)
+        self._vol_func_module_set_enabled(False)
         self._spinbox.setEnabled(False)
 
-    def _restore_toolbar_status(self):
-        # Restore all toolbar controls
-        self._actions['grid_view'].setEnabled(self.toolbar_status['grid_view'])
-        self._actions['hand'].setEnabled(self.toolbar_status['hand'])
-        self._actions['snapshot'].setEnabled(self.toolbar_status['snapshot'])
+    def _disable_surf_actions(self):
+        # Disable surface-specific actions for volume
+        self._surf_func_module_set_enabled(False)
 
-        self._actions['save_image'].setEnabled(self.toolbar_status['save_image'])
-        self._actions['duplicate_image'].setEnabled(self.toolbar_status['duplicate_image'])
-        self._actions['new_image'].setEnabled(self.toolbar_status['new_image'])
-        self._actions['close'].setEnabled(self.toolbar_status['close'])
-        self._actions['orth_view'].setEnabled(self.toolbar_status['orth_view'])
-        self._actions['cross_hover_view'].setEnabled(self.toolbar_status['cross_hover_view'])
-        self._actions['original_view'].setEnabled(self.toolbar_status['original_view'])
-        self._actions['undo'].setEnabled(self.toolbar_status['undo'])
-        self._actions['redo'].setEnabled(self.toolbar_status['redo'])
-        self._functional_module_set_enabled(self.toolbar_status['functional_module_set_enabled'])
-        if not self.volume_model.is_mni_space():
-            self._actions['atlas'].setEnabled(self.toolbar_status['atlas'])
-        self._spinbox.setEnabled(self.toolbar_status['tool_bar_spinbox'])
+    def _restore_actions_status(self, actions_status):
+        # Restore all toolbar controls
+        if actions_status:
+            self._actions['grid_view'].setEnabled(actions_status['grid_view'])
+            self._actions['hand'].setEnabled(actions_status['hand'])
+            self._actions['snapshot'].setEnabled(actions_status['snapshot'])
+            self._actions['duplicate_image'].setEnabled(actions_status['duplicate_image'])
+            self._actions['orth_view'].setEnabled(actions_status['orth_view'])
+            self._actions['cross_hover_view'].setEnabled(actions_status['cross_hover_view'])
+            self._actions['original_view'].setEnabled(actions_status['original_view'])
+            self._actions['remove_image'].setEnabled(actions_status['remove_image'])
+            self._actions['undo'].setEnabled(actions_status['undo'])
+            self._actions['redo'].setEnabled(actions_status['redo'])
+            if actions_status == self.volume_actions_status:
+                self._vol_func_module_set_enabled(True)
+                self._spinbox.setEnabled(True)
+                if not self.volume_model.is_mni_space():
+                    self._actions['atlas'].setEnabled(actions_status['atlas'])
+            else:
+                self._surf_func_module_set_enabled(True)
 
     def _tabwidget_index_changed(self):
         if self.tabWidget.count() == 2:
             if self.tabWidget.currentWidget() == self.list_view:
                 self.centralWidget().layout().removeWidget(self.surface_view)
                 self.surface_view.setParent(None)
-                self.centralWidget().layout().addWidget(self.image_view)
-                self._restore_toolbar_status()
+                self.centralWidget().layout().addWidget(self.volume_view)
+                self._save_actions_status(self.surface_actions_status)
+                self._disable_surf_actions()
+                self._restore_actions_status(self.volume_actions_status)
             else:
-                self.centralWidget().layout().removeWidget(self.image_view)
-                self.image_view.setParent(None)
+                self.centralWidget().layout().removeWidget(self.volume_view)
+                self.volume_view.setParent(None)
                 self.centralWidget().layout().addWidget(self.surface_view)
-                self._disable_toolbar()
+                self._save_actions_status(self.volume_actions_status)
+                self._disable_vol_actions()
+                self._restore_actions_status(self.surface_actions_status)
 
-    def __new_image(self):
+    def _new_image(self):
         """Create new image."""
-        self._new_image()
+        if self.tabWidget.currentWidget() == self.list_view:
+            self.new_volume_image()
+        else:
+            self.new_surface_image()
 
     def _update_remove_image(self):
         """Update the display after removing an image."""
@@ -918,7 +943,7 @@ class BpMainWindow(QMainWindow):
         else:
             self._actions['remove_image'].setEnabled(True)
 
-    def _new_image(self, data=None, name=None, colormap=None):
+    def new_volume_image(self, data=None, name=None, colormap=None):
         """Create a new volume for brain parcellation."""
         if colormap is None:
             colormap = self._label_config_center.get_first_label_config()
@@ -928,15 +953,29 @@ class BpMainWindow(QMainWindow):
         # change button status
         self._actions['remove_image'].setEnabled(True)
 
+    def new_surface_image(self):
+        self.surface_model.add_item(self.surface_tree_view_control.currentIndex())
+
     def new_image_action(self):
         """Change the related status of other actions after creating an image."""
         self._actions['remove_image'].setEnabled(True)
 
     def _remove_image(self):
         """Remove current image."""
+        if self.tabWidget.currentWidget() == self.list_view:
+            self._remove_volume_image()
+        else:
+            self._remove_surface_image()
+
+    def _remove_volume_image(self):
         row = self.list_view.currentRow()
         self.volume_model.delItem(row)
         if self.volume_model.rowCount() == 1:
+            self._actions['remove_image'].setEnabled(False)
+
+    def _remove_surface_image(self):
+        self.surface_model.del_item(self.surface_tree_view_control.currentIndex())
+        if self.surface_model.rowCount(QModelIndex()) == 0:
             self._actions['remove_image'].setEnabled(False)
 
     def _save_image(self):
@@ -999,26 +1038,41 @@ class BpMainWindow(QMainWindow):
 
     def _close_display(self):
         """Close current display."""
-        self.setCentralWidget(QWidget())
-        self._set_scale_factor(self.default_grid_scale_factor)
-        self.removeToolBar(self._toolbar)
-        self.volume_model = None
-        self._actions['add_template'].setEnabled(True)
-        self._actions['add_image'].setEnabled(True)
-        self._actions['add_surface_image'].setEnabled(True)
-        self._actions['remove_image'].setEnabled(False)
-        self._actions['new_image'].setEnabled(False)
-        self._actions['save_image'].setEnabled(False)
-        self._actions['duplicate_image'].setEnabled(False)
-        #self._actions['ld_glbl'].setEnabled(False)
-        #self._actions['ld_lbl'].setEnabled(False)
-        self._actions['close'].setEnabled(False)
-        self._actions['grid_view'].setEnabled(False)
-        self._actions['orth_view'].setEnabled(False)
-        self._actions['cross_hover_view'].setEnabled(False)
-        self._actions['original_view'].setEnabled(False)
-        self._actions['snapshot'].setEnabled(False)
-        self._functional_module_set_enabled(False)
+        old_index = self.tabWidget.currentIndex()
+        if self.tabWidget.count() == 1:
+            self.setCentralWidget(QWidget())
+            self.removeToolBar(self._toolbar)
+            if self.tabWidget.currentWidget() == self.list_view:
+                self._set_scale_factor(self.default_grid_scale_factor)
+                self.volume_model = None
+                self.volume_view = None
+                self.volume_actions_status.clear()
+            else:
+                self.surface_model = None
+                self.surface_view = None
+                self.surface_actions_status.clear()
+            self._actions['add_image'].setEnabled(False)
+            self._actions['remove_image'].setEnabled(False)
+            self._actions['new_image'].setEnabled(False)
+            self._actions['save_image'].setEnabled(False)
+            #self._actions['ld_glbl'].setEnabled(False)
+            #self._actions['ld_lbl'].setEnabled(False)
+            self._actions['close'].setEnabled(False)
+            self._disable_vol_actions()
+            self._disable_surf_actions()
+        elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() == self.list_view:
+            self.tabWidget.setCurrentIndex(self.tabWidget.count() - old_index - 1)
+            self.tabWidget.removeTab(old_index)
+            self._set_scale_factor(self.default_grid_scale_factor)
+            self.volume_model = None
+            self.volume_view = None
+            self.volume_actions_status.clear()
+        elif self.tabWidget.count() == 2 and self.tabWidget.currentWidget() == self.surface_tree_view:
+            self.tabWidget.setCurrentIndex(self.tabWidget.count() - old_index - 1)
+            self.tabWidget.removeTab(old_index)
+            self.surface_model = None
+            self.surface_view = None
+            self.surface_actions_status.clear()
 
     def _about_freeroi(self):
         """ About software."""
@@ -1048,7 +1102,7 @@ class BpMainWindow(QMainWindow):
     def _create_menus(self):
         """Create menus."""
         self.file_menu = self.menuBar().addMenu(self.tr("File"))
-        self.file_menu.addAction(self._actions['add_image'])
+        self.file_menu.addAction(self._actions['add_volume_image'])
         self.file_menu.addAction(self._actions['add_template'])
         self.file_menu.addSeparator()
         self.file_menu.addAction(self._actions['add_surface_image'])
@@ -1121,14 +1175,14 @@ class BpMainWindow(QMainWindow):
         """Cursor enabled."""
         if self._actions['cursor'].isChecked():
             self._actions['cursor'].setChecked(True)
-            if isinstance(self.image_view, OrthView):
+            if isinstance(self.volume_view, OrthView):
                 self._actions['hand'].setChecked(False)
             if self.roidialog.isVisible():
                 self._roidialog_disable()
 
             self.painter_status.set_draw_settings(ViewSettings())
-            self.image_view.set_cursor(Qt.ArrowCursor)
-            self.image_view.set_label_mouse_tracking(True)
+            self.volume_view.set_cursor(Qt.ArrowCursor)
+            self.volume_view.set_label_mouse_tracking(True)
         else:
             self._actions['cursor'].setChecked(True)
 
@@ -1136,21 +1190,21 @@ class BpMainWindow(QMainWindow):
         """Brush enabled."""
         self._label_config_center.set_is_roi_edit(False)
         self.painter_status.set_draw_settings(self._label_config_center)
-        self.image_view.set_cursor(Qt.CrossCursor)
-        self.image_view.set_label_mouse_tracking(False)
+        self.volume_view.set_cursor(Qt.CrossCursor)
+        self.volume_view.set_label_mouse_tracking(False)
 
     def _roi_edit_enable(self):
         """ROI brush enabled."""
         self._label_config_center.set_is_roi_edit(True)
         self.painter_status.set_draw_settings(self._label_config_center)
-        self.image_view.set_cursor(Qt.CrossCursor)
-        self.image_view.set_label_mouse_tracking(False)
+        self.volume_view.set_cursor(Qt.CrossCursor)
+        self.volume_view.set_label_mouse_tracking(False)
 
     def _roidialog_enable(self):
         """ROI dialog enabled."""
         if self._actions['edit'].isChecked():
             self._actions['cursor'].setChecked(False)
-            if isinstance(self.image_view, OrthView):
+            if isinstance(self.volume_view, OrthView):
                 self._actions['hand'].setChecked(False)
             self._actions['edit'].setChecked(True)
             self.roidialog._voxel_clicked()
@@ -1168,7 +1222,7 @@ class BpMainWindow(QMainWindow):
 
     def _roi_batch_enable(self):
         """ROI batch enabled."""
-        self.image_view.set_label_mouse_tracking(False)
+        self.volume_view.set_label_mouse_tracking(False)
         self._label_config_center.set_is_roi_edit(False)
         self.painter_status.set_draw_settings(self.roidialog)
 
@@ -1187,8 +1241,8 @@ class BpMainWindow(QMainWindow):
                 self._roidialog_disable()
 
             self.painter_status.set_draw_settings(MoveSettings())
-            self.image_view.set_cursor(Qt.OpenHandCursor)
-            self.image_view.set_label_mouse_tracking(True)
+            self.volume_view.set_cursor(Qt.OpenHandCursor)
+            self.volume_view.set_label_mouse_tracking(True)
         else:
             self._actions['hand'].setChecked(True)
 
@@ -1339,16 +1393,16 @@ class BpMainWindow(QMainWindow):
         self._actions['snapshot'].setEnabled(False)
         self._actions['cursor'].trigger()
 
-        self.centralWidget().layout().removeWidget(self.image_view)
-        self.image_view.set_display_type('grid')
+        self.centralWidget().layout().removeWidget(self.volume_view)
+        self.volume_view.set_display_type('grid')
         self.volume_model.scale_changed.disconnect()
         self.volume_model.repaint_slices.disconnect()
-        self.volume_model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
-        self.image_view.deleteLater()
+        self.volume_model.cross_pos_changed.disconnect(self.volume_view.update_cross_pos)
+        self.volume_view.deleteLater()
         self._spinbox.setValue(100 * self.volume_model.get_scale_factor('grid'))
-        self.image_view = GridView(self.volume_model, self.painter_status,
+        self.volume_view = GridView(self.volume_model, self.painter_status,
                                    self._gridview_vertical_scrollbar_position)
-        self.centralWidget().layout().addWidget(self.image_view)
+        self.centralWidget().layout().addWidget(self.volume_view)
 
     def _orth_view(self):
         """Orth view option."""
@@ -1359,16 +1413,16 @@ class BpMainWindow(QMainWindow):
         self._actions['cursor'].trigger()
 
         self._gridview_vertical_scrollbar_position = \
-            self.image_view.get_vertical_srollbar_position()
-        self.centralWidget().layout().removeWidget(self.image_view)
-        self.image_view.set_display_type('orth')
+            self.volume_view.get_vertical_srollbar_position()
+        self.centralWidget().layout().removeWidget(self.volume_view)
+        self.volume_view.set_display_type('orth')
         self.volume_model.scale_changed.disconnect()
         self.volume_model.repaint_slices.disconnect()
-        self.volume_model.cross_pos_changed.disconnect(self.image_view.update_cross_pos)
-        self.image_view.deleteLater()
+        self.volume_model.cross_pos_changed.disconnect(self.volume_view.update_cross_pos)
+        self.volume_view.deleteLater()
         self._spinbox.setValue(100 * self.volume_model.get_scale_factor('orth'))
-        self.image_view = OrthView(self.volume_model, self.painter_status)
-        self.centralWidget().layout().addWidget(self.image_view)
+        self.volume_view = OrthView(self.volume_model, self.painter_status)
+        self.centralWidget().layout().addWidget(self.volume_view)
 
     def _display_cross_hover(self):
         """Display the cross hover on the image."""
@@ -1383,12 +1437,12 @@ class BpMainWindow(QMainWindow):
 
     def _reset_view(self):
         """Reset view parameters."""
-        if self.image_view.display_type() == 'orth':
+        if self.volume_view.display_type() == 'orth':
             if not self.volume_model.get_scale_factor('orth') == \
                     self.default_orth_scale_factor:
                 self._spinbox.setValue(100 * self.default_orth_scale_factor)
-            self.image_view.reset_view()
-        elif self.image_view.display_type() == 'grid':
+            self.volume_view.reset_view()
+        elif self.volume_view.display_type() == 'grid':
             if not self.volume_model.get_scale_factor('grid') == \
                     self.default_grid_scale_factor:
                 self._spinbox.setValue(100 * self.default_grid_scale_factor)
@@ -1462,8 +1516,10 @@ class BpMainWindow(QMainWindow):
         new_dialog = ClusterDialog(self.volume_model, self)
         new_dialog.exec_()
 
-    def _functional_module_set_enabled(self, status):
-        """Enable the actions."""
+    def _vol_func_module_set_enabled(self, status):
+        """
+        set enabled status for actions of volume functional module.
+        """
         self._actions['binarization'].setEnabled(status)
         self._actions['intersect'].setEnabled(status)
         self._actions['meants'].setEnabled(status)
@@ -1488,7 +1544,14 @@ class BpMainWindow(QMainWindow):
         self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
 
+    def _surf_func_module_set_enabled(self, status):
+        """
+        set enabled status for actions of surface functional module.
+        """
+        self._actions['scribing'].setEnabled(status)
+        self._actions['surf_region_grow'].setEnabled(status)
+
     def _snapshot(self):
         """Capture images from OrthView."""
-        self.image_view.save_image()
+        self.volume_view.save_image()
 
