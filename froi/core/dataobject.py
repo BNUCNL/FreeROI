@@ -1003,6 +1003,9 @@ class Hemisphere(object):
 
         return aq.qcomposition(rgba_list)
 
+    def get_vertices_num(self):
+        return self.geometries.values()[0].get_vertices_num()
+
     def get_cifti_structure_name(self):
         if self._name == 'lh':
             return 'CIFTI_STRUCTURE_CORTEX_LEFT'
