@@ -488,7 +488,7 @@ class RegionGrow(object):
             Include all evolved regions after self._compute()
         """
         # call methods of the class
-        evolved_regions, region_assessments = self._compute(seeds_id, stop_criteria)
+        evolved_regions, _, _, _ = self._compute(seeds_id, stop_criteria)
         return evolved_regions
 
     @staticmethod
@@ -572,6 +572,17 @@ class RegionGrow(object):
 
         neighbor = [None] * n_seed
 
+        if assess_step:
+            for i in range(len(evolving_regions)):
+                if len(evolving_regions[i].get_component()) % assess_step == 0:
+                    assessed_value = self._assess_func(evolving_regions[i])
+                    region_assessments[i].append(assessed_value)
+                    outer_signals = [r.mean_signal() for r in evolving_regions[i].get_neighbors()]
+                    inner_signals = [r.mean_signal() for r in evolving_regions[i].get_component()]
+                    r_outer_mean[i].append(np.mean(outer_signals))
+                    r_inner_min[i].append(np.min(inner_signals))
+                    print 'Evolving region{} size: {}'.format(i, evolving_regions[i].size())
+
         # ------main cycle------
         while np.any(np.less(region_size, stop_criteria)):
             r_to_grow = np.less(region_size, stop_criteria)
@@ -604,7 +615,7 @@ class RegionGrow(object):
                         outer_signals = [i.mean_signal() for i in evolving_regions[r].get_neighbors()]
                         inner_signals = [i.mean_signal() for i in evolving_regions[r].get_component()]
                         r_outer_mean[r].append(np.mean(outer_signals))
-                        r_inner_min[r].append(np.mean(inner_signals))
+                        r_inner_min[r].append(np.min(inner_signals))
                         print 'Evolving region{} size: {}'.format(r, evolving_regions[r].size())
 
             for i in r_index:
