@@ -653,8 +653,8 @@ class GeometryData(object):
             print 'surf file does not exist!'
             return None
         self.geo_path = geo_path
-        self.surf_dir, name = os.path.split(geo_path)
-        name_split = name.split('.')
+        self.surf_dir, self.name = os.path.split(geo_path)
+        name_split = self.name.split('.')
         self.suffix = name_split[-1]
         if self.suffix in ('pial', 'inflated', 'white'):
             # FreeSurfer style geometry filename
@@ -881,7 +881,8 @@ class Hemisphere(object):
         self.load_geometry(geo_path, geo_type, offset=1.0)
 
         self.overlays = []
-        self._name = self.geometries[geo_type].hemi_rl
+        self._name = self.geometries[geo_type].name
+        self.hemi_rl = self.geometries[geo_type].hemi_rl
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
         self.bin_curv = self.geometries[geo_type].get_bin_curv()
@@ -1007,9 +1008,9 @@ class Hemisphere(object):
         return self.geometries.values()[0].get_vertices_num()
 
     def get_cifti_structure_name(self):
-        if self._name == 'lh':
+        if self.hemi_rl == 'lh':
             return 'CIFTI_STRUCTURE_CORTEX_LEFT'
-        elif self._name == 'rh':
+        elif self.hemi_rl == 'rh':
             return 'CIFTI_STRUCTURE_CORTEX_RIGHT'
         else:
             return 'Failed to recognize which hemisphere the data belong to!'

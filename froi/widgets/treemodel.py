@@ -91,6 +91,8 @@ class TreeModel(QAbstractItemModel):
                     return None
                 if item.bin_curv is not None:
                     return item.bin_curv[self._point_id]
+            elif role == Qt.DisplayRole or role == Qt.EditRole:
+                return item.hemi_rl
         else:
             if role == Qt.UserRole:
                 return item.get_min()
@@ -104,9 +106,8 @@ class TreeModel(QAbstractItemModel):
                 if self._point_id == -1:
                     return None
                 return item.get_data()[self._point_id][0]
-
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return item.get_name()
+            elif role == Qt.DisplayRole or role == Qt.EditRole:
+                return item.get_name()
 
         if role == Qt.CheckStateRole:
 
