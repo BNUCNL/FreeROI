@@ -2,6 +2,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
+import os
 import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -184,10 +185,11 @@ class SurfaceTreeView(QWidget):
         self._down_button.clicked.connect(self._down_action)
 
         self._rightclick_add = self.contextMenu.addAction(u'Add')
-        self._rightclick_edit = self.contextMenu.addAction(u'Edit')
         self._rightclick_del = self.contextMenu.addAction(u'Delete')
+        self._rightclick_rename = self.contextMenu.addAction(u'Rename')
+        self._rightclick_rename.setVisible(False)
         self._rightclick_add.triggered.connect(self._rightclick_add_action)
-        self._rightclick_edit.triggered.connect(self._rightclick_edit_action)
+        self._rightclick_rename.triggered.connect(self._rightclick_rename_action)
         self._rightclick_del.triggered.connect(self._rightclick_del_action)
 
     def _disp_current_para(self, index=-1):
@@ -293,15 +295,31 @@ class SurfaceTreeView(QWidget):
         return self._tree_view
 
     def _rightclick_add_action(self):
-        """Add, use method: main.py BpMainWindow._add_surface_image()"""
-        print 'Add'
+        """Add an overlay"""
+        if self._temp_dir is None:
+            temp_dir = QDir.currentPath()
+        else:
+            temp_dir = self._temp_dir
+        file_name = QFileDialog.getOpenFileName(self,
+                                                'Add new surface file',
+                                                temp_dir)
+        if file_name != '':
+            if sys.platform == 'win32':
+                file_path = unicode(file_name).encode('gb2312')
+            else:
+                file_path = str(file_name)
+            index = self._tree_view.currentIndex()
+            self._model.add_item(index, file_path)
+            self._disp_current_para()
 
-    def _rightclick_edit_action(self):
-        """Edit"""
-        print 'Edit'
+            self._temp_dir = os.path.dirname(file_path)
+
+    def _rightclick_rename_action(self):
+        """rename overlays"""
+        pass
 
     def _rightclick_del_action(self):
-        """Del"""
+        """Delete an overlay"""
         index = self._tree_view.currentIndex()
         self._model.del_item(index)
         self._disp_current_para()
