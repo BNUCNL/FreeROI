@@ -2,14 +2,16 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
+import os
 import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from froi.core.dataobject import Hemisphere
 from treemodel import TreeModel
 from froi.utils import *
+from froi.core.dataobject import Hemisphere
 from froi.core.labelconfig import LabelConfig
+from froi.algorithm.tools import get_curr_hemi
 
 
 class SurfaceTreeView(QWidget):
@@ -55,21 +57,6 @@ class SurfaceTreeView(QWidget):
         # initialize QTreeView
         self._tree_view = QTreeView()
 
-        # initialize surface option push button
-        self._white_button = QPushButton('white')
-        self._pial_button = QPushButton('pial')
-        self._inflated_button = QPushButton('inflated')
-        self._flatted_button = QPushButton('flatted')
-
-        # self._surface_button.setIconSize(surface_button_size)
-        surface_type_layout = QHBoxLayout()
-        surface_type_layout.addWidget(self._white_button)
-        surface_type_layout.addWidget(self._pial_button)
-        surface_type_layout.addWidget(self._inflated_button)
-        surface_type_layout.addWidget(self._flatted_button)
-        surface_type_group_box = QGroupBox('Surface type option')
-        surface_type_group_box.setLayout(surface_type_layout)
-
         # initialize visibility controller
         visibility_label = QLabel('Visibility')
         self._visibility = QSlider(Qt.Horizontal)
@@ -80,24 +67,18 @@ class SurfaceTreeView(QWidget):
         visibility_layout.addWidget(visibility_label)
         visibility_layout.addWidget(self._visibility)
 
-        # -- Surface display settings panel
-        # initialize Surface display settings widgets
-        # TODO: to be refactorred
-        surface_name_label = QLabel('Hemi:')
-        self._surface_name = QLineEdit()
-        surface_colormap_label = QLabel('Colormap:')
-        self._surface_colormap = QComboBox()
-        self._surface_colormap.addItems(self.builtin_colormap)
-        self._surface_colormap.setEditable(True)
+        # -- Geometry display settings panel
+        # initialize geometry display settings widgets
+        # TODO: to be refactorred to support more geometry shapes
+        geo_name_label = QLabel('Geo:')
+        self._geo_name_edit = QLineEdit()
 
-        # layout for Surface settings
-        surface_layout = QGridLayout()
-        surface_layout.addWidget(surface_name_label, 0, 0)
-        surface_layout.addWidget(self._surface_name, 0, 1)
-        surface_layout.addWidget(surface_colormap_label, 1, 0)
-        surface_layout.addWidget(self._surface_colormap, 1, 1)
-        surface_group_box = QGroupBox('Surface display settings')
-        surface_group_box.setLayout(surface_layout)
+        # layout for geometry settings
+        geo_layout = QGridLayout()
+        geo_layout.addWidget(geo_name_label, 0, 0)
+        geo_layout.addWidget(self._geo_name_edit, 0, 1)
+        geo_group_box = QGroupBox('Geometry display settings')
+        geo_group_box.setLayout(geo_layout)
 
         # -- Overlay display settings panel
         # initialize up/down push button
@@ -154,10 +135,9 @@ class SurfaceTreeView(QWidget):
         # -- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
-        self.layout().addWidget(surface_type_group_box)
-        self.layout().addLayout(visibility_layout)
-        self.layout().addWidget(surface_group_box)
+        self.layout().addWidget(geo_group_box)
         self.layout().addWidget(scalar_group_box)
+        self.layout().addLayout(visibility_layout)
         self.layout().addWidget(cursor_group_box)
 
         # -- right click context show
@@ -199,21 +179,17 @@ class SurfaceTreeView(QWidget):
         # Config setting actions
         self._view_min.editingFinished.connect(self._set_view_min)
         self._view_max.editingFinished.connect(self._set_view_max)
-        self._surface_colormap.currentIndexChanged.connect(self._set_colormap)
         self._scalar_colormap.currentIndexChanged.connect(self._set_colormap)
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
-        self._white_button.clicked.connect(self._white_action)
-        self._pial_button.clicked.connect(self._pial_action)
-        self._inflated_button.clicked.connect(self._inflated_action)
-        self._flatted_button.clicked.connect(self._flatted_action)
 
         self._rightclick_add = self.contextMenu.addAction(u'Add')
-        self._rightclick_edit = self.contextMenu.addAction(u'Edit')
         self._rightclick_del = self.contextMenu.addAction(u'Delete')
+        self._rightclick_rename = self.contextMenu.addAction(u'Rename')
+        self._rightclick_rename.setVisible(False)
         self._rightclick_add.triggered.connect(self._rightclick_add_action)
-        self._rightclick_edit.triggered.connect(self._rightclick_edit_action)
+        self._rightclick_rename.triggered.connect(self._rightclick_rename_action)
         self._rightclick_del.triggered.connect(self._rightclick_del_action)
 
     def _disp_current_para(self, index=-1):
@@ -231,6 +207,10 @@ class SurfaceTreeView(QWidget):
                 self._down_button.setEnabled(False)
             else:
                 self._down_button.setEnabled(True)
+
+            # geometry information
+            hemi = get_curr_hemi(index)
+            self._geo_name_edit.setText(hemi.get_name())
 
             # min/max value
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
@@ -303,33 +283,8 @@ class SurfaceTreeView(QWidget):
         self._model.moveDown(index)
         self._tree_view.setFocus()
 
-    def _white_action(self):
-        """Show white surface."""
-        # index = self._tree_view.currentIndex()
-        # max_index = self._model.rowCount(index.parent()) - 1
-        index = self._get_surface_index('white')
-        if not index == -1:
-            self._disp_current_para(index)
-
-    def _pial_action(self):
-        """Show pial surface."""
-        index = self._get_surface_index('pial')
-        if not index == -1:
-            self._disp_current_para(index)
-
-    def _inflated_action(self):
-        """Show inflated surface."""
-        index = self._get_surface_index('inflated')
-        if not index == -1:
-            self._disp_current_para(index)
-
-    def _flatted_action(self):
-        """Show flatted surface."""
-        index = self._get_surface_index('flatted')
-        if not index == -1:
-            self._disp_current_para(index)
-
     def _get_surface_index(self, geo_type):
+        # TODO may be removed in future
         """Check different type of surface exist or not."""
         for index in self._tree_view.selectedIndexes():
             if index.data().endswith(geo_type):
@@ -340,15 +295,31 @@ class SurfaceTreeView(QWidget):
         return self._tree_view
 
     def _rightclick_add_action(self):
-        """Add, use method: main.py BpMainWindow._add_surface_image()"""
-        print 'Add'
+        """Add an overlay"""
+        if self._temp_dir is None:
+            temp_dir = QDir.currentPath()
+        else:
+            temp_dir = self._temp_dir
+        file_name = QFileDialog.getOpenFileName(self,
+                                                'Add new surface file',
+                                                temp_dir)
+        if file_name != '':
+            if sys.platform == 'win32':
+                file_path = unicode(file_name).encode('gb2312')
+            else:
+                file_path = str(file_name)
+            index = self._tree_view.currentIndex()
+            self._model.add_item(index, file_path)
+            self._disp_current_para()
 
-    def _rightclick_edit_action(self):
-        """Edit"""
-        print 'Edit'
+            self._temp_dir = os.path.dirname(file_path)
+
+    def _rightclick_rename_action(self):
+        """rename overlays"""
+        pass
 
     def _rightclick_del_action(self):
-        """Del"""
+        """Delete an overlay"""
         index = self._tree_view.currentIndex()
         self._model.del_item(index)
         self._disp_current_para()
