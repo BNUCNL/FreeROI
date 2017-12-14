@@ -161,15 +161,6 @@ class SurfaceTreeView(QWidget):
         # self._tree_view.selectionModel().currentChanged.connect(
         #        self.current_changed)
 
-        # When dataset changed, refresh display.
-        self._model.dataChanged.connect(self._disp_current_para)
-
-        # When add new item, refresh display.
-        self._model.rowsInserted.connect(self._disp_current_para)
-
-        # When remove new item, refresh display.
-        self._model.rowsRemoved.connect(self._disp_current_para)
-
         # When layout changed, refresh display.
         self._model.layoutChanged.connect(self._disp_current_para)
 
