@@ -154,10 +154,10 @@ def main():
 
         if args.type == 'volume':
             try:
-                win._add_img(args.data_list[0],
-                             view_min=args.low_thresh[0],
-                             view_max=args.high_thresh[0],
-                             colormap=args.colormap[0])
+                win._add_volume_img(args.data_list[0],
+                                    view_min=args.low_thresh[0],
+                                    view_max=args.high_thresh[0],
+                                    colormap=args.colormap[0])
                 if args.label_config:
                     win._label_config_center.set_label_config(args.label_config)
             except:
@@ -169,18 +169,18 @@ def main():
                                     'red', 'green', 'blue', 'rainbow']:
                     colormap = win._label_config_center.get_label_config_by_name(colormap)
                 try:
-                    win._add_img(data,
-                                 view_min=args.low_thresh[i],
-                                 view_max=args.high_thresh[i],
-                                 colormap=colormap)
+                    win._add_volume_img(data,
+                                        view_min=args.low_thresh[i],
+                                        view_max=args.high_thresh[i],
+                                        colormap=colormap)
                 except:
                     print 'Load image ' + data + ' error!'
                     raise
             if args.new_names:
                 for new_name in args.new_names:
                     try:
-                        win._new_image(data=None, name=new_name,
-                                       colormap='gray')
+                        win.new_volume_image(data=None, name=new_name,
+                                             colormap='gray')
                     except:
                         print 'Could not create volume ' + new_name
                         raise

@@ -17,7 +17,8 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
-from ..io.surf_io import read_scalar_data
+from ..io.surf_io import read_scalar_data, save2label
+from ..io.io import save2nifti
 from labelconfig import LabelConfig
 
 
@@ -652,8 +653,8 @@ class GeometryData(object):
             print 'surf file does not exist!'
             return None
         self.geo_path = geo_path
-        self.surf_dir, name = os.path.split(geo_path)
-        name_split = name.split('.')
+        self.surf_dir, self.name = os.path.split(geo_path)
+        name_split = self.name.split('.')
         self.suffix = name_split[-1]
         if self.suffix in ('pial', 'inflated', 'white'):
             # FreeSurfer style geometry filename
@@ -830,70 +831,34 @@ class ScalarData(object):
     def is_label(self):
         return self._islabel
 
-    def save2nifti(self, file_path):
+    def save2nifti(self, fpath, header=None):
         """Save to a nifti file."""
-        # Define nifti1 datatype codes
-        NIFTI_TYPE_UINT8 = 2  # unsigned char
-        NIFTI_TYPE_INT16 = 4  # signed short
-        NIFTI_TYPE_INT32 = 8  # signed int.
-        NIFTI_TYPE_FLOAT32 = 16  # 32 bit float.
-        NIFTI_TYPE_COMPLEX64 = 32  # 64 bit complex = 2 32 bit floats
-        NIFTI_TYPE_FLOAT64 = 64  # 64 bit float = double.
-        NIFTI_TYPE_RGB24 = 128  # 3 8 bit bytes.
-        NIFTI_TYPE_INT8 = 256  # signed char.
-        NIFTI_TYPE_UINT16 = 512  # unsigned short.
-        NIFTI_TYPE_UINT32 = 768  # unsigned int.
-        NIFTI_TYPE_INT64 = 1024  # signed long long.
-        NIFTI_TYPE_UINT64 = 1280  # unsigned long long.
-        NIFTI_TYPE_FLOAT128 = 1536  # 128 bit float = long double.
-        NIFTI_TYPE_COMPLEX128 = 1792  # 128 bit complex = 2 64 bit floats.
-        NIFTI_TYPE_COMPLEX256 = 2048  # 256 bit complex = 2 128 bit floats
-        NIFTI_TYPE_RGBA32 = 2304  # 4 8 bit bytes.
-
-        # Detect the data type of the input data.
-        data_type = {
-            np.uint8: NIFTI_TYPE_UINT8,
-            np.uint16: NIFTI_TYPE_UINT16,
-            np.uint32: NIFTI_TYPE_UINT32,
-            np.float32: NIFTI_TYPE_FLOAT32,
-            np.int16: NIFTI_TYPE_INT16,
-            np.int32: NIFTI_TYPE_INT32,
-            np.int8: NIFTI_TYPE_INT8
-            }
-        if sys.maxint > 2 ** 32:  # The platform is 64 bit
-            data_type[np.float128] = NIFTI_TYPE_FLOAT128
-            data_type[np.float64] = NIFTI_TYPE_FLOAT64
-            data_type[np.int64] = NIFTI_TYPE_INT64
-            data_type[np.uint64] = NIFTI_TYPE_UINT64
-            data_type[np.complex64] = NIFTI_TYPE_COMPLEX64
-            data_type[np.complex128] = NIFTI_TYPE_COMPLEX128
-            data_type[np.complex256] = NIFTI_TYPE_COMPLEX256
-
-        header = nib.Nifti1Header()
-        if self.data.shape[1] == 1:
-            new_shape = (self.data.shape[0], 1, 1)
+        if self._data.shape[1] == 1:
+            new_shape = (self._data.shape[0], 1, 1)
         else:
-            new_shape = (self.data.shape[0], 1, 1, self.data.shape[1])
-        data = self.data.reshape(new_shape)
+            new_shape = (self._data.shape[0], 1, 1, self._data.shape[1])
+        data = self._data.reshape(new_shape)
 
-        if data.dtype.type in data_type:
-            header['datatype'] = data_type[data.dtype.type]
-        header['cal_max'] = data.max()
-        header['cal_min'] = data.min()
-        image = nib.Nifti1Image(data, None, header)
-        nib.nifti1.save(image, file_path)
+        save2nifti(fpath, data, header)
 
-    def save2label(self, file_path, hemi_coords):
+    def save2label(self, fpath, label=None, hemi_coords=None):
         """
-        save overlay to a text file adapted to freesurfer label file format
+        save label to a text file
+
+        Parameters
+        ----------
+        fpath : string
+            The file path to output
+        label :
+            specify which labeled vertices that will be saved
+        hemi_coords : numpy array
+            If not None, it means that saving vertices as the freesurfer style.
         """
-        vertices = np.where(self.data[:, 0] != 0)[0]
-        coords = hemi_coords[vertices]
-        unknow = np.zeros_like(vertices, np.float16)
-        X = np.c_[vertices, coords, unknow]
-        header = str(len(vertices))
-        np.savetxt(file_path, X, fmt=['%d', '%f', '%f', '%f', '%f'],
-                   header=header, comments="#!ascii, label vertexes\n")
+        if label is None:
+            vertices = np.where(self._data[:, 0] != 0)[0]
+        else:
+            vertices = np.where(self._data[:, 0] == label)[0]
+        save2label(fpath, vertices, hemi_coords=hemi_coords)
 
 
 class Hemisphere(object):
@@ -916,7 +881,8 @@ class Hemisphere(object):
         self.load_geometry(geo_path, geo_type, offset=1.0)
 
         self.overlays = []
-        self._name = self.geometries[geo_type].hemi_rl
+        self._name = self.geometries[geo_type].name
+        self.hemi_rl = self.geometries[geo_type].hemi_rl
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
         self.bin_curv = self.geometries[geo_type].get_bin_curv()
@@ -1038,10 +1004,13 @@ class Hemisphere(object):
 
         return aq.qcomposition(rgba_list)
 
+    def get_vertices_num(self):
+        return self.geometries.values()[0].get_vertices_num()
+
     def get_cifti_structure_name(self):
-        if self._name == 'lh':
+        if self.hemi_rl == 'lh':
             return 'CIFTI_STRUCTURE_CORTEX_LEFT'
-        elif self._name == 'rh':
+        elif self.hemi_rl == 'rh':
             return 'CIFTI_STRUCTURE_CORTEX_RIGHT'
         else:
             return 'Failed to recognize which hemisphere the data belong to!'

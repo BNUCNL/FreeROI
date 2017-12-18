@@ -13,6 +13,7 @@ class ROIDialog(QDialog, DrawSettings):
     voxel_edit_enabled = pyqtSignal()
     roi_edit_enabled = pyqtSignal()
     roi_batch_enabled = pyqtSignal()
+
     def __init__(self, model, label_config_center, parent=None):
         super(ROIDialog, self).__init__(parent)
 
@@ -88,8 +89,8 @@ class ROIDialog(QDialog, DrawSettings):
         self.ROI_tool_widget.setVisible(False)
         self.ROI_tool_widget.setLayout(vbox_layout)
 
-        self._label_config_center.size_label.setVisible(True);
-        self._label_config_center.size_edit.setVisible(True);
+        self._label_config_center.size_label.setVisible(True)
+        self._label_config_center.size_edit.setVisible(True)
         self.vlayout.addWidget(self.ROI_tool_widget)
         self.setLayout(self.vlayout)
 

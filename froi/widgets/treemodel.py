@@ -5,7 +5,9 @@
 
 """
 
+import numpy as np
 from PyQt4.QtCore import *
+
 from froi.core.dataobject import Hemisphere
 
 
@@ -89,6 +91,8 @@ class TreeModel(QAbstractItemModel):
                     return None
                 if item.bin_curv is not None:
                     return item.bin_curv[self._point_id]
+            elif role == Qt.DisplayRole or role == Qt.EditRole:
+                return item.hemi_rl
         else:
             if role == Qt.UserRole:
                 return item.get_min()
@@ -102,9 +106,8 @@ class TreeModel(QAbstractItemModel):
                 if self._point_id == -1:
                     return None
                 return item.get_data()[self._point_id][0]
-
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return item.get_name()
+            elif role == Qt.DisplayRole or role == Qt.EditRole:
+                return item.get_name()
 
         if role == Qt.CheckStateRole:
 
@@ -247,17 +250,23 @@ class TreeModel(QAbstractItemModel):
         else:
             return False
 
-    def add_item(self, index, source, vmin=None, vmax=None, colormap='jet', alpha=1.0, visible=True, islabel=False):
-        if not index.isValid():
-            item = Hemisphere(source)
-            self.insertRow(index.row(), item, index)
+    def add_item(self, index, source=None, vmin=None, vmax=None,
+                 colormap='jet', alpha=1.0, visible=True, islabel=False):
 
+        if not index.isValid():
+            if isinstance(source, str):
+                item = Hemisphere(source)
+                self.insertRow(index.row(), item, index)
+            else:
+                raise RuntimeError("You have not specify a geometry file!")
         else:
             parent = index.parent()
             if not parent.isValid():
                 hemi_item = index.internalPointer()
             else:
                 hemi_item = parent.internalPointer()
+            if source is None:
+                source = np.zeros((hemi_item.get_vertices_num(),))
             hemi_item.load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
                                    visible=visible, islabel=islabel)
             item = None
