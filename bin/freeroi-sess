@@ -14,82 +14,93 @@ def surf_sess(args, freeroi):
 
     # get subjects_dir
     # ----------------
-    if args.struc_par:
-        struc_par = args.struc_par
+    if args.subjects_dir:
+        subjects_dir = args.subjects_dir
     else:
-        struc_par = os.environ.get('SUBJECTS_DIR')
-        if struc_par is None:
+        subjects_dir = os.environ.get('SUBJECTS_DIR')
+        if subjects_dir is None:
             raise ValueError("The environment value SUBJECTS_DIR may not be set, "
                              "and you have to specify the structure data's source directory "
-                             "through --struc_par!")
+                             "through --subjects_dir!")
 
     # get more information to find the right subject' structure data
     # --------------------------------------------------------------
-    subj_name = raw_input("which subject's structure you want to use? (e.g. self, fsaverage)\n"
-                          "Or input string 'file', then you can specify subjects' structure data"
-                          " by a file's lines (each line is corresponding to sessid_file's line).>")
-    if subj_name == 'file':
-        subjid_file = raw_input("Please input the path of subjid_file:")
-        subjid = open(subjid_file).readlines()
-        subjid = [line.strip() for line in subjid]
+    if not args.geo_path:
+        subj_name = raw_input("which subject's structure you want to use? (e.g. self, fsaverage)\n"
+                              "Or input string 'file', then you can specify subjects' structure data"
+                              " by a file's lines (each line is corresponding to sessid_file's line).>")
+        if subj_name == 'file':
+            subjid_file = raw_input("Please input the path of subjid_file:")
+            subjid = open(subjid_file).readlines()
+            subjid = [line.strip() for line in subjid]
 
-    while True:
-        hemi = raw_input("specify the hemisphere which must be one of (lh, rh):")
-        if hemi in ('lh', 'rh'):
-            break
+        while True:
+            hemi = raw_input("specify the hemisphere which must be one of (lh, rh):")
+            if hemi in ('lh', 'rh'):
+                break
 
-    while True:
-        surf = raw_input("specify the surface which must be one of (inflated, white, pial):")
-        if surf in ('inflated', 'white', 'pial'):
-            break
+        while True:
+            surf = raw_input("specify the surface which must be one of (inflated, white, pial):")
+            if surf in ('inflated', 'white', 'pial'):
+                break
 
     # start to get data
     # -----------------
-    if not os.path.exists(args.srcdir_file):
-        print "Function data's source directory file does not exist."
-        sys.exit()
-    else:
+    if os.path.exists(args.srcdir_file):
         sesspar = open(args.srcdir_file).readlines()
         sesspar = [line.strip() for line in sesspar]
         sesspar = sesspar[0]
-    if not os.path.exists(args.sessid_file):
-        print 'Session ID file does not exist.'
-        sys.exit()
     else:
+        print "Error: Source directory file does not exist."
+        sys.exit()
+
+    if os.path.exists(args.sessid_file):
         sessid = open(args.sessid_file).readlines()
         sessid = [line.strip() for line in sessid]
+    else:
+        print 'Error: Session ID file does not exist.'
+        sys.exit()
 
     for sess in sessid:
-
-        # get structure data
+        # get geometry data
         # ------------------
-        if subj_name == 'self':
-            struc = os.path.join(struc_par, sess, 'surf', '.'.join([hemi, surf]))
+        if args.geo_path:
+            if '{id}' in args.geo_path:
+                struc = os.path.join(subjects_dir, args.geo_path.format(id=sess))
+                if args.ref_par and args.ref_list:
+                    ref_subj = os.path.join(args.ref_par, sess)
+            else:
+                struc = os.path.join(subjects_dir, args.geo_path)
+                if args.ref_par and args.ref_list:
+                    subj_name = args.geo_path.split('/')[0]
+                    ref_subj = os.path.join(args.ref_par, subj_name)
+        elif subj_name == 'self':
+            struc = os.path.join(subjects_dir, sess, 'surf', '.'.join([hemi, surf]))
             if args.ref_par and args.ref_list:
                 ref_subj = os.path.join(args.ref_par, sess)
         elif subj_name == 'file':
             sess_index = sessid.index(sess)
-            struc = os.path.join(struc_par, subjid[sess_index], 'surf', '.'.join([hemi, surf]))
+            struc = os.path.join(subjects_dir, subjid[sess_index], 'surf', '.'.join([hemi, surf]))
             if args.ref_par and args.ref_list:
                 ref_subj = os.path.join(args.ref_par, subjid[sess_index])
         else:
-            struc = os.path.join(struc_par, subj_name, 'surf', '.'.join([hemi, surf]))
+            struc = os.path.join(subjects_dir, subj_name, 'surf', '.'.join([hemi, surf]))
             if args.ref_par and args.ref_list:
                 ref_subj = os.path.join(args.ref_par, subj_name)
         print struc
 
-        # get function data
+        # get scalar data
         # -----------------
         func_dir = os.path.join(sesspar, sess, args.stem)
         if os.path.exists(func_dir):
             args_list = []
-            for ifunc in args.ifunc_list:
-                file_path = os.path.join(func_dir, ifunc[0])
+            for img in args.image_list:
+                file_path = os.path.join(func_dir, img[0])
                 print file_path
                 args_list += ['-data', file_path,
-                              '-lt', ifunc[1],
-                              '-ht', ifunc[2],
-                              '-c', ifunc[3]]
+                              '-lt', img[1],
+                              '-ht', img[2],
+                              '-c', img[3]]
             if args.ref_list:
                 for ref_file in args.ref_list:
                     if args.ref_par:
@@ -138,12 +149,12 @@ def vol_sess(args, freeroi):
         if os.path.exists(func_dir):
             print func_dir
             args_list = []
-            for ifunc in args.ifunc_list:
-                file_path = os.path.join(func_dir, ifunc[0])
+            for img in args.image_list:
+                file_path = os.path.join(func_dir, img[0])
                 args_list += ['-data', file_path,
-                              '-lt', ifunc[1],
-                              '-ht', ifunc[2],
-                              '-c', ifunc[3]]
+                              '-lt', img[1],
+                              '-ht', img[2],
+                              '-c', img[3]]
             if args.ref_list:
                 for ref_file in args.ref_list:
                     args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
@@ -175,11 +186,11 @@ def main():
                         help='a session ID file containing all subjects')
     parser.add_argument('-stem',
                         dest='stem',
-                        metavar='task name',
+                        metavar='interspace path',
                         required=True,
                         help='stem for target file relative to session directory')
-    parser.add_argument('-ifunc',
-                        dest='ifunc_list', nargs=4,
+    parser.add_argument('-img',
+                        dest='image_list', nargs=4,
                         metavar=('function_data', 'low_thresh', 'high_thresh', 'colormap'),
                         required=True,
                         action='append',
@@ -195,12 +206,23 @@ def main():
                         metavar='output function data name',
                         required=False,
                         help='specify the output function data name')
-    # FIXME parameters(--struc_par and --ref_par mainly used for surface)
-    parser.add_argument('--struc_par',
-                        dest='struc_par',
+    parser.add_argument('-type',
+                        dest='type',
+                        metavar='data type',
+                        choices=['surface', 'volume'],
+                        required=True,
+                        help='Specify data type')
+    # surface-specific parameters
+    parser.add_argument('--subjects_dir',
+                        dest='subjects_dir',
                         metavar="structure data's parent directory",
                         required=False,
                         help="specify the structure data's parent directory")
+    parser.add_argument('--geo_path',
+                        dest='geo_path',
+                        metavar="geometry data path from subjects_dir to file",
+                        required=False,
+                        help="specify the geometry path relative to subjects_dir")
     parser.add_argument('--ref_par',
                         dest='ref_par',
                         metavar="reference data's parent directory",
@@ -211,11 +233,7 @@ def main():
     sess_working_dir = os.path.dirname(__file__)
     freeroi = os.path.join(sess_working_dir, 'freeroi')
 
-    while True:
-        base_type = raw_input("Which type dose the function data belong to? (surface or volume):")
-        if base_type in ('surface', 'volume'):
-            break
-    if base_type == 'volume':
+    if args.type == 'volume':
         vol_sess(args, freeroi)
     else:
         surf_sess(args, freeroi)
