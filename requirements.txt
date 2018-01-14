@@ -1,6 +1,7 @@
 nibabel
 nose
 numpy
-scikits-image
+scikit-image
 scipy
-pyqt
+pyqt=4
+mayavi

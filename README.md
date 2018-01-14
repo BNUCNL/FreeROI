@@ -7,24 +7,23 @@ data. Its goal is to provide a user-friendly interface for neuroimaging
 researchers to visualize and analyze their data, especially in defining region
 of interest (ROI) for ROI analysis.
 
-# Quickstart
+# Easy installation
 
-The easiest way to configure your local python environment to support FreeROI is to use the [Anaconda python distribution](https://store.continuum.io/cshop/anaconda/). Download and install anaconda (Python 2.7), then run the following command to install all required and related packages.
+The easiest way to configure your local python environment to support FreeROI is to use the [Anaconda python distribution](https://store.continuum.io/cshop/anaconda/). Download and install anaconda2 (We recommend [anaconda-4.1.1](https://repo.continuum.io/archive/)), then run the following command to install all required and related packages. (If your anaconda forcely installs PyQt5, you have to execute ```conda uninstall pyqt=5``` before install PyQt4)
 
 ```
-$ conda install numpy scipy nose scikits-image pyqt=4
+$ conda install numpy scipy nose scikit-image pyqt=4 mayavi
 ```
 
-In addition, one non-standard package (nibabel) for reading and writing fMRI data should be installed:
+In addition, one non-standard package (nibabel) for reading and writing neuroimaging data should be installed:
 
 ```
 $ pip install nibabel
 ```
 
-To install FreeROI from the github repository, call the following commands. For both commands, replace `<your_directory>` with the folder where you would like to store the FreeROI source code.
+Finally, download FreeROI source code to <your_directory> by [clicking here](https://github.com/BNUCNL/FreeROI/archive/surface_lab.zip) or executing ```$ git clone http://github.com/BNUCNL/FreeROI <your_directory>```. Then:
 
 ```
-$ git clone http://github.com/BNUCNL/FreeROI <your_directory>
 $ cd <your_directory>
 $ python setup.py install
 ```
@@ -33,7 +32,7 @@ This should work on most platform (i.e., Mac or Linux PCs). You can also skip An
 
 For Windows users, an exectable version is [available](http://sourceforge.net/projects/freeroi/files/?source=navbar). Unzip the package, and store the directory in a place which path has no Chinese characters. Double click *freeroi.exe* to run the program.
 
-# DIY on your platform
+# DIY on your environment
 
 Currently supports the following systems:
 
@@ -51,9 +50,8 @@ Currently supports the following systems:
 ## Install Qt4
 
 * On Ubuntu/Debian
-
   ```
-  $ apt-get install libqt4-core libqt4-dev libqt4-gui qt4-dev-tools
+  $ apt-get install libqt4-dev 
   ```
 
 * On CentOS/Fedora/Fedora
@@ -62,8 +60,6 @@ Currently supports the following systems:
   ```
 
 * On Mac OSX
-   
-  On Mac OSX, the Qt4 could be installed with brew like this
   ```
   $ brew install qt --build-from-source
   ```
@@ -72,18 +68,17 @@ If you cannot install Qt4 with above methods, you may need to install it
 manually. The source code of Qt4.8 could be downloaded from the
 [homepage of Qt](http://qt-project.org/downloads).
 
-## Install related python module
-
-Then, several python modules should be installed. Here we provide a script
-`quick_start.sh` to install them automatically. By default, a new virtual
-python environment would be generated using `virtualenv`. 
 
 ## Install SIP and PyQt4
 
-Third, [SIP](http://www.riverbankcomputing.com/software/sip/download) and 
-[PyQt4](http://www.riverbankcomputing.com/software/pyqt/download) should be
-installed.
+* On Ubuntu/Debian
+  ```
+  $ apt-get install python-qt4 python-qt4-dev
+  ```
 
+If you cannot install SIP and PyQt4 with above methods, you may need to install it
+manually. The source codes can be downloaded from [SIP](http://www.riverbankcomputing.com/software/sip/download) and 
+[PyQt4](http://www.riverbankcomputing.com/software/pyqt/download).
 Untar these packages, and install them like this
 ```
 # install SIP
@@ -98,10 +93,30 @@ $ make
 $ make install
 ```
 
+
+## Install VTK
+
+* On Ubuntu/Debian
+  ```
+  $ apt-get install python-vtk
+  ```
+ 
+* On any 64-bit platform
+  $ pip install [VTK-5.10.1+qt486-cp27-none-win_amd64.whl](https://www.lfd.uci.edu/~gohlke/pythonlibs/#vtk)
+
+* On any 32-bit platform
+  $ pip install [VTK-5.10.1+qt486-cp27-none-win32.whl](https://www.lfd.uci.edu/~gohlke/pythonlibs/#vtk)
+
+
+## Install related python module
+
+Then, several python modules should be installed. Here we provide a script
+`quick_start.sh` to install them automatically.
+
+
 ## Install FreeROI
 
-After download the source code, you only to execte:
-
+After download the source code of FreeROI, you only to execute:
 ```
 python setup.py install
 ```

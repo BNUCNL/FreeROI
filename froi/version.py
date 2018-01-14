@@ -1,4 +1,4 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-__version__ = '0.2.3 beta'
+__version__ = '0.3.0 beta'
