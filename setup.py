@@ -35,21 +35,23 @@ print("pyqt_version:%06.0x" % pyqtcfg.pyqt_version)
 print("pyqt_version_num:%d" % pyqtcfg.pyqt_version)
 print("pyqt_version_str:%s" % pyqtcfg.pyqt_version_str)
 
-#-- PyQt4 library configuration
-# Replace the following with
-#  qt_inc_dir = "path/to/Qt/include"
-#  qt_lib_dir = "path/to/Qt/lib"
-# when automatically extracted paths don't fit your installation.
-# (Note that you should use a compatible compiler and Qt version
-# as was used for building PyQt.)
-qt_inc_dir = pyqtcfg.qt_inc_dir
-qt_lib_dir = pyqtcfg.qt_lib_dir
+#-- Qt library configuration
+try:
+    qt_inc_dir = pyqtcfg.qt_inc_dir
+    qt_lib_dir = pyqtcfg.qt_lib_dir
+except AttributeError:
+    print("Can't extract qt library paths which fit your installation automatically.\nPlease provide the paths of Qt_include and Qt_lib.\nSuch as:")
+    print('qt_inc_dir = path/to/Qt_include')
+    print('qt_lib_dir = path/to/Qt_lib')
+    print('Note that you should use a compatible compiler and Qt version as was used for building PyQt.')
+    qt_inc_dir = input('qt_inc_dir = ')
+    qt_lib_dir = input('qt_lib_dir = ')
 #--
 
 qt_lib_dirs = [qt_lib_dir]
 qt_libraries = ['QtCore', 'QtGui']
 
-if 'mingw32' in sys.argv:
+if sys.platform == 'win32':
     # Need better criterion - this should only apply to mingw32
     qt_lib_dirs.extend((qt_lib_dir.replace(r'\lib', r'\bin'),
                         os.path.dirname(PyQt4.__file__)))
@@ -114,8 +116,8 @@ from version import __version__
 setup(name='freeroi',
       version=__version__,
       description='Toolbox for ROI defining',
-      author='Lijie Huang, Zetian Yang, Guangfu Zhou, Zhaoguo Liu, and Zonglei Zhen, from Neuroinformatic Team@LiuLab',
-      author_email=['huanglijie.seal@gmail.com', 'zetian.yang@gmail.com'],
+      author='Lijie Huang, Zetian Yang, Xiayu Chen, Guangfu Zhou, Zhaoguo Liu, and Zonglei Zhen, from Neuroinformatic Team@LiuLab',
+      author_email=['huanglijie.seal@gmail.com', 'zetian.yang@gmail.com', 'sunshine_drizzle@foxmail'],
       packages=['froi',
                 'froi.algorithm',
                 'froi.core',
