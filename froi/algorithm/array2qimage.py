@@ -237,11 +237,11 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
                     new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
                     if array.ndim == 1:
                         for i in range(array.shape[0]):
-                            new_array[i, :] = lut_255[array[i]]
+                            new_array[i, :] = lut_255[int(array[i])]
                     else:
                         for i in range(array.shape[0]):
                             for j in range(array.shape[1]):
-                                new_array[i, j, :] = lut_255[array[i, j]]
+                                new_array[i, j, :] = lut_255[int(array[i, j])]
                     new_array[..., 3] = alpha * array.clip(0, 1)
 
             else:
