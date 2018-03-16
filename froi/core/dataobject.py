@@ -636,7 +636,7 @@ class GeometryData(object):
 
     """
 
-    def __init__(self, geo_path, offset=None):
+    def __init__(self, geo_path, offset=0.0):
         """
         Surface Geometry
         
@@ -649,46 +649,29 @@ class GeometryData(object):
             applied. If != 0.0, an additional offset will be used.
 
         """
-        if not os.path.exists(geo_path):
-            print 'surf file does not exist!'
-            return None
-        self.geo_path = geo_path
-        self.surf_dir, self.name = os.path.split(geo_path)
+        self._surf_dir, self.name = os.path.split(geo_path)
         name_split = self.name.split('.')
-        self.suffix = name_split[-1]
-        if self.suffix in ('pial', 'inflated', 'white'):
+        self._suffix = name_split[-1]
+        if self._suffix in ('pial', 'inflated', 'white'):
             # FreeSurfer style geometry filename
+            self.coords, self.faces = nib.freesurfer.read_geometry(geo_path)
             self.hemi_rl = name_split[0]
-        elif self.suffix == 'gii':
-            # CIFTI style geometry filename
-            if name_split[1] == 'L':
-                self.hemi_rl = 'lh'
-            elif name_split[1] == 'R':
-                self.hemi_rl = 'rh'
-            else:
-                self.hemi_rl = None
+            self._curv_name = '{}.curv'.format(self.hemi_rl)
+        elif self._suffix == 'gii':
+            # GIFTI style geometry filename
+            darrays = nib.load(geo_path).darrays
+            self.coords, self.faces = darrays[0].data, darrays[1].data
+            self.hemi_rl = 'lh' if name_split[1] == 'L' else 'rh'
+            name_split[2] = 'curvature'
+            name_split[-2] = 'shape'
+            self._curv_name = '.'.join(name_split)
         else:
-            raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
-        self.offset = offset
+            raise ImageFileError('This file format-{} is not supported at present.'.format(self._suffix))
 
-        # load geometry
-        self.load()
-
-    def load(self):
-        """Load surface geometry."""
-        if self.suffix in ('pial', 'inflated', 'white'):
-            self.coords, self.faces = nib.freesurfer.read_geometry(self.geo_path)
-        elif self.suffix == 'gii':
-            gii_data = nib.gifti.read(self.geo_path).darrays
-            self.coords, self.faces = gii_data[0].data, gii_data[1].data
+        if self.hemi_rl == 'lh':
+            self.coords[:, 0] -= (np.max(self.coords[:, 0]) + offset)
         else:
-            raise ImageFileError('This file format-{} is not supported at present.'.format(self.suffix))
-
-        if self.offset is not None:
-            if self.hemi_rl == 'lh':
-                self.coords[:, 0] -= (np.max(self.coords[:, 0]) + self.offset)
-            else:
-                self.coords[:, 0] -= (np.min(self.coords[:, 0]) + self.offset)
+            self.coords[:, 0] -= (np.min(self.coords[:, 0]) + offset)
         self.nn = mshtool.compute_normals(self.coords, self.faces)
 
     def get_bin_curv(self):
@@ -697,13 +680,14 @@ class GeometryData(object):
         :return:
             binarized curvature
         """
-        curv_name = '{}.curv'.format(self.hemi_rl)
-        curv_path = os.path.join(self.surf_dir, curv_name)
+        curv_path = os.path.join(self._surf_dir, self._curv_name)
         if not os.path.exists(curv_path):
             return None
-        bin_curv = nib.freesurfer.read_morph_data(curv_path) <= 0
+        if self._suffix in 'gii':
+            bin_curv = nib.load(curv_path).darrays[0].data >= 0
+        else:
+            bin_curv = nib.freesurfer.read_morph_data(curv_path) <= 0
         bin_curv = bin_curv.astype(np.int)
-
         return bin_curv
 
     def save(self, fpath):
@@ -887,7 +871,7 @@ class Hemisphere(object):
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
         self.bin_curv = self.geometries[geo_type].get_bin_curv()
 
-    def load_geometry(self, geo_path, geo_type, offset=None):
+    def load_geometry(self, geo_path, geo_type, offset=0.0):
         """Add surface data"""
         if geo_type in self.geometries.keys():
             print 'Invalid Operation! The surface type is already exist!'
