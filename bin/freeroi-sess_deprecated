@@ -1,0 +1,242 @@
+#! /bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
+"""Main application for FreeROI GUI."""
+
+import os
+import sys
+import argparse
+import subprocess
+
+
+def surf_sess(args, freeroi):
+
+    # get subjects_dir
+    # ----------------
+    if args.subjects_dir:
+        subjects_dir = args.subjects_dir
+    else:
+        subjects_dir = os.environ.get('SUBJECTS_DIR')
+        if subjects_dir is None:
+            raise ValueError("The environment value SUBJECTS_DIR may not be set, "
+                             "and you have to specify the structure data's source directory "
+                             "through --subjects_dir!")
+
+    # get more information to find the right subject' structure data
+    # --------------------------------------------------------------
+    if not args.geo_path:
+        subj_name = raw_input("which subject's structure you want to use? (e.g. self, fsaverage)\n"
+                              "Or input string 'file', then you can specify subjects' structure data"
+                              " by a file's lines (each line is corresponding to sessid_file's line).>")
+        if subj_name == 'file':
+            subjid_file = raw_input("Please input the path of subjid_file:")
+            subjid = open(subjid_file).readlines()
+            subjid = [line.strip() for line in subjid]
+
+        while True:
+            hemi = raw_input("specify the hemisphere which must be one of (lh, rh):")
+            if hemi in ('lh', 'rh'):
+                break
+
+        while True:
+            surf = raw_input("specify the surface which must be one of (inflated, white, pial):")
+            if surf in ('inflated', 'white', 'pial'):
+                break
+
+    # start to get data
+    # -----------------
+    if os.path.exists(args.srcdir_file):
+        sesspar = open(args.srcdir_file).readlines()
+        sesspar = [line.strip() for line in sesspar]
+        sesspar = sesspar[0]
+    else:
+        print "Error: Source directory file does not exist."
+        sys.exit()
+
+    if os.path.exists(args.sessid_file):
+        sessid = open(args.sessid_file).readlines()
+        sessid = [line.strip() for line in sessid]
+    else:
+        print 'Error: Session ID file does not exist.'
+        sys.exit()
+
+    for sess in sessid:
+        # get geometry data
+        # ------------------
+        if args.geo_path:
+            if '{id}' in args.geo_path:
+                struc = os.path.join(subjects_dir, args.geo_path.format(id=sess))
+                if args.ref_par and args.ref_list:
+                    ref_subj = os.path.join(args.ref_par, sess)
+            else:
+                struc = os.path.join(subjects_dir, args.geo_path)
+                if args.ref_par and args.ref_list:
+                    subj_name = args.geo_path.split('/')[0]
+                    ref_subj = os.path.join(args.ref_par, subj_name)
+        elif subj_name == 'self':
+            struc = os.path.join(subjects_dir, sess, 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_list:
+                ref_subj = os.path.join(args.ref_par, sess)
+        elif subj_name == 'file':
+            sess_index = sessid.index(sess)
+            struc = os.path.join(subjects_dir, subjid[sess_index], 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_list:
+                ref_subj = os.path.join(args.ref_par, subjid[sess_index])
+        else:
+            struc = os.path.join(subjects_dir, subj_name, 'surf', '.'.join([hemi, surf]))
+            if args.ref_par and args.ref_list:
+                ref_subj = os.path.join(args.ref_par, subj_name)
+        print struc
+
+        # get scalar data
+        # -----------------
+        func_dir = os.path.join(sesspar, sess, args.stem)
+        if os.path.exists(func_dir):
+            args_list = []
+            for img in args.image_list:
+                file_path = os.path.join(func_dir, img[0])
+                print file_path
+                args_list += ['-data', file_path,
+                              '-lt', img[1],
+                              '-ht', img[2],
+                              '-c', img[3]]
+            if args.ref_list:
+                for ref_file in args.ref_list:
+                    if args.ref_par:
+                        ref = os.path.join(ref_subj, ref_file[0])
+                        print ref
+                        args_list = ['-data', ref, '-lt',  ref_file[1],
+                                     '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+                    else:
+                        print ref_file[0]
+                        args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
+                                     '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+            subprocess.call(['cd', func_dir], shell=True)
+            cmd_list = [freeroi, '-data', struc, '-lt', '0',
+                        '-ht', '0', '-c', 'gray'] + args_list
+            if args.new_func:
+                cmd_list += ['-n', args.new_func]
+            cmd_list += ['-type', 'surface']
+            subprocess.call(cmd_list)
+        else:
+            print sess + "'s data does not exist!"
+
+
+def vol_sess(args, freeroi):
+
+    freeroi_dir = os.path.dirname(freeroi)
+    freeroi_dir_par = os.path.dirname(freeroi_dir)
+    template_file = os.path.join(freeroi_dir_par, 'froi', 'data', 'standard',
+                                 'MNI152_T1_2mm_brain.nii.gz')
+
+    if not os.path.exists(args.srcdir_file):
+        print 'Source directory file does not exist.'
+        sys.exit()
+    else:
+        sesspar = open(args.srcdir_file).readlines()
+        sesspar = [line.strip() for line in sesspar]
+        sesspar = sesspar[0]
+    if not os.path.exists(args.sessid_file):
+        print 'Session ID file does not exist.'
+        sys.exit()
+    else:
+        sessid = open(args.sessid_file).readlines()
+        sessid = [line.strip() for line in sessid]
+
+    for subj in sessid:
+        func_dir = os.path.join(sesspar, subj, args.stem)
+        if os.path.exists(func_dir):
+            print func_dir
+            args_list = []
+            for img in args.image_list:
+                file_path = os.path.join(func_dir, img[0])
+                args_list += ['-data', file_path,
+                              '-lt', img[1],
+                              '-ht', img[2],
+                              '-c', img[3]]
+            if args.ref_list:
+                for ref_file in args.ref_list:
+                    args_list = ['-data', ref_file[0], '-lt',  ref_file[1],
+                                 '-ht',  ref_file[2], '-c',  ref_file[3]] + args_list
+            subprocess.call(['cd', func_dir], shell=True)
+            cmd_list = [freeroi, '-data', template_file, '-lt', '3000',
+                        '-ht', '8000', '-c', 'gray'] + args_list
+            if args.new_func:
+                cmd_list += ['-n', args.new_func]
+            cmd_list += ['-type', 'volume']
+            subprocess.call(cmd_list)
+        else:
+            print subj + "'s data does not exist!"
+
+
+def main():
+    """Main entrance for batch processing of freeroi."""
+    parser = argparse.ArgumentParser(description='FreeROI for batch processing')
+
+    parser.add_argument('-df',
+                        dest='srcdir_file',
+                        metavar='a file containing source directory',
+                        required=True,
+                        help='specify a directory path containing whole data')
+    parser.add_argument('-sf',
+                        dest='sessid_file',
+                        metavar='sessid file',
+                        required=True,
+                        help='a session ID file containing all subjects')
+    parser.add_argument('-stem',
+                        dest='stem',
+                        metavar='interspace path',
+                        required=True,
+                        help='stem for target file relative to session directory')
+    parser.add_argument('-img',
+                        dest='image_list', nargs=4,
+                        metavar=('function_data', 'low_thresh', 'high_thresh', 'colormap'),
+                        required=True,
+                        action='append',
+                        help='specify the input function data file name and its low_thresh, high_thresh, colormap')
+    parser.add_argument('-ref',
+                        dest='ref_list', nargs=4,
+                        metavar=('reference_file', 'low_thresh', 'high_thresh', 'colormap'),
+                        required=False,
+                        action='append',
+                        help='specify the reference file name and its low_thresh, high_thresh, colormap')
+    parser.add_argument('-new',
+                        dest='new_func',
+                        metavar='output function data name',
+                        required=False,
+                        help='specify the output function data name')
+    parser.add_argument('-type',
+                        dest='type',
+                        metavar='data type',
+                        choices=['surface', 'volume'],
+                        required=True,
+                        help='Specify data type')
+    # surface-specific parameters
+    parser.add_argument('--subjects_dir',
+                        dest='subjects_dir',
+                        metavar="structure data's parent directory",
+                        required=False,
+                        help="specify the structure data's parent directory")
+    parser.add_argument('--geo_path',
+                        dest='geo_path',
+                        metavar="geometry data path from subjects_dir to file",
+                        required=False,
+                        help="specify the geometry path relative to subjects_dir")
+    parser.add_argument('--ref_par',
+                        dest='ref_par',
+                        metavar="reference data's parent directory",
+                        required=False,
+                        help="specify the reference data's parent directory")
+    args = parser.parse_args()
+
+    sess_working_dir = os.path.dirname(__file__)
+    freeroi = os.path.join(sess_working_dir, 'freeroi')
+
+    if args.type == 'volume':
+        vol_sess(args, freeroi)
+    else:
+        surf_sess(args, freeroi)
+
+if __name__ == '__main__':
+    main()
