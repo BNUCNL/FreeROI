@@ -10,7 +10,7 @@ from mayavi import mlab
 import numpy as np
 
 from treemodel import TreeModel
-from ..algorithm.tools import toggle_color, bfs, normalize_arr
+from ..algorithm.tools import toggle_color, bfs
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -78,7 +78,7 @@ class SurfaceView(QWidget):
         # self.ui.setParent(self)
         # get rid of the toolbar
         figure = mlab.gcf()
-        _toggle_toolbar(figure, False)
+        _toggle_toolbar(figure, True)
 
         # Initialize some fields
         self.surface_model = None
@@ -96,6 +96,7 @@ class SurfaceView(QWidget):
         self.path = []
         self.is_cbar = False
         self.cbar = None
+        self._view = None
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surface_view)
@@ -195,6 +196,7 @@ class SurfaceView(QWidget):
             self.gcf_flag = False
             fig = mlab.gcf()
             fig.on_mouse_pick(self._picker_callback_left)
+            fig.scene.picker.tolerance = 0.01
             # fig.scene.scene.interactor.add_observer('MouseMoveEvent', self._move_callback)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
@@ -226,11 +228,16 @@ class SurfaceView(QWidget):
             toggle_color(self.tmp_lut[c_id])
             self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
 
+        self._view = mlab.view()
+        phi, theta = self._view[0], self._view[1]
+        self.surface_model.phi_theta_to_edit(phi, theta)
+
     def _picker_callback_left(self, picker_obj):
         pass
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
+        self.connect(self.surface_model, QtCore.SIGNAL("phi_theta_to_show"), self._set_phi_theta)
 
     def _plot_line(self):
         if self.plot_start is None:
@@ -280,8 +287,12 @@ class SurfaceView(QWidget):
     def get_faces(self):
         return self.faces
 
-if __name__ == "__main__":
+    def _set_phi_theta(self, phi, theta):
+        if self._view is not None:
+            mlab.view(phi, theta, *self._view[2:])
 
+
+if __name__ == "__main__":
     surface_view = SurfaceView()
     surface_view.setWindowTitle("surface view")
     surface_view.setWindowIcon(QIcon("/nfs/j3/userhome/chenxiayu/workingdir/icon/QAli.png"))

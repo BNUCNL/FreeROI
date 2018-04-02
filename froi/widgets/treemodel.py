@@ -21,7 +21,6 @@ class TreeModel(QAbstractItemModel):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
         self._data = hemisphere_list
-
         self._point_id = 0
 
     def get_data(self):
@@ -106,11 +105,14 @@ class TreeModel(QAbstractItemModel):
                 if self._point_id == -1:
                     return None
                 return item.get_data()[self._point_id][0]
+            elif role == Qt.UserRole + 5:
+                return item.get_data().min()
+            elif role == Qt.UserRole + 6:
+                return item.get_data().max()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 
         if role == Qt.CheckStateRole:
-
             if index.column() == 0:
                 if item.is_visible():
                     return Qt.Checked
@@ -288,3 +290,8 @@ class TreeModel(QAbstractItemModel):
     def get_point_id(self):
         return self._point_id
 
+    def phi_theta_to_show(self, phi, theta):
+        self.emit(SIGNAL("phi_theta_to_show"), phi, theta)
+
+    def phi_theta_to_edit(self, phi, theta):
+        self.emit(SIGNAL("phi_theta_to_edit"), phi, theta)
