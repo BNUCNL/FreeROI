@@ -615,7 +615,7 @@ class VolumeDataset(object):
 
 
 class GeometryData(object):
-    """Container for surface object in FreeROI GUI system.
+    """Container for geometry object in FreeROI GUI system.
 
     Attributes
     ----------
@@ -846,14 +846,14 @@ class ScalarData(object):
 
 
 class Hemisphere(object):
-    """Hemisphere: container for surface data and scalar data."""
-    def __init__(self, geo_path, offset=None):
+    """Hemisphere: container for geometry data and scalar data."""
+    def __init__(self, geo_path, offset=0.0):
         """
         Hemisphere
 
         Parameters
         ----------
-        geo_path: absolute surf file path
+        geo_path: absolute geometry file path
         offset: float | None
             If 0.0, the surface will be offset such that medial wall
             is aligned with the origin. If None, no offset will be 
@@ -862,7 +862,7 @@ class Hemisphere(object):
         # FIXME to contain more geometry type
         geo_type = 'inflated'
         self.geometries = {}
-        self.load_geometry(geo_path, geo_type, offset=1.0)
+        self.load_geometry(geo_path, geo_type, offset=offset)
 
         self.overlays = []
         self._name = self.geometries[geo_type].name
@@ -923,22 +923,10 @@ class Hemisphere(object):
                 self.overlays[idx-1], self.overlays[idx]
 
     def is_top_layer(self, idx):
-        if isinstance(idx, int) and 0 <= idx < len(self.overlays):
-            if len(self.overlays)-1 == idx:
-                return True
-            else:
-                return False
-        else:
-            print 'Invalid input!'
+        return True if len(self.overlays)-1 == idx else False
 
     def is_bottom_layer(self, idx):
-        if isinstance(idx, int) and 0 <= idx < len(self.overlays):
-            if idx == 0:
-                return True
-            else:
-                return False
-        else:
-            print 'Invalid input!'
+        return True if idx == 0 else False
 
     def is_visible(self):
         return self._visible

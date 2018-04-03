@@ -2,7 +2,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import os
 import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -115,7 +114,7 @@ class SurfaceTreeView(QWidget):
         scalar_group_box = QGroupBox('Overlay display settings')
         scalar_group_box.setLayout(scalar_layout)
 
-        # initialize widgets for cursor information
+        # initialize widgets for cursor position information
         id_label = QLabel('id:')
         self._id_edit = QLineEdit()
         self._id_edit.setReadOnly(True)
@@ -132,6 +131,21 @@ class SurfaceTreeView(QWidget):
         cursor_group_box = QGroupBox('Cursor')
         cursor_group_box.setLayout(cursor_layout)
 
+        # initialize widgets for camera view information
+        phi_label = QLabel('phi:')
+        self._phi_edit = QLineEdit()
+        theta_label = QLabel('theta:')
+        self._theta_edit = QLineEdit()
+
+        # layout for camera view information
+        camera_layout = QHBoxLayout()
+        camera_layout.addWidget(phi_label)
+        camera_layout.addWidget(self._phi_edit)
+        camera_layout.addWidget(theta_label)
+        camera_layout.addWidget(self._theta_edit)
+        camera_group_box = QGroupBox('Camera')
+        camera_group_box.setLayout(camera_layout)
+
         # -- layout config for whole TreeWidget
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._tree_view)
@@ -139,6 +153,7 @@ class SurfaceTreeView(QWidget):
         self.layout().addWidget(scalar_group_box)
         self.layout().addLayout(visibility_layout)
         self.layout().addWidget(cursor_group_box)
+        self.layout().addWidget(camera_group_box)
 
         # -- right click context show
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -174,6 +189,9 @@ class SurfaceTreeView(QWidget):
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
+        self._phi_edit.editingFinished.connect(self._set_phi_theta)
+        self._theta_edit.editingFinished.connect(self._set_phi_theta)
+        self.connect(self._model, SIGNAL("phi_theta_to_edit"), self._update_phi_theta)
 
         self._rightclick_add = self.contextMenu.addAction(u'Add')
         self._rightclick_del = self.contextMenu.addAction(u'Delete')
@@ -235,7 +253,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_min.text()
         if value == '':
-            self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
+            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 5)))
             self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
@@ -245,7 +263,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_max.text()
         if value == '':
-            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 6)))
             self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)
@@ -261,6 +279,17 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._visibility.value() / 100.
         self._model.setData(index, value, role=Qt.UserRole + 2)
+
+    def _set_phi_theta(self):
+        phi = self._phi_edit.text()
+        theta = self._theta_edit.text()
+        self._model.phi_theta_to_show(float(phi), float(theta))
+
+    def _update_phi_theta(self, phi, theta):
+        self._phi_edit.setText(str(phi))
+        self._phi_edit.setCursorPosition(0)
+        self._theta_edit.setText(str(theta))
+        self._theta_edit.setCursorPosition(0)
 
     def _up_action(self):
         """Move selected item up for one step."""
