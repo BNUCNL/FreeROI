@@ -115,6 +115,16 @@ def main():
                         choices=['surface', 'volume'],
                         required=False,
                         help='Specify data type')
+    parser.add_argument('-view',
+                        dest='view', nargs=2,
+                        metavar="phi and theta angles",
+                        required=False,
+                        help="phi and theta angles of mayavi camera view")
+    parser.add_argument('-dest',
+                        dest='dest',
+                        metavar='destination directory',
+                        required=False,
+                        help='specify a directory where output file should be')
 
     args = parser.parse_args()
 
@@ -125,6 +135,10 @@ def main():
     win = BpMainWindow()
     win.config_extra_settings(data_dir)
     win.show()
+
+    # set output directory
+    if args.dest:
+        win.set_save_dir(args.dest)
 
     # add images
     if args.data_list:
@@ -185,8 +199,15 @@ def main():
                         print 'Could not create volume ' + new_name
                         raise
         else:
+
+            if args.view:
+                view = [float(_) for _ in args.view]
+            else:
+                view = (0, 0)
+
             try:
-                win._add_surface_img(args.data_list[0], QModelIndex())
+                win._add_surface_img(args.data_list[0], QModelIndex(),
+                                     view=view)
             except:
                 print 'Load surface failed!'
                 raise
@@ -197,15 +218,18 @@ def main():
                     win._add_surface_img(source=data, index=index,
                                          vmin=args.low_thresh[i],
                                          vmax=args.high_thresh[i],
-                                         colormap=args.colormap[i])
+                                         colormap=args.colormap[i],
+                                         view=view)
                 except:
                     print 'Load {} failed!'.format(data)
                     raise
+
             if args.new_names:
                 print 'can not create new blank overlay for surface data at present!'
                 sys.exit()
 
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()

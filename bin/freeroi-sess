@@ -46,6 +46,19 @@ def surf_sess(args, freeroi):
         if args.new_img:
             args_list.extend(['-n', args.new_img])
 
+        # specify camera view
+        if args.view:
+            args_list.extend(['-view', args.view[0], args.view[1]])
+
+        # set output directory as user-specified destination
+        # or default directory same as img's directory
+        if args.dest:
+            args_list.extend(['-dest', args.dest])
+        else:
+            img_tmp = args.img_list[0][0].format(id=sess)
+            dest = os.path.dirname(img_tmp)
+            args_list.extend(['-dest', dest])
+
         # execute command
         cmd_list = [freeroi,
                     '-data', geo_path,
@@ -92,6 +105,15 @@ def vol_sess(args, freeroi):
         if args.new_img:
             args_list.extend(['-n', args.new_img])
 
+        # set output directory as user-specified destination
+        # or default directory same as img's directory
+        if args.dest:
+            args_list.extend(['-dest', args.dest])
+        else:
+            img_tmp = args.img_list[0][0].format(id=sess)
+            dest = os.path.dirname(img_tmp)
+            args_list.extend(['-dest', dest])
+
         # execute command
         cmd_list = [freeroi,
                     '-data', template_file,
@@ -132,12 +154,22 @@ def main():
                         choices=['surface', 'volume'],
                         required=True,
                         help='Specify data type')
+    parser.add_argument('-dest',
+                        dest='dest',
+                        metavar='destination directory',
+                        required=False,
+                        help='specify a directory where output file should be')
     # surface-specific parameters
     parser.add_argument('-geo',
                         dest='geo_path',
                         metavar="geometry data's full path",
                         required=False,
                         help="specify the geometry full path")
+    parser.add_argument('-view',
+                        dest='view', nargs=2,
+                        metavar="phi and theta angles",
+                        required=False,
+                        help="phi and theta angles of mayavi camera view")
     args = parser.parse_args()
 
     sess_working_dir = os.path.dirname(__file__)
