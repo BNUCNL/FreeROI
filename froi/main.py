@@ -81,6 +81,7 @@ class BpMainWindow(QMainWindow):
             super(BpMainWindow, self).__init__(parent)
 
         # temporary variable
+        self._save_dir = None
         self._temp_dir = None
         self.is_save_configure = False
 
@@ -793,7 +794,7 @@ class BpMainWindow(QMainWindow):
                 register_volume_dialog.exec_()
 
     def _add_surface_img(self, source, index=None, offset=None, vmin=None, vmax=None,
-                         colormap='jet', alpha=1.0, visible=True, islabel=False):
+                         colormap='jet', alpha=1.0, visible=True, islabel=False, view=(0, 0)):
         """ Add surface image."""
         # If model is NULL, then re-initialize it.
         if not self.surface_model:
@@ -850,6 +851,7 @@ class BpMainWindow(QMainWindow):
                     self.volume_view.setParent(None)
                 self.centralWidget().layout().addWidget(self.surface_view)
 
+            self.surface_view.set_phi_theta(*view)
             self._actions['remove_image'].setEnabled(True)
         else:
             QMessageBox.question(self,
@@ -981,10 +983,10 @@ class BpMainWindow(QMainWindow):
     def _save_image(self):
         """Save overlay as a file."""
 
-        if not self._temp_dir:
-            temp_dir = str(QDir.currentPath())
+        if self._save_dir is not None:
+            temp_dir = self._save_dir
         else:
-            temp_dir = self._temp_dir
+            temp_dir = str(QDir.currentPath()) if self._temp_dir is None else self._temp_dir
 
         if self.tabWidget.currentWidget() == self.list_view:
             index = self.volume_model.currentIndex()
@@ -1555,3 +1557,5 @@ class BpMainWindow(QMainWindow):
         """Capture images from OrthView."""
         self.volume_view.save_image()
 
+    def set_save_dir(self, path):
+        self._save_dir = path

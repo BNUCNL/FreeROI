@@ -205,6 +205,8 @@ class SurfaceView(QWidget):
             self.cbar = mlab.colorbar(self.surf)
             self.is_cbar = False
 
+        self._view = mlab.view()
+
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
@@ -237,7 +239,7 @@ class SurfaceView(QWidget):
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
-        self.connect(self.surface_model, QtCore.SIGNAL("phi_theta_to_show"), self._set_phi_theta)
+        self.connect(self.surface_model, QtCore.SIGNAL("phi_theta_to_show"), self.set_phi_theta)
 
     def _plot_line(self):
         if self.plot_start is None:
@@ -287,7 +289,7 @@ class SurfaceView(QWidget):
     def get_faces(self):
         return self.faces
 
-    def _set_phi_theta(self, phi, theta):
+    def set_phi_theta(self, phi, theta):
         if self._view is not None:
             mlab.view(phi, theta, *self._view[2:])
 
