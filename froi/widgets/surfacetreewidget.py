@@ -219,7 +219,7 @@ class SurfaceTreeView(QWidget):
 
             # geometry information
             hemi = get_curr_hemi(index)
-            self._geo_name_edit.setText(hemi.get_name())
+            self._geo_name_edit.setText(hemi.hemi_rl)
 
             # min/max value
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
@@ -393,7 +393,7 @@ if __name__ == '__main__':
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
     h1 = Hemisphere(sub1)
-    h1.load_geometry(sub1, 'inflated')
+    h1.load_geometry(sub1)
     h1.load_overlay(s1)
     h1.load_overlay(s2)
     h2 = Hemisphere(surf2)

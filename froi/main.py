@@ -1033,7 +1033,8 @@ class BpMainWindow(QMainWindow):
 
             if filter == 'FS label(*.label)':
                 hemi = get_curr_hemi(index)
-                coords = hemi.geometries['inflated'].get_coords()
+                # FIXME coordinates in freesurfer-style label file should come from '.white' file
+                coords = hemi.geometries[hemi.displayed_geo_name].coords
                 overlay.save2label(path, hemi_coords=coords)
             else:
                 overlay.save2nifti(path)

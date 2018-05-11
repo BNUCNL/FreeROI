@@ -121,6 +121,11 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
         data = read_mgh_mgz(fpath)
         data = data.astype(np.float64)
 
+    elif suffix0 == 'gii':
+        if suffix1 == 'label':
+            islabel = True
+        data = nib.load(fpath).darrays[0].data.T
+
     else:
         raise RuntimeError('Unsupported data type.')
 
