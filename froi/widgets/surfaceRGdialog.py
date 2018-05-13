@@ -21,9 +21,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.model = model
 
         self.hemi = self._get_curr_hemi()
-        # FIXME 'inflated' should be replaced with geo_type in the future
-        self.surf = self.hemi.geometries['inflated']
-        self.hemi_vtx_number = self.surf.get_vertices_num()
+        self.surf = self.hemi.geometries[self.hemi.displayed_geo_name]
+        self.hemi_vtx_number = self.surf.vertices_count()
         # NxM array, N is the number of vertices,
         # M is the number of measurements or time points.
         self.X = None
@@ -325,9 +324,9 @@ class SurfaceRGDialog(QtGui.QDialog):
                 mask = data.reshape((data.shape[0],))
                 idx = np.where(mask < ol.get_min())
                 mask[idx] = 0
-                edge_list = get_n_ring_neighbor(self.surf.get_faces(), n=self.n_ring, mask=mask)
+                edge_list = get_n_ring_neighbor(self.surf.faces, n=self.n_ring, mask=mask)
             else:
-                edge_list = get_n_ring_neighbor(self.surf.get_faces(), n=self.n_ring)
+                edge_list = get_n_ring_neighbor(self.surf.faces, n=self.n_ring)
 
             for cut_vtx in self.cut_line:
                 edge_list[cut_vtx] = set()

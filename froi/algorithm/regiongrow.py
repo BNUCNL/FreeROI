@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
 
-from ..core.dataobject import GeometryData
+from ..core.dataobject import Geometry
 from meshtool import mesh2graph, get_n_ring_neighbor
 from graph_tool import graph2parcel
 from tools import slide_win_smooth
@@ -359,7 +359,7 @@ class RegionGrow(object):
 
         Parameters
         ----------
-        surf : GeometryData
+        surf : Geometry
             a instance of the class GeometryData
         vtx_signal : numpy array
             NxM array, N is the number of vertices,
@@ -374,14 +374,14 @@ class RegionGrow(object):
             else the surface will be partitioned to n_parcel parcels.
         """
 
-        if not isinstance(surf, GeometryData):
+        if not isinstance(surf, Geometry):
             raise TypeError("The argument surf must be a instance of GeometryData!")
 
-        n_vtx = surf.get_vertices_num()
+        n_vtx = surf.vertices_count()
         self.v_id2r_id = -np.ones(n_vtx, dtype=np.int)
         if n_parcel:
             # Prepare parcels, neighbors and v_id2r_id
-            graph = mesh2graph(surf.get_faces(), n=n_ring,
+            graph = mesh2graph(surf.faces, n=n_ring,
                                vtx_signal=vtx_signal, weight_normalization=True)
             if mask is not None:
                 graph = graph[np.nonzero(mask)[0]]
@@ -393,10 +393,10 @@ class RegionGrow(object):
             if mask is None:
                 for i in range(n_vtx):
                     self.v_id2r_id[i] = i
-                region_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring)
+                region_neighbors = get_n_ring_neighbor(surf.faces, n_ring)
             else:
                 mask_id = np.nonzero(mask)[0]
-                vtx_neighbors = get_n_ring_neighbor(surf.get_faces(), n_ring, mask=mask)
+                vtx_neighbors = get_n_ring_neighbor(surf.faces, n_ring, mask=mask)
                 region_neighbors = []
                 for r_id, v_id in enumerate(mask_id):
                     self.v_id2r_id[v_id] = r_id

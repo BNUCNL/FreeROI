@@ -147,16 +147,8 @@ class TreeModel(QAbstractItemModel):
             return None
 
         item = index.internalPointer()
-        if role == Qt.EditRole:
-            value_str = value.toPyObject()
-            if value_str != '':
-                if item.get_name() != value_str:
-                    item.set_name(str(value_str))
-                else:
-                    return False
-            else:
-                return False
-        elif role == Qt.CheckStateRole and index.column() == 0:
+
+        if role == Qt.CheckStateRole and index.column() == 0:
             if value == Qt.Unchecked:
                 item.set_visible(False)
             else:
@@ -169,7 +161,16 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
         else:
-            if role == Qt.UserRole:
+            if role == Qt.EditRole:
+                value_str = value.toPyObject()
+                if value_str != '':
+                    if item.get_name() != value_str:
+                        item.set_name(str(value_str))
+                    else:
+                        return False
+                else:
+                    return False
+            elif role == Qt.UserRole:
                 if str(item.get_min()) != value:
                     item.set_min(value)
                 else:
@@ -268,7 +269,7 @@ class TreeModel(QAbstractItemModel):
             else:
                 hemi_item = parent.internalPointer()
             if source is None:
-                source = np.zeros((hemi_item.get_vertices_num(),))
+                source = np.zeros((hemi_item.vertices_count(),))
             hemi_item.load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
                                    visible=visible, islabel=islabel)
             item = None

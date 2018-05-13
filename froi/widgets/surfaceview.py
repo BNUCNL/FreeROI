@@ -131,10 +131,10 @@ class SurfaceView(QWidget):
         for hemi in visible_hemis:
 
             # get geometry's information
-            geo = hemi.geometries['inflated']  # FIXME 'inflated' should be replaced with var: geo_type
-            hemi_coords = geo.get_coords()
-            hemi_faces = geo.get_faces().copy()  # need to be amended in situ, so need copy
-            hemi_nn = geo.get_nn()
+            geo = hemi.geometries[hemi.displayed_geo_name]
+            hemi_coords = geo.coords
+            hemi_faces = geo.faces.copy()  # need to be amended in situ, so need copy
+            hemi_nn = geo.nn
 
             # get the rgba_lut
             rgb_array = hemi.get_composite_rgb()

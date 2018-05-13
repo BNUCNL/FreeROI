@@ -614,8 +614,8 @@ class VolumeDataset(object):
         return dup_img
 
 
-class GeometryData(object):
-    """Container for geometry object in FreeROI GUI system.
+class Geometry(object):
+    """Container for surface geometry data.
 
     Attributes
     ----------
@@ -636,7 +636,7 @@ class GeometryData(object):
 
     """
 
-    def __init__(self, geo_path, offset=0.0):
+    def __init__(self, geo_path, offset=None):
         """
         Surface Geometry
         
@@ -649,100 +649,123 @@ class GeometryData(object):
             applied. If != 0.0, an additional offset will be used.
 
         """
-        self._surf_dir, self.name = os.path.split(geo_path)
-        name_split = self.name.split('.')
+        geo_dir, self._name = os.path.split(geo_path)
+        name_split = self._name.split('.')
         self._suffix = name_split[-1]
         if self._suffix in ('pial', 'inflated', 'white'):
             # FreeSurfer style geometry filename
-            self.coords, self.faces = nib.freesurfer.read_geometry(geo_path)
-            self.hemi_rl = name_split[0]
-            self._curv_name = '{}.curv'.format(self.hemi_rl)
+            self._coords, self._faces = nib.freesurfer.read_geometry(geo_path)
+            self._hemi_rl = name_split[0]
+            curv_name = '{}.curv'.format(self._hemi_rl)
         elif self._suffix == 'gii':
             # GIFTI style geometry filename
             darrays = nib.load(geo_path).darrays
-            self.coords, self.faces = darrays[0].data, darrays[1].data
-            self.hemi_rl = 'lh' if name_split[1] == 'L' else 'rh'
+            self._coords, self._faces = darrays[0].data, darrays[1].data
+            self._hemi_rl = 'lh' if name_split[1] == 'L' else 'rh'
             name_split[2] = 'curvature'
             name_split[-2] = 'shape'
-            self._curv_name = '.'.join(name_split)
+            curv_name = '.'.join(name_split)
         else:
             raise ImageFileError('This file format-{} is not supported at present.'.format(self._suffix))
 
-        if self.hemi_rl == 'lh':
-            self.coords[:, 0] -= (np.max(self.coords[:, 0]) + offset)
-        else:
-            self.coords[:, 0] -= (np.min(self.coords[:, 0]) + offset)
-        self.nn = mshtool.compute_normals(self.coords, self.faces)
+        if offset is not None:
+            if self._hemi_rl == 'lh':
+                self._coords[:, 0] -= (np.max(self._coords[:, 0]) + offset)
+            else:
+                self._coords[:, 0] -= (np.min(self._coords[:, 0]) + offset)
+        self._nn = mshtool.compute_normals(self._coords, self._faces)
+        self._curv_path = os.path.join(geo_dir, curv_name)
 
     def get_bin_curv(self):
         """
-        load and get binarized curvature (gyrus' curvature<0, sulcus's curvature>0)
+        load and get binarized curvature
+        at freesurfer style:
+            gyrus' curvature<0, sulcus's curvature>0
+        at gifti style:
+            gyrus' curvature>0, sulcus's curvature<0
         :return:
             binarized curvature
         """
-        curv_path = os.path.join(self._surf_dir, self._curv_name)
-        if not os.path.exists(curv_path):
+        if not os.path.exists(self._curv_path):
             return None
         if self._suffix in 'gii':
-            bin_curv = nib.load(curv_path).darrays[0].data >= 0
+            bin_curv = nib.load(self._curv_path).darrays[0].data >= 0
         else:
-            bin_curv = nib.freesurfer.read_morph_data(curv_path) <= 0
+            bin_curv = nib.freesurfer.read_morph_data(self._curv_path) <= 0
         bin_curv = bin_curv.astype(np.int)
         return bin_curv
 
     def save(self, fpath):
         """Save geometry information."""
-        nib.freesurfer.write_geometry(fpath, self.coords, self.faces)
+        nib.freesurfer.write_geometry(fpath, self._coords, self._faces)
 
-    def get_vertices_num(self):
-        """Get vertices number of the surface."""
-        return self.coords.shape[0]
+    def vertices_count(self):
+        """Count the number of vertices of the surface."""
+        return self._coords.shape[0]
 
-    def get_coords(self):
-        return self.coords
+    @property
+    def coords(self):
+        return self._coords
 
-    def get_faces(self):
-        return self.faces
+    @property
+    def faces(self):
+        return self._faces
 
-    def get_nn(self):
-        return self.nn
+    @property
+    def nn(self):
+        return self._nn
 
     @property
     def x(self):
-        return self.coords[:, 0]
+        return self._coords[:, 0]
 
     @property
     def y(self):
-        return self.coords[:, 1]
+        return self._coords[:, 1]
 
     @property
     def z(self):
-        return self.coords[:, 2]
+        return self._coords[:, 2]
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def hemi_rl(self):
+        return self._hemi_rl
 
     def apply_xfm(self, mtx):
         """Apply an affine transformation matrix to the x, y, z vectors."""
-        self.coords = np.dot(np.c_[self.coords, np.ones(len(self.coords))],
+        self._coords = np.dot(np.c_[self._coords, np.ones(len(self._coords))],
                              mtx.T)[:, 3]
 
 
-class ScalarData(object):
+class Scalar(object):
     """Container for Scalar data in Surface syetem.
     A container for thickness, curv, sig, and label dataset.
 
     """
-    def __init__(self, name, data, vmin=None, vmax=None, colormap='jet', alpha=1.0,
-                 visible=True, islabel=False):
+    def __init__(self, data, vmin=None, vmax=None, colormap='jet', alpha=1.0,
+                 visible=True, islabel=False, name=None):
         """
         :param name: string
             data name
         :param data: numpy array
+            the row indices are correspond with surface vertices's id
+            a column is one of vertices' features
         :param vmin: float
             threshold for overlay display
         :param vmax: float
             saturation point for overlay display
         :param colormap:
         """
-        self._name = name
+
+        if name is None:
+            self._name = 'unnamed overlay'
+        else:
+            self._name = name
+
         if data.ndim == 1:
             self._data = data.reshape((data.shape[0], 1))
         elif data.ndim == 2:
@@ -750,14 +773,14 @@ class ScalarData(object):
         else:
             raise ValueError("The data stored by ScalarData must be 2D")
 
-        if vmin and isinstance(vmin, float):
-            self._vmin = vmin
-        else:
+        if vmin is None:
             self._vmin = np.min(data)
-        if vmax and isinstance(vmax, float):
-            self._vmax = vmax
         else:
+            self._vmin = vmin
+        if vmax is None:
             self._vmax = np.max(data)
+        else:
+            self._vmax = vmax
 
         self._colormap = colormap
         self._alpha = alpha
@@ -847,7 +870,8 @@ class ScalarData(object):
 
 class Hemisphere(object):
     """Hemisphere: container for geometry data and scalar data."""
-    def __init__(self, geo_path, offset=0.0):
+
+    def __init__(self, geo_path, offset=None):
         """
         Hemisphere
 
@@ -859,65 +883,57 @@ class Hemisphere(object):
             is aligned with the origin. If None, no offset will be 
             applied. If != 0.0, an additional offset will be used.
         """
-        # FIXME to contain more geometry type
-        geo_type = 'inflated'
-        self.geometries = {}
-        self.load_geometry(geo_path, geo_type, offset=offset)
 
-        self.overlays = []
-        self._name = self.geometries[geo_type].name
-        self.hemi_rl = self.geometries[geo_type].hemi_rl
+        self.geometries = dict()
+        self._displayed_geo_name = None
+        self.overlays = list()
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
-        self.bin_curv = self.geometries[geo_type].get_bin_curv()
+        self.bin_curv = None
+        self.load_geometry(geo_path, offset=offset)
 
-    def load_geometry(self, geo_path, geo_type, offset=0.0):
-        """Add surface data"""
-        if geo_type in self.geometries.keys():
-            print 'Invalid Operation! The surface type is already exist!'
-        else:
-            self.geometries[geo_type] = GeometryData(geo_path, offset)
+    def load_geometry(self, geo_path, offset=None):
+        """Add geometry data"""
 
-    def del_surfs(self, geo_type):
-        """Del surface data"""
-        try:
-            self.geometries[geo_type]
-        except KeyError:
-            print "The surface data is not exist!"
+        geo = Geometry(geo_path, offset=offset)
+        if geo.name in self.geometries.keys():
+            print 'Invalid Operation! The geometry type is already exist!'
         else:
-            del self.geometries[geo_type]
+            self.geometries[geo.name] = Geometry(geo_path, offset)
+            self._displayed_geo_name = geo.name
+            if self.bin_curv is None:
+                self.bin_curv = geo.get_bin_curv()
 
-    def update_surfs(self, geo_path, geo_type, offset=None):
-        """Update surf data, if not exist, ask user to confirm"""
-        try:
-            self.geometries[geo_type]
-        except KeyError:
-            pass
-            # Here should be a dialog for confirm, whether adding data or not
-        else:
-            self.load_geometry(geo_path, geo_type, offset)
+    def remove_geometry(self, geo_name):
+        if geo_name in self.geometries.keys():
+            del self.geometries[geo_name]
 
     def load_overlay(self, source, vmin=None, vmax=None, colormap='jet', alpha=1.0,
-                     visible=True, islabel=False):
+                     visible=True, islabel=False, name=None):
         """Load scalar data as an overlay."""
-        if isinstance(source, np.ndarray):
-            name = 'new_overlay'
+
+        if isinstance(source, str):
+            if name is None:
+                name = os.path.basename(source).split('.')[0]
+            data, islabel = read_scalar_data(source, self.vertices_count(), self.cifti_structure)
+        elif isinstance(source, np.ndarray):
             data = source
         else:
-            name = os.path.basename(source).split('.')[0]
-            data, islabel = read_scalar_data(source, self.geometries.values()[0].get_vertices_num(),
-                                             self.get_cifti_structure_name())
-        self.overlays.append(ScalarData(name, data, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
-                                        visible=visible, islabel=islabel))
+            raise TypeError("Invalid source")
+
+        self.overlays.append(Scalar(data, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
+                                    visible=visible, islabel=islabel, name=name))
 
     def overlay_up(self, idx):
         """Move the `idx` overlay layer up."""
+
         if not self.is_top_layer(idx):
             self.overlays[idx], self.overlays[idx+1] = \
                 self.overlays[idx+1], self.overlays[idx]
 
     def overlay_down(self, idx):
         """Move the `idx` overlay layer down."""
+
         if not self.is_bottom_layer(idx):
             self.overlays[idx], self.overlays[idx-1] = \
                 self.overlays[idx-1], self.overlays[idx]
@@ -971,30 +987,22 @@ class Hemisphere(object):
         if self.bin_curv is not None:
             background = aq.array2qrgba(self.bin_curv, 255.0, 'gray', (-1, 1.5))
         else:
-            background = np.ones((self.geometries['inflated'].get_vertices_num(), 4)) * 127.5
+            background = np.ones((self.vertices_count(), 4)) * 127.5
         rgba_list.insert(0, background)
 
         return aq.qcomposition(rgba_list)
 
-    def get_vertices_num(self):
-        return self.geometries.values()[0].get_vertices_num()
+    def vertices_count(self):
+        return self.geometries.values()[0].vertices_count()
 
-    def get_cifti_structure_name(self):
-        if self.hemi_rl == 'lh':
-            return 'CIFTI_STRUCTURE_CORTEX_LEFT'
-        elif self.hemi_rl == 'rh':
-            return 'CIFTI_STRUCTURE_CORTEX_RIGHT'
-        else:
-            return 'Failed to recognize which hemisphere the data belong to!'
+    @property
+    def hemi_rl(self):
+        return self.geometries.values()[0].hemi_rl
 
-    def get_name(self):
-        return self._name
-
-    def set_name(self, name):
-        if isinstance(name, str):
-            self._name = name
-        else:
-            raise TypeError("The name of data must be a string")
+    @property
+    def cifti_structure(self):
+        return 'CIFTI_STRUCTURE_CORTEX_LEFT' if self.hemi_rl == 'lh'\
+            else 'CIFTI_STRUCTURE_CORTEX_RIGHT'
 
     def get_colormap(self):
         return self._colormap_geo
@@ -1018,3 +1026,57 @@ class Hemisphere(object):
 
         # 0 means that the render will start with the bottom overlay.
         return 0
+
+    @property
+    def displayed_geo_name(self):
+        return self._displayed_geo_name
+
+    @displayed_geo_name.setter
+    def displayed_geo_name(self, geo_name):
+        self._displayed_geo_name = geo_name
+
+
+class Brain(object):
+
+    def __init__(self):
+        self._surf_hemi = {
+            'lh': None,
+            'rh': None
+        }
+        self._visible = True
+
+    def get_surf_hemi(self, hemi_rl='both'):
+        return self._surf_hemi if hemi_rl == 'both' else self._surf_hemi[hemi_rl]
+
+    def set_surf_hemi(self, source, offset=None):
+        """
+        set surface hemisphere
+
+        :param source: Hemisphere or geometry data file path
+        :param offset: the minimum distance between two hemispheres
+        :return:
+        """
+
+        if not isinstance(source, Hemisphere):
+            source = Hemisphere(source, offset)
+        self._surf_hemi[source.hemi_rl] = source
+
+    def load_geometry(self, hemi_rl, geo_path, geo_type, offset=None):
+        self._surf_hemi[hemi_rl].load_geometry(geo_path, geo_type, offset)
+
+    def load_surf_overlay(self, hemi_rl, source, vmin=None, vmax=None,
+                          colormap='jet', alpha=1.0, visible=True, islabel=False):
+        self._surf_hemi[hemi_rl].load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap,
+                                              alpha=alpha, visible=visible, islabel=islabel)
+
+    def load_vol_overlay(self, source):
+        pass
+
+    def is_visible(self):
+        return self._visible
+
+    def set_visible(self, status):
+        if isinstance(status, bool):
+            self._visible = status
+        else:
+            raise TypeError("Visible status must be a bool.")
