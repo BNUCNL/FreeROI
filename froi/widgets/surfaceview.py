@@ -9,9 +9,9 @@ from mayavi.core.ui.api import SceneEditor, MayaviScene, MlabSceneModel
 from mayavi import mlab
 import numpy as np
 
-from treemodel import TreeModel
-from ..algorithm.tools import toggle_color, bfs
-from ..algorithm.meshtool import get_n_ring_neighbor
+from froi.widgets.treemodel import TreeModel
+from froi.algorithm.tools import toggle_color, bfs
+from froi.algorithm.meshtool import get_n_ring_neighbor, get_vtx_neighbor
 
 
 # Helpers
@@ -74,14 +74,14 @@ class SurfaceView(QWidget):
         # get mayavi scene
         # The edit_traits call will generate the widget to embed.
         self.visualization = Visualization()
-        surface_view = self.visualization.edit_traits(parent=self, kind="subpanel").control
+        surf_viz_widget = self.visualization.edit_traits(parent=self, kind="subpanel").control
         # self.ui.setParent(self)
-        # get rid of the toolbar
         figure = mlab.gcf()
         _toggle_toolbar(figure, True)
 
         # Initialize some fields
         self.surface_model = None
+        self.painter_status = None
         self.surf = None
         self.coords = None
         self.faces = None
@@ -99,7 +99,7 @@ class SurfaceView(QWidget):
         self._view = None
 
         hlayout = QHBoxLayout()
-        hlayout.addWidget(surface_view)
+        hlayout.addWidget(surf_viz_widget)
         self.setLayout(hlayout)
 
     def _show_surface(self):
@@ -215,20 +215,42 @@ class SurfaceView(QWidget):
 
         if self.point_id != -1:
 
-            self.tmp_lut = self.rgba_lut.copy()
+            # for painter_status
+            if self.painter_status.is_drawing_valid():
+                value = self.painter_status.get_drawing_value()
+                if self.painter_status.is_roi_tool():
+                    roi_val = self.surface_model.data(self.surface_model.current_index(),
+                                                      QtCore.Qt.UserRole + 4)
+                    self.surface_model.set_vertices_value(value, roi=roi_val)
+                else:
+                    size = self.painter_status.get_drawing_size()
+                    vertices = [self.point_id]
+                    if size != 0:
+                        vertices.extend(list(get_vtx_neighbor(self.point_id, self.faces, size)))
+                    self.surface_model.set_vertices_value(value, vertices=vertices)
 
-            if self.scribing_flag:  # plot line
-                if self.edge_list is None:
-                    self.create_edge_list()
-                self._plot_line()
+            else:
+                if self.painter_status.is_roi_selection():
+                    roi_val = self.surface_model.data(self.surface_model.current_index(),
+                                                      QtCore.Qt.UserRole + 4)
+                    self.painter_status.get_draw_settings()._update_roi(roi_val)
 
-            if self.seed_flag:  # get seed
-                self.seed_picked.emit()
+                self.tmp_lut = self.rgba_lut.copy()
 
-            # plot point
-            c_id = self.c_id2v_id.index(self.point_id)
-            toggle_color(self.tmp_lut[c_id])
-            self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
+                # plot line
+                if self.scribing_flag:
+                    if self.edge_list is None:
+                        self.create_edge_list()
+                    self._plot_line()
+
+                # get seed
+                if self.seed_flag:
+                    self.seed_picked.emit()
+
+                # plot point
+                c_id = self.c_id2v_id.index(self.point_id)
+                toggle_color(self.tmp_lut[c_id])
+                self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
 
         self._view = mlab.view()
         phi, theta = self._view[0], self._view[1]
@@ -273,12 +295,14 @@ class SurfaceView(QWidget):
     # user-oriented methods
     # -----------------------------------------------------------------
     def set_model(self, surface_model):
-
         if isinstance(surface_model, TreeModel):
             self.surface_model = surface_model
             self._create_connections()
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
+
+    def set_painter_status(self, painter_status):
+        self.painter_status = painter_status
 
     def create_edge_list(self):
         self.edge_list = get_n_ring_neighbor(self.faces)

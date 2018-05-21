@@ -45,6 +45,7 @@ class PainterStatus(object):
     def get_drawing_color(self):
         return self.draw_settings.get_drawing_color()
 
+
 class DrawSettings(object):
     """Settings for cursor status."""
     def is_view(self):
@@ -77,12 +78,14 @@ class DrawSettings(object):
     def get_drawing_color(self):
         raise NotImplementedError
 
+
 class ViewSettings(DrawSettings):
     def __init__(self):
         super(ViewSettings, self).__init__()
 
     def is_view(self):
         return True
+
 
 class MoveSettings(DrawSettings):
     def __init__(self):
