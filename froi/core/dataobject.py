@@ -790,6 +790,12 @@ class Scalar(object):
     def get_data(self):
         return self._data
 
+    def set_vertices_value(self, vertices, value):
+        self._data[vertices, 0] = value
+
+    def get_roi_vertices(self, roi):
+        return self._data[:, 0] == roi
+
     def get_name(self):
         return self._name
 
@@ -868,12 +874,12 @@ class Scalar(object):
         save2label(fpath, vertices, hemi_coords=hemi_coords)
 
 
-class Hemisphere(object):
-    """Hemisphere: container for geometry data and scalar data."""
+class Surface(object):
+    """Surface: container for geometry data and scalar data."""
 
     def __init__(self, geo_path, offset=None):
         """
-        Hemisphere
+        Surface
 
         Parameters
         ----------
@@ -1013,7 +1019,7 @@ class Hemisphere(object):
     def _get_start_render_index(self):
         """
         If an overlay's opacity is 1.0(i.e. completely opaque) and need to cover a whole
-        hemisphere, other overlays that below it are no need to be rendered.
+        Surface, other overlays that below it are no need to be rendered.
 
         :return: int
             The index that the render starts at.
@@ -1039,35 +1045,35 @@ class Hemisphere(object):
 class Brain(object):
 
     def __init__(self):
-        self._surf_hemi = {
+        self._surfaces = {
             'lh': None,
             'rh': None
         }
         self._visible = True
 
-    def get_surf_hemi(self, hemi_rl='both'):
-        return self._surf_hemi if hemi_rl == 'both' else self._surf_hemi[hemi_rl]
+    def get_surface(self, hemi_rl='both'):
+        return self._surfaces if hemi_rl == 'both' else self._surfaces[hemi_rl]
 
-    def set_surf_hemi(self, source, offset=None):
+    def set_surface(self, source, offset=None):
         """
-        set surface hemisphere
+        set surface
 
-        :param source: Hemisphere or geometry data file path
-        :param offset: the minimum distance between two hemispheres
+        :param source: Surface or geometry data file path
+        :param offset: the minimum distance between two surface hemispheres
         :return:
         """
 
-        if not isinstance(source, Hemisphere):
-            source = Hemisphere(source, offset)
-        self._surf_hemi[source.hemi_rl] = source
+        if not isinstance(source, Surface):
+            source = Surface(source, offset)
+        self._surfaces[source.hemi_rl] = source
 
     def load_geometry(self, hemi_rl, geo_path, geo_type, offset=None):
-        self._surf_hemi[hemi_rl].load_geometry(geo_path, geo_type, offset)
+        self._surfaces[hemi_rl].load_geometry(geo_path, geo_type, offset)
 
     def load_surf_overlay(self, hemi_rl, source, vmin=None, vmax=None,
                           colormap='jet', alpha=1.0, visible=True, islabel=False):
-        self._surf_hemi[hemi_rl].load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap,
-                                              alpha=alpha, visible=visible, islabel=islabel)
+        self._surfaces[hemi_rl].load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap,
+                                             alpha=alpha, visible=visible, islabel=islabel)
 
     def load_vol_overlay(self, source):
         pass

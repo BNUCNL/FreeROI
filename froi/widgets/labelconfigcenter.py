@@ -85,8 +85,6 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
 
         self.size_label = QLabel('Brush Size:')
         self.size_edit = QSpinBox()
-        self.size_edit.setRange(1, 10)
-        self.size_edit.setValue(4)
        
         hboxlayout = QHBoxLayout()
         hboxlayout.addWidget(self.size_label)

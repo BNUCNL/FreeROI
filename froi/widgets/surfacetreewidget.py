@@ -8,7 +8,7 @@ from PyQt4.QtGui import *
 
 from treemodel import TreeModel
 from froi.utils import *
-from froi.core.dataobject import Hemisphere
+from froi.core.dataobject import Surface
 from froi.core.labelconfig import LabelConfig
 from froi.algorithm.tools import get_curr_hemi
 
@@ -347,13 +347,13 @@ class SurfaceTreeView(QWidget):
     # def _add_item(self, source):
     #     index = self._tree_view.currentIndex()
     #     if not index.isValid():
-    #         add_item = Hemisphere(source)
+    #         add_item = Surface(source)
     #         ok = self._model.insertRow(index.row(), add_item, index)
     #
     #     else:
     #         parent = index.parent()
     #         if not parent.isValid():
-    #             add_item = Hemisphere(source)
+    #             add_item = Surface(source)
     #         else:
     #             parent_item = parent.internalPointer()
     #             parent_item.load_overlay(source)
@@ -384,7 +384,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     db_dir = froi_utils.get_data_dir()
     # model init
-    hemisphere_list = []
+    surface_list = []
     sub1 = os.path.join(db_dir, 'surf', 'lh.white')
     surf2 = os.path.join(db_dir, 'surf', 'rh.white')
     s1 = os.path.join(db_dir, 'surf', 'white')
@@ -392,27 +392,27 @@ if __name__ == '__main__':
     s3 = os.path.join(db_dir, 'surf', 'rh.thickness')
     s4 = os.path.join(db_dir, 'surf', 'rh.curv')
 
-    h1 = Hemisphere(sub1)
+    h1 = Surface(sub1)
     h1.load_geometry(sub1)
     h1.load_overlay(s1)
     h1.load_overlay(s2)
-    h2 = Hemisphere(surf2)
+    h2 = Surface(surf2)
     h2.load_overlay(s3)
     h2.load_overlay(s4)
 
-    hemisphere_list.append(h1)
-    hemisphere_list.append(h2)
+    surface_list.append(h1)
+    surface_list.append(h2)
 
-    for h in hemisphere_list:
+    for h in surface_list:
         print h.name
         for ol in h.overlays:
             print ol.name
 
-    model = TreeModel(hemisphere_list)
+    model = TreeModel(surface_list)
 
     # View init
     view = SurfaceTreeView(model)
-    view.setWindowTitle("Hemisphere Tree Model")
+    view.setWindowTitle("Surface Tree Model")
     view.show()
 
     sys.exit(app.exec_())

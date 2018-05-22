@@ -8,7 +8,7 @@
 import numpy as np
 from PyQt4.QtCore import *
 
-from froi.core.dataobject import Hemisphere
+from froi.core.dataobject import Surface
 
 
 class TreeModel(QAbstractItemModel):
@@ -17,11 +17,12 @@ class TreeModel(QAbstractItemModel):
     repaint_surface = pyqtSignal()
     idChanged = pyqtSignal()
 
-    def __init__(self, hemisphere_list, parent=None):
+    def __init__(self, surfaces, parent=None):
         """Initialize an instance."""
         super(TreeModel, self).__init__(parent)
-        self._data = hemisphere_list
+        self._data = surfaces
         self._point_id = 0
+        self._current_index = QModelIndex()
 
     def get_data(self):
         return self._data
@@ -32,12 +33,12 @@ class TreeModel(QAbstractItemModel):
             return QModelIndex()
 
         if not parent.isValid():
-            hemi_item = self._data[row]
-            return self.createIndex(row, column, hemi_item)
+            surf_item = self._data[row]
+            return self.createIndex(row, column, surf_item)
         else:
-            hemi_item = parent.internalPointer()
-            if hemi_item in self._data:
-                ol_item = hemi_item.overlays[hemi_item.overlay_count()-1-row]
+            surf_item = parent.internalPointer()
+            if surf_item in self._data:
+                ol_item = surf_item.overlays[surf_item.overlay_count()-1-row]
                 if ol_item:
                     return self.createIndex(row, column, ol_item)
                 else:
@@ -54,32 +55,32 @@ class TreeModel(QAbstractItemModel):
         if item in self._data:
             return QModelIndex()
         else:
-            for hemi in self._data:
-                if item in hemi.overlays:
-                    return self.createIndex(self._data.index(hemi), 0, hemi)
+            for surf in self._data:
+                if item in surf.overlays:
+                    return self.createIndex(self._data.index(surf), 0, surf)
 
     def rowCount(self, parent):
         """Return the number of rows for display."""
-        if parent.isValid():
-            if parent.internalPointer() in self._data:
-                return self._data[parent.row()].overlay_count()
-            else:
-                return 0
-        else:
-            return len(self._data)
 
-    def columnCount(self, parent):
-        """Return the number of overlays in a hemispheres."""
+        depth = self.index_depth(parent)
+        if depth == 0:
+            return len(self._data)
+        elif depth == 1:
+            return parent.internalPointer().overlay_count()
+        elif depth == 2:
+            return 0
+
+    def columnCount(self, QModelIndex_parent=None, *args, **kwargs):
         return 1
         
     def data(self, index, role):
         """Return specific data."""
-        if not index.isValid():
+
+        depth = self.index_depth(index)
+        if depth == 0:
             return None
-
-        item = index.internalPointer()
-
-        if item in self._data:
+        elif depth == 1:
+            item = index.internalPointer()
             if role == Qt.UserRole + 2:
                 # FIXME to remove the role after refine visible bar's display
                 return 1.0
@@ -92,7 +93,8 @@ class TreeModel(QAbstractItemModel):
                     return item.bin_curv[self._point_id]
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.hemi_rl
-        else:
+        elif depth == 2:
+            item = index.internalPointer()
             if role == Qt.UserRole:
                 return item.get_min()
             elif role == Qt.UserRole + 1:
@@ -126,12 +128,10 @@ class TreeModel(QAbstractItemModel):
         
         result = Qt.ItemIsSelectable | Qt.ItemIsUserCheckable
         item = index.internalPointer()
-        if not item in self._data:
-            for hemi in self._data:
-                if item in hemi.overlays:
-                    break
-            if hemi.is_visible():
-                result |= Qt.ItemIsEnabled
+        if item not in self._data:
+            for surf in self._data:
+                if item in surf.overlays and surf.is_visible():
+                    result |= Qt.ItemIsEnabled
         else:
             result |= Qt.ItemIsEnabled
 
@@ -197,7 +197,7 @@ class TreeModel(QAbstractItemModel):
 
     def insertRow(self, row, item, parent):
         self.beginInsertRows(parent, row, row)
-        if item is not None:
+        if isinstance(item, Surface):
             self._data.append(item)  # insert(row, item)
         self.endInsertRows()
 
@@ -216,10 +216,10 @@ class TreeModel(QAbstractItemModel):
         row = index.row()
         parent = index.parent()
         self.beginMoveRows(parent, row, row, parent, row-1)
-        for hemi in self._data:
-            if item in hemi.overlays:
-                idx = hemi.overlays.index(item)
-                hemi.overlay_up(idx)
+        for surf in self._data:
+            if item in surf.overlays:
+                idx = surf.overlays.index(item)
+                surf.overlay_up(idx)
         self.endMoveRows()
         self.repaint_surface.emit()
 
@@ -228,52 +228,67 @@ class TreeModel(QAbstractItemModel):
         row = index.row()
         parent = index.parent()
         self.beginMoveRows(parent, row+1, row+1, parent, row)
-        for hemi in self._data:
-            if item in hemi.overlays:
-                idx = hemi.overlays.index(item)
-                hemi.overlay_down(idx)
+        for surf in self._data:
+            if item in surf.overlays:
+                idx = surf.overlays.index(item)
+                surf.overlay_down(idx)
         self.endMoveRows()
         self.repaint_surface.emit()
 
     def setCurrentIndex(self, index):
         """Set current row."""
-        if index.row() >= 0 and index.row() <= self.rowCount(index.parent()):
+        if 0 <= index.row() <= self.rowCount(index.parent()):
             self._current_index = index
+            self.emit(SIGNAL("currentIndexChanged"))
         else:
             raise ValueError('Invalid value.')
 
-    def is_hemisphere(self, index):
-        """Check whether the `index` item is an instance of Hemisphere."""
-        if not index.isValid():
-            return Qt.NoItemFlags
-        
-        item = index.internalPointer()
-        if item in self._data:
-            return True
+    def current_index(self):
+        return self._current_index
+
+    def get_overlay_list(self, index=None):
+        if index is None:
+            index = self._current_index
+
+        overlay_list = []
+        depth = self.index_depth(index)
+        if depth == 2:
+            surface_idx = self.parent(index)
+            for row in range(self.rowCount(surface_idx)):
+                idx = self.index(row, 0, surface_idx)
+                overlay_list.append(self.data(idx, Qt.DisplayRole))
+            return overlay_list
         else:
-            return False
+            return overlay_list
+
+    def index_depth(self, index):
+        """judge the depth of the index relative to the root"""
+        depth = 0
+        while True:
+            if not index.isValid():
+                return depth
+            else:
+                index = self.parent(index)
+                depth += 1
 
     def add_item(self, index, source=None, vmin=None, vmax=None,
                  colormap='jet', alpha=1.0, visible=True, islabel=False):
 
         if not index.isValid():
-            if isinstance(source, str):
-                item = Hemisphere(source)
-                self.insertRow(index.row(), item, index)
-            else:
-                raise RuntimeError("You have not specify a geometry file!")
+            if not isinstance(source, Surface):
+                source = Surface(source)
+            self.insertRow(index.row(), source, index)
         else:
             parent = index.parent()
             if not parent.isValid():
-                hemi_item = index.internalPointer()
+                surf_item = index.internalPointer()
             else:
-                hemi_item = parent.internalPointer()
+                surf_item = parent.internalPointer()
             if source is None:
-                source = np.zeros((hemi_item.vertices_count(),))
-            hemi_item.load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
+                source = np.zeros((surf_item.vertices_count(),))
+            surf_item.load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
                                    visible=visible, islabel=islabel)
-            item = None
-            self.insertRow(index.row(), item, parent)
+            self.insertRow(index.row(), None, parent)
         self.repaint_surface.emit()
         return True
 
@@ -283,6 +298,31 @@ class TreeModel(QAbstractItemModel):
         self.removeRow(index.row(), index.parent())
         self.repaint_surface.emit()
         return True
+
+    def set_vertices_value(self, value, index=None, vertices=None, roi=None,
+                           target_row=None):
+
+        if index is None:
+            index = self._current_index
+
+        depth = self.index_depth(index)
+        if depth == 2:
+            item = index.internalPointer()
+            if roi is not None:
+                # change values, which are equal to roi, to the new value.
+                vertices = item.get_roi_vertices(roi)
+
+            if target_row is None:
+                target_item = item
+            else:
+                target_idx = self.index(target_row, 0, self.parent(index))
+                target_item = target_idx.internalPointer()
+
+            target_item.set_vertices_value(vertices, value)
+        else:
+            return None
+
+        self.repaint_surface.emit()
 
     def set_point_id(self, point_id):
         self._point_id = point_id

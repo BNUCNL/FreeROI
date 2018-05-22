@@ -354,7 +354,7 @@ class VolumeListModel(QAbstractListModel):
 
     def setCurrentIndex(self, index):
         """Set current row."""
-        if index.row() >= 0 and index.row() <= self.rowCount():
+        if 0 <= index.row() <= self.rowCount():
             self._current_index = index
         else:
             raise ValueError('Invalid value.')

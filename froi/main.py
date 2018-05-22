@@ -37,7 +37,7 @@ from widgets.roimergedialog import ROIMergeDialog
 from widgets.opendialog import OpenDialog
 from widgets.labelmanagedialog import LabelManageDialog
 from widgets.labelconfigcenter import LabelConfigCenter
-from widgets.roidialog import ROIDialog
+from widgets.roidialog import VolROIDialog, SurfROIDialog
 from widgets.atlasdialog import AtlasDialog
 from widgets.binaryerosiondialog import BinaryerosionDialog
 from widgets.binarydilationdialog import BinarydilationDialog
@@ -97,6 +97,7 @@ class BpMainWindow(QMainWindow):
         self.surface_view = None
         self.list_view = None
         self.surface_tree_view = None
+        self.painter_status = PainterStatus(ViewSettings())
 
     def config_extra_settings(self, data_dir):
         """Set data directory and update some configurations."""
@@ -108,19 +109,12 @@ class BpMainWindow(QMainWindow):
         # set icon configuration
         self._icon_dir = get_icon_dir()
 
-        # set window title
         self.setWindowTitle('FreeROI')
-        #self.resize(1280, 1000)
         self.center()
-        # set window icon
         self.setWindowIcon(QIcon(os.path.join(self._icon_dir, 'logo.png')))
 
         self._init_configuration()
-
-        # create actions
         self._create_actions()
-
-        # create menus
         self._create_menus()
 
     def center(self):
@@ -713,11 +707,13 @@ class BpMainWindow(QMainWindow):
         """ Add image."""
         # If model is NULL, then re-initialize it.
         if not self.volume_model:
-            self._init_label_config_center()
-            self.volume_model = VolumeListModel([], self._label_config_center)
+            self._vol_label_config_center = self._init_label_config_center()
+            self._vol_label_config_center.size_edit.setRange(1, 10)
+            self._vol_label_config_center.size_edit.setValue(4)
+            self.volume_model = VolumeListModel([], self._vol_label_config_center)
             self.volume_model.set_scale_factor(self.default_grid_scale_factor, 'grid')
             self.volume_model.set_scale_factor(self.default_orth_scale_factor, 'orth')
-            self.painter_status = PainterStatus(ViewSettings())
+            self._init_vol_roidialog(self.volume_model)
 
         # Save previous opened directory (except `standard` directory)
         file_path = source
@@ -737,15 +733,14 @@ class BpMainWindow(QMainWindow):
             # If only one data in VolumeList, then initialize views.
             if self.volume_model.rowCount() == 1:
                 # initialize views
-                self.list_view = LayerView(self._label_config_center)
+                self.list_view = LayerView(self._vol_label_config_center)
                 self.list_view.setModel(self.volume_model)
-                self._init_roi_dialog(self.volume_model)
                 self.volume_view = GridView(self.volume_model, self.painter_status)
 
                 # connect signals with slots
                 self.list_view.current_changed.connect(self._update_undo)
                 self.list_view.current_changed.connect(self._update_redo)
-                self.list_view._list_view.selectionModel().currentChanged.connect(self.roidialog.clear_rois)
+                self.list_view._list_view.selectionModel().currentChanged.connect(self.vol_roidialog.clear_rois)
                 self.volume_model.rowsInserted.connect(self._update_remove_image)
                 self.volume_model.undo_stack_changed.connect(self._update_undo)
                 self.volume_model.redo_stack_changed.connect(self._update_redo)
@@ -798,9 +793,13 @@ class BpMainWindow(QMainWindow):
         """ Add surface image."""
         # If model is NULL, then re-initialize it.
         if not self.surface_model:
+            self._surf_label_config_center = self._init_label_config_center()
+            self._surf_label_config_center.size_edit.setRange(0, 10)
+            self._surf_label_config_center.size_edit.setValue(1)
             self.surface_model = TreeModel([])
             self.surface_tree_view = SurfaceTreeView(self.surface_model)
             self.surface_tree_view_control = self.surface_tree_view.get_treeview()
+            self._init_surf_roidialog(self.surface_model)
 
         if index is None:
             index = self.surface_tree_view_control.currentIndex()
@@ -844,6 +843,7 @@ class BpMainWindow(QMainWindow):
             if not self.surface_view:
                 self.surface_view = SurfaceView()
                 self.surface_view.set_model(self.surface_model)
+                self.surface_view.set_painter_status(self.painter_status)
 
             if self.centralWidget().layout().indexOf(self.surface_view) == -1:  # Could not find the self.surface_view
                 if self.centralWidget().layout().indexOf(self.volume_view) != -1:
@@ -930,6 +930,7 @@ class BpMainWindow(QMainWindow):
                 self._save_actions_status(self.volume_actions_status)
                 self._disable_vol_actions()
                 self._restore_actions_status(self.surface_actions_status)
+            self._roidialog_disable()
 
     def _new_image(self):
         """Create new image."""
@@ -948,7 +949,7 @@ class BpMainWindow(QMainWindow):
     def new_volume_image(self, data=None, name=None, colormap=None):
         """Create a new volume for brain parcellation."""
         if colormap is None:
-            colormap = self._label_config_center.get_first_label_config()
+            colormap = self._vol_label_config_center.get_first_label_config()
         self.volume_model.new_image(data, name, None, colormap)
         self.list_view.setCurrentIndex(self.volume_model.index(0))
 
@@ -1178,42 +1179,80 @@ class BpMainWindow(QMainWindow):
         """Cursor enabled."""
         if self._actions['cursor'].isChecked():
             self._actions['cursor'].setChecked(True)
-            if isinstance(self.volume_view, OrthView):
-                self._actions['hand'].setChecked(False)
-            if self.roidialog.isVisible():
-                self._roidialog_disable()
 
+            if self.tabWidget.currentWidget() is self.list_view:
+                if isinstance(self.volume_view, OrthView):
+                    self._actions['hand'].setChecked(False)
+                self.volume_view.set_cursor(Qt.ArrowCursor)
+                self.volume_view.set_label_mouse_tracking(True)
+
+            self._roidialog_disable()
             self.painter_status.set_draw_settings(ViewSettings())
-            self.volume_view.set_cursor(Qt.ArrowCursor)
-            self.volume_view.set_label_mouse_tracking(True)
         else:
             self._actions['cursor'].setChecked(True)
 
     def _voxel_edit_enable(self):
-        """Brush enabled."""
-        self._label_config_center.set_is_roi_edit(False)
-        self.painter_status.set_draw_settings(self._label_config_center)
+        """Voxel brush enabled."""
+        self._vol_label_config_center.set_is_roi_edit(False)
+        self.painter_status.set_draw_settings(self._vol_label_config_center)
         self.volume_view.set_cursor(Qt.CrossCursor)
         self.volume_view.set_label_mouse_tracking(False)
 
-    def _roi_edit_enable(self):
-        """ROI brush enabled."""
-        self._label_config_center.set_is_roi_edit(True)
-        self.painter_status.set_draw_settings(self._label_config_center)
+    def _vertex_edit_enable(self):
+        """Vertex brush enabled."""
+        self._surf_label_config_center.set_is_roi_edit(False)
+        self.painter_status.set_draw_settings(self._surf_label_config_center)
+
+    def _vol_roi_edit_enable(self):
+        """Volume ROI brush enabled."""
+        self._vol_label_config_center.set_is_roi_edit(True)
+        self.painter_status.set_draw_settings(self._vol_label_config_center)
         self.volume_view.set_cursor(Qt.CrossCursor)
         self.volume_view.set_label_mouse_tracking(False)
+
+    def _surf_roi_edit_enable(self):
+        """Surface ROI brush enabled."""
+        self._surf_label_config_center.set_is_roi_edit(True)
+        self.painter_status.set_draw_settings(self._surf_label_config_center)
+
+    def _vol_roi_batch_enable(self):
+        """Volume ROI batch enabled."""
+        self.volume_view.set_label_mouse_tracking(False)
+        self._vol_label_config_center.set_is_roi_edit(False)
+        self.painter_status.set_draw_settings(self.vol_roidialog)
+
+    def _surf_roi_batch_enable(self):
+        """Surface ROI batch enabled."""
+        self._surf_label_config_center.set_is_roi_edit(False)
+        self.painter_status.set_draw_settings(self.surf_roidialog)
 
     def _roidialog_enable(self):
         """ROI dialog enabled."""
         if self._actions['edit'].isChecked():
             self._actions['cursor'].setChecked(False)
-            if isinstance(self.volume_view, OrthView):
-                self._actions['hand'].setChecked(False)
             self._actions['edit'].setChecked(True)
-            self.roidialog._voxel_clicked()
-            self.roidialog.show()
+            if self.tabWidget.currentWidget() is self.list_view:
+                if isinstance(self.volume_view, OrthView):
+                    self._actions['hand'].setChecked(False)
+                self.vol_roidialog._vx_clicked()
+                self.vol_roidialog._fill_target_box()
+                self.vol_roidialog.show()
+            elif self.tabWidget.currentWidget() is self.surface_tree_view:
+                self.surf_roidialog._vx_clicked()
+                self.surf_roidialog._fill_target_box()
+                self.surf_roidialog.show()
         else:
             self._actions['edit'].setChecked(True)
+
+    def _roidialog_disable(self):
+        """Disable the roi dialog."""
+        if hasattr(self, "vol_roidialog"):
+            if self.vol_roidialog.isVisible():
+                self.vol_roidialog.hide()
+        if hasattr(self, "surf_roidialog"):
+            if self.surf_roidialog.isVisible():
+                self.surf_roidialog.hide()
+        self._actions['edit'].setChecked(False)
 
     def _atlas_dialog(self):
         """Atlas information dialog."""
@@ -1223,25 +1262,13 @@ class BpMainWindow(QMainWindow):
             self.atlasdialog = AtlasDialog(self.volume_model, self)
             self.atlasdialog.show()
 
-    def _roi_batch_enable(self):
-        """ROI batch enabled."""
-        self.volume_view.set_label_mouse_tracking(False)
-        self._label_config_center.set_is_roi_edit(False)
-        self.painter_status.set_draw_settings(self.roidialog)
-
-    def _roidialog_disable(self):
-        """Disable the roi dialog."""
-        self.roidialog.hide()
-        self._actions['edit'].setChecked(False)
-
     def _hand_enable(self):
         """Hand enabled."""
         if self._actions['hand'].isChecked():
             self._actions['cursor'].setChecked(False)
             self._actions['hand'].setChecked(True)
 
-            if hasattr(self, 'roidialog'):
-                self._roidialog_disable()
+            self._roidialog_disable()
 
             self.painter_status.set_draw_settings(MoveSettings())
             self.volume_view.set_cursor(Qt.OpenHandCursor)
@@ -1268,13 +1295,21 @@ class BpMainWindow(QMainWindow):
         else:
             self._actions['redo'].setEnabled(False)
 
-    def _init_roi_dialog(self, model):
-        """Initialize ROI Dialog."""
+    def _init_vol_roidialog(self, model):
+        """Initialize volume ROI Dialog."""
         self._actions['label_management'].setEnabled(False)
-        self.roidialog = ROIDialog(model, self._label_config_center, self)
-        self.roidialog.voxel_edit_enabled.connect(self._voxel_edit_enable)
-        self.roidialog.roi_edit_enabled.connect(self._roi_edit_enable)
-        self.roidialog.roi_batch_enabled.connect(self._roi_batch_enable)
+        self.vol_roidialog = VolROIDialog(model, self._vol_label_config_center, self)
+        self.vol_roidialog.vx_edit_enabled.connect(self._voxel_edit_enable)
+        self.vol_roidialog.roi_edit_enabled.connect(self._vol_roi_edit_enable)
+        self.vol_roidialog.roi_batch_enabled.connect(self._vol_roi_batch_enable)
+
+    def _init_surf_roidialog(self, model):
+        """Initialize Surface ROI Dialog."""
+        self._actions['label_management'].setEnabled(False)
+        self.surf_roidialog = SurfROIDialog(model, self._surf_label_config_center, self)
+        self.surf_roidialog.vx_edit_enabled.connect(self._vertex_edit_enable)
+        self.surf_roidialog.roi_edit_enabled.connect(self._surf_roi_edit_enable)
+        self.surf_roidialog.roi_batch_enabled.connect(self._surf_roi_batch_enable)
 
     def _init_label_config_center(self):
         """Initialize LabelConfigCenter."""
@@ -1298,7 +1333,7 @@ class BpMainWindow(QMainWindow):
                 model.appendRow(text_index_icon_item)
 
             self._label_models.append(model)
-        self._label_config_center = LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
+        return LabelConfigCenter(self.label_configs, self._list_view_model, self._label_models)
 
     def _get_label_config(self, file_path):
         """Get label config file."""
