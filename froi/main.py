@@ -350,7 +350,7 @@ class BpMainWindow(QMainWindow):
         self._actions['cross_hover_view'].triggered.connect(self._display_cross_hover)
         self._actions['cross_hover_view'].setEnabled(False)
 
-        # Binaryzation view action
+        # Binarization view action
         self._actions['binarization'] = QAction(QIcon(os.path.join(
                                                       self._icon_dir, 'binarization.png')),
                                                 self.tr("Binarization"),

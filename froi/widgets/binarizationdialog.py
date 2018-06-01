@@ -9,7 +9,7 @@ from ..algorithm import imtool
 
 
 class BinarizationDialog(QDialog):
-    """A dialog for action of binaryzation."""
+    """A dialog for action of binarization."""
     def __init__(self, model, parent=None):
         super(BinarizationDialog, self).__init__(parent)
         self._model = model
@@ -61,7 +61,7 @@ class BinarizationDialog(QDialog):
     def _create_actions(self):
         self.source_combo.currentIndexChanged.connect(self._create_output)
         self.threshold_edit.editingFinished.connect(self._create_output)
-        self.run_button.clicked.connect(self._binaryzation)
+        self.run_button.clicked.connect(self._binarize)
         self.cancel_button.clicked.connect(self.done)
 
     def _create_output(self):
@@ -69,7 +69,7 @@ class BinarizationDialog(QDialog):
         output_name = '_'.join(['bin', str(source_name)])
         self.out_edit.setText(output_name)
 
-    def _binaryzation(self):
+    def _binarize(self):
         vol_name = str(self.out_edit.text())
         threshold = self.threshold_edit.text()
 
@@ -86,13 +86,12 @@ class BinarizationDialog(QDialog):
             self.threshold_edit.selectAll()
             return
 
-        source_row = self.source_combo.currentIndex()
-        source_data = self._model.data(self._model.index(source_row),
-                                       Qt.UserRole + 6)
-        new_vol = imtool.binaryzation(source_data, threshold)
+        source_idx = self._model.index(self.source_combo.currentIndex())
+        source_data = self._model.data(source_idx, Qt.UserRole + 6)
+        new_vol = imtool.binarize(source_data, threshold)
         self._model.addItem(new_vol,
-                            None,
-                            vol_name,
-                            self._model._data[0].get_header())
+                            name=vol_name,
+                            header=self._model.data(source_idx, Qt.UserRole + 11)
+                            )
         self.done(0)
 

@@ -85,25 +85,23 @@ class BinarydilationDialog(QDialog):
     def _binary_dilation(self):
         vol_name = str(self.out_edit.text())
         num = self.structure_combo.currentIndex() + 3
-        self.structure_array = np.ones((num,num,num), dtype=np.int)
+        self.structure_array = np.ones((num, num, num), dtype=np.int)
         # self.orgin = self.origin_edit.text()
 
         if not vol_name:
             self.out_edit.setFocus()
             return
 
-        source_row = self.source_combo.currentIndex()
-        source_data = self._model.data(self._model.index(source_row),
-                                       Qt.UserRole + 6)
+        source_idx = self._model.index(self.source_combo.currentIndex())
+        source_data = self._model.data(source_idx, Qt.UserRole + 6)
 
-        binary_vol = imtool.binaryzation(source_data,
-                                    (source_data.max() + source_data.min()) / 2)
+        binary_vol = imtool.binarize(source_data,
+                                     (source_data.max() + source_data.min()) / 2)
         new_vol = morphology.binary_dilation(binary_vol,
                                              structure=self.structure_array,
                                              border_value=1)
-        self._model.addItem(new_vol,
-                            None,
-                            vol_name,
-                            self._model._data[0].get_header())
+        self._model.addItem(new_vol.astype(np.int8),
+                            name=vol_name,
+                            header=self._model.data(source_idx, Qt.UserRole + 11)
+                            )
         self.done(0)
-

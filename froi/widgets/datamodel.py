@@ -143,6 +143,10 @@ class VolumeListModel(QAbstractListModel):
             return self._data[row].get_data_shape()[3]
         elif role == Qt.UserRole + 11:
             return self._data[0].get_header()
+        elif role == Qt.UserRole + 12:
+            return self._data[row]._data.min()
+        elif role == Qt.UserRole + 13:
+            return self._data[row]._data.max()
 
         # return QVariant()
         return None

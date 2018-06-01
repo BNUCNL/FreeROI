@@ -288,7 +288,7 @@ class LayerView(QWidget):
         index = self._list_view.currentIndex()
         value = self._view_min.text()
         if value == '':
-            self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
+            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 12)))
             self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
@@ -298,7 +298,7 @@ class LayerView(QWidget):
         index = self._list_view.currentIndex()
         value = self._view_max.text()
         if value == '':
-            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 1)))
+            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 13)))
             self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)

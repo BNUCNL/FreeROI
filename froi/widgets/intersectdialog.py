@@ -76,19 +76,17 @@ class IntersectDialog(QDialog):
         vol_name = str(self.out_edit.text())
         if not vol_name:
             QMessageBox.critical(self, "No output volume name",
-                            "Please specify output volume's name!")
-            return
-        source_row = self.source_combo.currentIndex()
-        mask_row = self.mask_combo.currentIndex()
-        source_data = self._model.data(self._model.index(source_row),
-                                       Qt.UserRole + 4)
-        mask_data = self._model.data(self._model.index(mask_row),
-                                     Qt.UserRole + 4)
-        new_vol = imtool.intersect(source_data, mask_data)
-        self._model.addItem(new_vol, 
-                            None,
-                            vol_name,
-                            self._model._data[0].get_header(), 
-                            0, 100, 255, 'rainbow')
-        self.done(0)
+                                 "Please specify output volume's name!")
+            return None
 
+        source_idx = self._model.index(self.source_combo.currentIndex())
+        mask_idx = self._model.index(self.mask_combo.currentIndex())
+        source_data = self._model.data(source_idx, Qt.UserRole + 4)
+        mask_data = self._model.data(mask_idx, Qt.UserRole + 4)
+        new_vol = imtool.intersect(source_data, mask_data)
+        self._model.addItem(new_vol,
+                            name=vol_name,
+                            header=self._model.data(source_idx, Qt.UserRole + 11),
+                            colormap=self._model.data(source_idx, Qt.UserRole + 3)
+                            )
+        self.done(0)

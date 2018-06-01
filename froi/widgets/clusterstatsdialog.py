@@ -104,7 +104,7 @@ class ClusterStatsDialog(QDialog):
         path = QFileDialog.getSaveFileName(self, 'Save file as ...',
                                            'output.csv',
                                            'csv files (*.csv *.txt)')
-        if not path.isEmpty():
+        if path:
             labels = ['index', 'max value', 'X', 'Y', 'Z', 'size']
             csv.nparray2csv(self._cluster_info, labels, path)
             self.done(0)
