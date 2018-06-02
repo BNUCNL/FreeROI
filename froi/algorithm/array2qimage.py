@@ -191,7 +191,7 @@ def rgb_view(qimage, byteorder='big'):
 
 def alpha_view(qimage):
     """Return the alpha value array in view."""
-    bytes = byte_view(qimage, byteorder = None)
+    bytes = byte_view(qimage, byteorder=None)
     if bytes.shape[2] != 4:
         raise ValueError, "For alpha_view, the image must have 32 bit pixel" + \
                         " size (use RGB32, ARGB32, or ARGB32_Premultiplied)"
