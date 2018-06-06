@@ -131,7 +131,7 @@ class SurfaceView(QWidget):
         for hemi in visible_hemis:
 
             # get geometry's information
-            geo = hemi.geometries[hemi.displayed_geo_name]
+            geo = hemi.current_geometry()
             hemi_coords = geo.coords
             hemi_faces = geo.faces.copy()  # need to be amended in situ, so need copy
             hemi_nn = geo.nn

@@ -63,61 +63,6 @@ class ConstVariable(object):
         self.__dict__[name] = value
 
 
-# ------------surface-tree-view tools--------------
-def get_curr_hemi(index):
-    """
-    get the current hemisphere
-
-    Parameter
-    ---------
-    index : QModelIndex
-
-    Returns
-    -------
-    hemi_item : Hemisphere
-        the current hemisphere
-    False : bool
-        It means the user has not specified a hemisphere.
-    """
-
-    if not index.isValid():
-        return False
-
-    parent = index.parent()
-    if not parent.isValid():
-        hemi_item = index.internalPointer()
-    else:
-        hemi_item = parent.internalPointer()
-    return hemi_item
-
-
-def get_curr_overlay(index):
-    """
-    get the current overlay
-
-    Parameter
-    ---------
-    index : QModelIndex
-
-    Returns
-    -------
-    ol_item : ScalarData
-        the current overlay
-    False : bool
-        It means the user has not specified a overlay.
-    """
-
-    if not index.isValid():
-        return False
-
-    parent = index.parent()
-    if not parent.isValid():
-        return False
-    else:
-        ol_item = index.internalPointer()
-        return ol_item
-
-
 # --------------surface-view tools-----------------
 def toggle_color(color):
     """

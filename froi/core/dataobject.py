@@ -891,7 +891,7 @@ class Surface(object):
         """
 
         self.geometries = dict()
-        self._displayed_geo_name = None
+        self._current_geo = None
         self.overlays = list()
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
@@ -906,13 +906,19 @@ class Surface(object):
             print 'Invalid Operation! The geometry type is already exist!'
         else:
             self.geometries[geo.name] = Geometry(geo_path, offset)
-            self._displayed_geo_name = geo.name
+            self.set_current_geometry(geo.name)
             if self.bin_curv is None:
                 self.bin_curv = geo.get_bin_curv()
 
     def remove_geometry(self, geo_name):
         if geo_name in self.geometries.keys():
             del self.geometries[geo_name]
+
+    def set_current_geometry(self, name):
+        self._current_geo = self.geometries[name]
+
+    def current_geometry(self):
+        return self._current_geo
 
     def load_overlay(self, source, vmin=None, vmax=None, colormap='jet', alpha=1.0,
                      visible=True, islabel=False, name=None):
@@ -1032,14 +1038,6 @@ class Surface(object):
 
         # 0 means that the render will start with the bottom overlay.
         return 0
-
-    @property
-    def displayed_geo_name(self):
-        return self._displayed_geo_name
-
-    @displayed_geo_name.setter
-    def displayed_geo_name(self, geo_name):
-        self._displayed_geo_name = geo_name
 
 
 class Brain(object):
