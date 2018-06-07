@@ -19,7 +19,7 @@ from widgets.gridwidget import GridView
 from widgets.orthwidget import OrthView
 from widgets.datamodel import VolumeListModel
 from widgets.drawsettings import PainterStatus, ViewSettings, MoveSettings
-from widgets.binarizationdialog import BinarizationDialog
+from widgets.binarizationdialog import VolBinarizationDialog, SurfBinarizationDialog
 from widgets.intersectdialog import IntersectDialog
 from widgets.localmaxdialog import LocalMaxDialog
 from widgets.no_gui_tools import inverse_image, gen_label_color
@@ -182,11 +182,13 @@ class BpMainWindow(QMainWindow):
         self._actions['undo'].setEnabled(False)
         self._actions['redo'].setEnabled(False)
         self._vol_func_module_set_enabled(True)
+        self._actions['binarization'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
     def _init_surf_actions(self):
         self._surf_func_module_set_enabled(True)
+        self._actions['binarization'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1484,7 +1486,12 @@ class BpMainWindow(QMainWindow):
 
     def _binarization(self):
         """Image binarization dialog."""
-        binarization_dialog = BinarizationDialog(self.volume_model)
+        if self.tabWidget.currentWidget() is self.list_view:
+            binarization_dialog = VolBinarizationDialog(self.volume_model)
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            binarization_dialog = SurfBinarizationDialog(self.surface_model)
+        else:
+            return
         binarization_dialog.exec_()
 
     def _binaryerosion(self):
@@ -1555,7 +1562,6 @@ class BpMainWindow(QMainWindow):
         """
         set enabled status for actions of volume functional module.
         """
-        self._actions['binarization'].setEnabled(status)
         self._actions['intersect'].setEnabled(status)
         self._actions['meants'].setEnabled(status)
         self._actions['voxelstats'].setEnabled(status)

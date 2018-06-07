@@ -752,6 +752,7 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
 
     return graph
 
+
 if __name__ == '__main__':
     from nibabel.freesurfer import read_geometry
     from froi.io.surf_io import read_scalar_data
