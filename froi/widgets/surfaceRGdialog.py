@@ -3,9 +3,8 @@ from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, MultiCursor
 
-from ..io.surf_io import read_scalar_data
 from ..algorithm.regiongrow import RegionGrow
-from ..algorithm.tools import get_curr_hemi, get_curr_overlay, slide_win_smooth, VlineMover
+from ..algorithm.tools import slide_win_smooth, VlineMover
 from ..algorithm.meshtool import get_n_ring_neighbor
 
 
@@ -13,22 +12,13 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     rg_types = ['srg', 'arg', 'crg']
 
-    def __init__(self, model, tree_view_control, surf_view, parent=None):
+    def __init__(self, model, surf_view, parent=None):
         super(SurfaceRGDialog, self).__init__(parent)
         self.setWindowTitle("surfRG")
         self._surf_view = surf_view
-        self.tree_view_control = tree_view_control
         self.model = model
 
-        self.hemi = self._get_curr_hemi()
-        self.surf = self.hemi.geometries[self.hemi.displayed_geo_name]
-        self.hemi_vtx_number = self.surf.vertices_count()
-        # NxM array, N is the number of vertices,
-        # M is the number of measurements or time points.
-        self.X = None
-
         self.rg_type = 'arg'
-        self.mask = None
         self.seeds_id = []
         self.stop_criteria = [500]
         self.n_ring = 1
@@ -36,6 +26,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.cut_line = []  # a list of vertices' id which plot a line
         self.r_idx_sm = None
         self.smoothness = None
+        self.vertices_count = None
+        self._is_cutting = False
 
         self._init_gui()
         self._create_actions()
@@ -44,6 +36,11 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _init_gui(self):
         # Initialize widgets
+        rg_type_label = QtGui.QLabel('RG-type')
+        self._rg_type_combo = QtGui.QComboBox()
+        self._rg_type_combo.addItems(self.rg_types)
+        self._rg_type_combo.setCurrentIndex(self.rg_types.index(self.rg_type))
+
         group_idx_label = QtGui.QLabel('seed group:')
         self._group_idx_combo = QtGui.QComboBox()
         self._group_idx_combo.addItem(self.group_idx)
@@ -61,13 +58,9 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._ring_spin.setMinimum(1)
         self._ring_spin.setValue(self.n_ring)
 
-        rg_type_label = QtGui.QLabel('RG-type')
-        self._rg_type_combo = QtGui.QComboBox()
-        self._rg_type_combo.addItems(self.rg_types)
-        self._rg_type_combo.setCurrentIndex(self.rg_types.index(self.rg_type))
-
-        self._scalar_button = QtGui.QPushButton("add scalar")
-        self._mask_button = QtGui.QPushButton('add mask')
+        self._mask_label = QtGui.QLabel("mask")
+        self._mask_combo = QtGui.QComboBox()
+        self._fill_mask_box()
 
         self._cutoff_button1 = QtGui.QPushButton('start cutoff')
         self._cutoff_button2 = QtGui.QPushButton('stop cutoff')
@@ -90,8 +83,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         grid_layout.addWidget(self._stop_edit, 3, 1)
         grid_layout.addWidget(ring_label, 4, 0)
         grid_layout.addWidget(self._ring_spin, 4, 1)
-        grid_layout.addWidget(self._scalar_button, 5, 0)
-        grid_layout.addWidget(self._mask_button, 5, 1)
+        grid_layout.addWidget(self._mask_label, 5, 0)
+        grid_layout.addWidget(self._mask_combo, 5, 1)
         grid_layout.addWidget(self._cutoff_button1, 6, 0)
         grid_layout.addWidget(self._cutoff_button2, 6, 1)
         grid_layout.addWidget(self._ok_button, 7, 0)
@@ -100,38 +93,21 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _create_actions(self):
         # connect
-        self.connect(self._ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
-        self.connect(self._cancel_button, QtCore.SIGNAL("clicked()"), self.close)
-        self.connect(self._seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
-        self.connect(self._stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
-        self._ring_spin.valueChanged.connect(self._set_n_ring)
         self._rg_type_combo.currentIndexChanged.connect(self._set_rg_type)
         self._group_idx_combo.currentIndexChanged.connect(self._set_group_idx)
-        self.connect(self._scalar_button, QtCore.SIGNAL("clicked()"), self._scalar_dialog)
-        self.connect(self._mask_button, QtCore.SIGNAL("clicked()"), self._mask_dialog)
+        self.connect(self._seeds_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_seeds_id)
+        self.connect(self._stop_edit, QtCore.SIGNAL("textEdited(QString)"), self._set_stop_criteria)
+        self.connect(self._ring_spin, QtCore.SIGNAL("valueChanged"), self._set_n_ring)
         self.connect(self._cutoff_button1, QtCore.SIGNAL("clicked()"), self._start_cutoff)
         self.connect(self._cutoff_button2, QtCore.SIGNAL("clicked()"), self._stop_cutoff)
+        self.connect(self._ok_button, QtCore.SIGNAL("clicked()"), self._start_surfRG)
+        self.connect(self._cancel_button, QtCore.SIGNAL("clicked()"), self.close)
         self._surf_view.seed_picked.connect(self._set_seeds_edit_text)
-
-    def _mask_dialog(self):
-
-        fpath = QtGui.QFileDialog().getOpenFileName(self, 'Open mask file', './',
-                                                    'mask files(*.nii *.nii.gz *.mgz *.mgh *.label)')
-        if not fpath:
-            return
-        self.mask, _ = read_scalar_data(fpath, self.hemi_vtx_number)
-
-    def _scalar_dialog(self):
-
-        fpaths = QtGui.QFileDialog().getOpenFileNames(self, "Open scalar file", "./")
-
-        if not fpaths:
-            return
-        self.X = np.zeros((self.hemi_vtx_number,))
-        for fpath in fpaths:
-            data, _ = read_scalar_data(fpath, self.hemi_vtx_number)
-            self.X = np.c_[self.X, data]
-        self.X = np.delete(self.X, 0, 1)
+        self.model.rowsMoved.connect(self._fill_mask_box)
+        self.model.rowsInserted.connect(self._fill_mask_box)
+        self.model.rowsRemoved.connect(self._fill_mask_box)
+        self.model.dataChanged.connect(self._fill_mask_box)
+        self.connect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._fill_mask_box)
 
     def _start_cutoff(self):
         self._cutoff_button1.setEnabled(False)
@@ -139,6 +115,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._surf_view.seed_flag = False
         self._surf_view.scribing_flag = True
         self.cut_line = []
+        self._is_cutting = True
 
     def _stop_cutoff(self):
         self._surf_view.seed_flag = True
@@ -148,6 +125,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.cut_line = list(self._surf_view.path)
         self._surf_view.plot_start = None
         self._surf_view.path = []
+        self._is_cutting = False
 
     def _set_group_idx(self):
 
@@ -162,21 +140,22 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _set_rg_type(self):
         self.rg_type = str(self._rg_type_combo.currentText())
         if self.rg_type == 'crg':
-            self._stop_edit.setVisible(False)
             self._stop_label.setVisible(False)
-            self._scalar_button.setVisible(False)
-            self._mask_button.setVisible(False)
+            self._stop_edit.setVisible(False)
+            self._mask_label.setVisible(False)
+            self._mask_combo.setVisible(False)
             self._cutoff_button1.setVisible(True)
             self._cutoff_button2.setVisible(True)
         else:
-            self._stop_edit.setVisible(True)
             self._stop_label.setVisible(True)
-            self._scalar_button.setVisible(True)
-            self._mask_button.setVisible(True)
+            self._stop_edit.setVisible(True)
+            self._mask_label.setVisible(True)
+            self._mask_combo.setVisible(True)
             self._cutoff_button1.setVisible(False)
             self._cutoff_button2.setVisible(False)
-            self._stop_cutoff()
-            self.cut_line = []
+            if self._is_cutting:
+                self._stop_cutoff()
+                self.cut_line = []
 
     def _set_seeds_edit_text(self):
 
@@ -233,15 +212,71 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _set_n_ring(self):
         self.n_ring = int(self._ring_spin.value())
 
+    def _fill_mask_box(self):
+        self._mask_combo.clear()
+        overlay_name_list = self.model.get_overlay_list()
+        self._mask_combo.addItem("None")
+        self._mask_combo.addItems(overlay_name_list)
+
+        index = self.model.current_index()
+        depth = self.model.index_depth(index)
+        if depth == 2:
+            name = self.model.data(index, QtCore.Qt.DisplayRole)
+            row = overlay_name_list.index(name) + 1
+        else:
+            row = 0
+
+        self._mask_combo.setCurrentIndex(row)
+
+    def _get_current_mask(self):
+        row = self._mask_combo.currentIndex()
+        if row == 0:
+            return None
+        else:
+            row -= 1
+            surface_idx = self.model.get_surface_index()
+            mask_idx = self.model.index(row, 0, surface_idx)
+            mask = self.model.data(mask_idx, QtCore.Qt.UserRole + 5)
+            mask = np.mean(mask, 1)  # FIXME not suitable for multi-feature data
+            mask = mask.reshape((mask.shape[0],))
+            if self.model.data(mask_idx, QtCore.Qt.UserRole + 7):
+                mask[mask != 0] = 1
+            else:
+                thresh = self.model.data(mask_idx, QtCore.Qt.UserRole)
+                mask_l_thresh = mask < thresh  # 'l' means "less than"
+                mask[mask_l_thresh] = 0
+                mask[np.logical_not(mask_l_thresh)] = 1
+            return mask
+
     def _start_surfRG(self):
+
+        index = self.model.current_index()
+        depth = self.model.index_depth(index)
+        if depth == 1:
+            geometry = self.model.data(index, QtCore.Qt.UserRole + 6)
+        elif depth == 2:
+            geometry = self.model.data(index.parent(), QtCore.Qt.UserRole + 6)
+        else:
+            QtGui.QMessageBox.warning(
+                self, 'Error',
+                'Get surface failed!\nYou may have not selected any surface!',
+                QtGui.QMessageBox.Yes
+            )
+            return None
+        self.vertices_count = geometry.vertices_count()
 
         rg = RegionGrow()
         if self.rg_type == 'arg':
-            if self.X is None:
-                ol = self._get_curr_overlay()
-                if not ol:
-                    return None
-                self.X = ol.get_data()
+            if depth != 2:
+                QtGui.QMessageBox.warning(
+                    self,
+                    'Warning',
+                    'Get overlay failed!\nYou may have not selected any overlay!',
+                    QtGui.QMessageBox.Yes
+                )
+                return None
+            scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+            mask = self._get_current_mask()
 
             # ------------------select a assessment function-----------------
             assess_type, ok = QtGui.QInputDialog.getItem(
@@ -254,7 +289,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             # ------------------If ok, start arg!-----------------
             if ok and assess_type != '':
                 rg.set_assessment(assess_type)
-                rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
+                rg.surf2regions(geometry, scalar_data, mask, self.n_ring)
                 rg_result, self.evolved_regions, self.region_assessments, self.assess_step, r_outer_mean, r_inner_min\
                     = rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
 
@@ -307,26 +342,30 @@ class SurfaceRGDialog(QtGui.QDialog):
                 return None
 
         elif self.rg_type == 'srg':
-            if self.X is None:
-                ol = self._get_curr_overlay()
-                if not ol:
-                    return None
-                self.X = ol.get_data()
+            if depth != 2:
+                QtGui.QMessageBox.warning(
+                    self,
+                    'Warning',
+                    'Get overlay failed!\nYou may have not selected any overlay!',
+                    QtGui.QMessageBox.Yes
+                )
+                return None
+            scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+            mask = self._get_current_mask()
 
-            rg.surf2regions(self.surf, self.X, self.mask, self.n_ring)
+            rg.surf2regions(geometry, scalar_data, mask, self.n_ring)
             rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria)
 
         elif self.rg_type == 'crg':
-            ol = get_curr_overlay(self.tree_view_control.currentIndex())
-            if ol:
-                data = ol.get_data()
-                data = np.mean(data, 1)
-                mask = data.reshape((data.shape[0],))
-                idx = np.where(mask < ol.get_min())
-                mask[idx] = 0
-                edge_list = get_n_ring_neighbor(self.surf.faces, n=self.n_ring, mask=mask)
+            if depth == 2:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+                thresh = self.model.data(index, QtCore.Qt.UserRole)
+                scalar_data = np.mean(scalar_data, 1)  # FIXME not suitable for multi-feature data
+                mask = scalar_data.reshape((scalar_data.shape[0],))
+                mask[mask < thresh] = 0
+                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
             else:
-                edge_list = get_n_ring_neighbor(self.surf.faces, n=self.n_ring)
+                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
 
             for cut_vtx in self.cut_line:
                 edge_list[cut_vtx] = set()
@@ -337,34 +376,6 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         self._show_result(rg_result)
         self.close()
-
-    def _get_curr_hemi(self):
-
-        hemi = get_curr_hemi(self.tree_view_control.currentIndex())
-        if not hemi:
-            QtGui.QMessageBox.warning(
-                    self, 'Error',
-                    'Get hemisphere failed!\nYou may have not selected any hemisphere!',
-                    QtGui.QMessageBox.Yes
-            )
-            self.close()  # FIXME may be a bug
-        return hemi
-
-    def _get_curr_overlay(self):
-        """
-        If no scalar data is selected, the program will
-        get current overlay's data as region growing's data.
-        """
-
-        ol = get_curr_overlay(self.tree_view_control.currentIndex())
-        if not ol:
-            QtGui.QMessageBox.warning(
-                    self,
-                    'Warning',
-                    'Get overlay failed!\nYou may have not selected any overlay!',
-                    QtGui.QMessageBox.Yes
-            )
-        return ol
 
     def _show_result(self, rg_result):
         """
@@ -377,9 +388,9 @@ class SurfaceRGDialog(QtGui.QDialog):
                 labeled_vertices = list(r)
             else:
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
-            data = np.zeros((self.hemi_vtx_number,), np.int)
+            data = np.zeros((self.vertices_count,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data,
+            self.model.add_item(self.model.current_index(), data,
                                 islabel=True, colormap='blue')
 
     def _on_clicked(self, event):
@@ -398,9 +409,9 @@ class SurfaceRGDialog(QtGui.QDialog):
             labeled_vertices = list(labeled_vertices)
 
             # visualize these labeled vertices
-            data = np.zeros((self.hemi_vtx_number,), np.int)
+            data = np.zeros((self.vertices_count,), np.int)
             data[labeled_vertices] = 1
-            self.model.add_item(self.tree_view_control.currentIndex(), data,
+            self.model.add_item(self.model.current_index(), data,
                                 islabel=True, colormap='blue')
         elif event.button == 1 and event.inaxes in self.slider_axes:
             # do something on left click
@@ -437,6 +448,10 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.smoothness = None
 
     def close(self):
+
+        if self._is_cutting:
+            self._stop_cutoff()
+            self.cut_line = []
 
         self._surf_view.seed_flag = False
         QtGui.QDialog.close(self)

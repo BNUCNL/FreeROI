@@ -13,7 +13,6 @@ from PyQt4.QtGui import *
 
 from version import __version__
 from core.labelconfig import LabelConfig
-from algorithm.tools import get_curr_hemi
 from utils import get_icon_dir
 from widgets.listwidget import LayerView
 from widgets.gridwidget import GridView
@@ -585,9 +584,7 @@ class BpMainWindow(QMainWindow):
         self._actions['surf_region_grow'].setEnabled(False)
 
     def _surf_rg(self):
-        new_dialog = SurfaceRGDialog(self.surface_model,
-                                     self.surface_tree_view_control,
-                                     self.surface_view, self)
+        new_dialog = SurfaceRGDialog(self.surface_model, self.surface_view, self)
         new_dialog.show()
 
     def _roi_scribing(self):
@@ -1033,9 +1030,9 @@ class BpMainWindow(QMainWindow):
                 self._temp_dir = os.path.dirname(path)
 
             if filter == 'FS label(*.label)':
-                hemi = get_curr_hemi(index)
+                index = self.surface_model.get_surface_index()
                 # FIXME coordinates in freesurfer-style label file should come from '.white' file
-                coords = hemi.geometries[hemi.displayed_geo_name].coords
+                coords = self.surface_model.data(index, Qt.UserRole + 6).coords
                 overlay.save2label(path, hemi_coords=coords)
             else:
                 overlay.save2nifti(path)

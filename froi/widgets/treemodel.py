@@ -91,6 +91,8 @@ class TreeModel(QAbstractItemModel):
                     return None
                 if item.bin_curv is not None:
                     return item.bin_curv[self._point_id]
+            elif role == Qt.UserRole + 6:
+                return item.current_geometry()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.hemi_rl
         elif depth == 2:
@@ -108,9 +110,9 @@ class TreeModel(QAbstractItemModel):
                     return None
                 return item.get_data()[self._point_id][0]
             elif role == Qt.UserRole + 5:
-                return item.get_data().min()
-            elif role == Qt.UserRole + 6:
-                return item.get_data().max()
+                return item.get_data()
+            elif role == Qt.UserRole + 7:
+                return item.is_label()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 
@@ -246,23 +248,38 @@ class TreeModel(QAbstractItemModel):
     def current_index(self):
         return self._current_index
 
+    def get_surface_index(self, index=None):
+        if index is None:
+            index = self._current_index
+
+        depth = self.index_depth(index)
+        if depth == 1:
+            surface_idx = index
+        elif depth == 2:
+            surface_idx = self.parent(index)
+        else:
+            return None
+        return surface_idx
+
     def get_overlay_list(self, index=None):
         if index is None:
             index = self._current_index
 
         overlay_list = []
-        depth = self.index_depth(index)
-        if depth == 2:
-            surface_idx = self.parent(index)
-            for row in range(self.rowCount(surface_idx)):
-                idx = self.index(row, 0, surface_idx)
-                overlay_list.append(self.data(idx, Qt.DisplayRole))
-            return overlay_list
-        else:
+        surface_idx = self.get_surface_index(index)
+        if surface_idx is None:
             return overlay_list
 
-    def index_depth(self, index):
+        for row in range(self.rowCount(surface_idx)):
+            idx = self.index(row, 0, surface_idx)
+            overlay_list.append(self.data(idx, Qt.DisplayRole))
+        return overlay_list
+
+    def index_depth(self, index=None):
         """judge the depth of the index relative to the root"""
+        if index is None:
+            index = self._current_index
+
         depth = 0
         while True:
             if not index.isValid():

@@ -10,7 +10,6 @@ from treemodel import TreeModel
 from froi.utils import *
 from froi.core.dataobject import Surface
 from froi.core.labelconfig import LabelConfig
-from froi.algorithm.tools import get_curr_hemi
 
 
 class SurfaceTreeView(QWidget):
@@ -218,8 +217,8 @@ class SurfaceTreeView(QWidget):
                 self._down_button.setEnabled(True)
 
             # geometry information
-            hemi = get_curr_hemi(index)
-            self._geo_name_edit.setText(hemi.hemi_rl)
+            idx = self._model.get_surface_index()
+            self._geo_name_edit.setText(self._model.data(idx, Qt.DisplayRole))
 
             # min/max value
             self._view_min.setText(str(self._model.data(index, Qt.UserRole)))
@@ -253,7 +252,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_min.text()
         if value == '':
-            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 5)))
+            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 5).min()))
             self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
@@ -263,7 +262,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_max.text()
         if value == '':
-            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 6)))
+            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 5).max()))
             self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)
