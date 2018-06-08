@@ -240,12 +240,10 @@ class SurfaceRGDialog(QtGui.QDialog):
             mask = np.mean(mask, 1)  # FIXME not suitable for multi-feature data
             mask = mask.reshape((mask.shape[0],))
             if self.model.data(mask_idx, QtCore.Qt.UserRole + 7):
-                mask[mask != 0] = 1
+                mask = mask != 0
             else:
                 thresh = self.model.data(mask_idx, QtCore.Qt.UserRole)
-                mask_l_thresh = mask < thresh  # 'l' means "less than"
-                mask[mask_l_thresh] = 0
-                mask[np.logical_not(mask_l_thresh)] = 1
+                mask = mask > thresh
             return mask
 
     def _start_surfRG(self):
@@ -304,7 +302,6 @@ class SurfaceRGDialog(QtGui.QDialog):
                 self.sm_sliders = []  # store smooth sliders, hold references
                 for r_idx, r in enumerate(self.evolved_regions):
                     # plot region outer boundary assessment curve
-                    self.axes[r_idx][1].hold(True)
                     self.axes[r_idx][1].plot(r_outer_mean[r_idx], 'b.-', label='r_outer_mean')
                     self.axes[r_idx][1].plot(r_inner_min[r_idx], 'r.-', label='r_inner_min')
                     self.axes[r_idx][1].legend()
@@ -324,8 +321,6 @@ class SurfaceRGDialog(QtGui.QDialog):
                     self.slider_axes[r_idx] = slider_ax
                     self.sm_sliders.append(sm_slider)
 
-                    # axes hold off
-                    self.axes[r_idx][0].hold(False)
                 self.axes[-1][1].set_xlabel('contrast step/component')
                 self.cursor = MultiCursor(fig.canvas, self.axes.ravel(),
                                           ls='dashed', lw=0.5, c='g', horizOn=True)
