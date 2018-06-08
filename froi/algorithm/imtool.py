@@ -108,7 +108,7 @@ def nonzero_coord(data):
 
 def binarize(data, threshold):
     """Image binarization with the given threshold"""
-    return (data > threshold).astype(int)
+    return (data > threshold).astype(np.int8)
 
 
 def multi_label_edge_detection(data):

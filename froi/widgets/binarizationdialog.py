@@ -25,7 +25,7 @@ class BinarizationDialog(QDialog):
         # initialize widgets
         threshold_label = QLabel("Threshold")
         self.threshold_edit = QLineEdit()
-        out_label = QLabel("Output volume name")
+        out_label = QLabel("Output name")
         self.out_edit = QLineEdit()
 
         # layout config
