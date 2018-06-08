@@ -39,7 +39,7 @@ from widgets.labelconfigcenter import LabelConfigCenter
 from widgets.roidialog import VolROIDialog, SurfROIDialog
 from widgets.atlasdialog import AtlasDialog
 from widgets.binaryerosiondialog import VolBinErosionDialog, SurfBinErosionDialog
-from widgets.binarydilationdialog import BinarydilationDialog
+from widgets.binarydilationdialog import VolBinDilationDialog, SurfBinDilationDialog
 from widgets.greydilationdialog import GreydilationDialog
 from widgets.greyerosiondialog import GreyerosionDialog
 from widgets.meants import MeanTSDialog
@@ -184,6 +184,7 @@ class BpMainWindow(QMainWindow):
         self._vol_func_module_set_enabled(True)
         self._actions['binarization'].setEnabled(True)
         self._actions['binaryerosion'].setEnabled(True)
+        self._actions['binarydilation'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -191,6 +192,7 @@ class BpMainWindow(QMainWindow):
         self._surf_func_module_set_enabled(True)
         self._actions['binarization'].setEnabled(True)
         self._actions['binaryerosion'].setEnabled(True)
+        self._actions['binarydilation'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1508,7 +1510,12 @@ class BpMainWindow(QMainWindow):
 
     def _binarydilation(self):
         """Image binarydilation dialog."""
-        binarydilation_dialog = BinarydilationDialog(self.volume_model)
+        if self.tabWidget.currentWidget() is self.list_view:
+            binarydilation_dialog = VolBinDilationDialog(self.volume_model)
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            binarydilation_dialog = SurfBinDilationDialog(self.surface_model)
+        else:
+            return
         binarydilation_dialog.exec_()
 
     def _greyerosion(self):
@@ -1581,7 +1588,6 @@ class BpMainWindow(QMainWindow):
         self._actions['slic'].setEnabled(status)
         self._actions['cluster'].setEnabled(status)
         self._actions['opening'].setEnabled(status)
-        self._actions['binarydilation'].setEnabled(status)
         self._actions['greydilation'].setEnabled(status)
         self._actions['greyerosion'].setEnabled(status)
         self._actions['regular_roi'].setEnabled(status)
