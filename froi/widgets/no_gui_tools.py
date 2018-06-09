@@ -22,22 +22,6 @@ def inverse_image(model):
     return
 
 
-def edge_detection(model):
-    """Image edge detection."""
-    # get data and name from current selected image
-    current_row = model.currentIndex().row()
-    source_vol = model.data(model.index(current_row), Qt.UserRole + 6)
-    source_name = model.data(model.index(current_row), Qt.DisplayRole)
-    # detect the edge
-    new_vol =  imtool.multi_label_edge_detection(source_vol)
-    new_vol_name = 'edge_' + source_name
-    # save result as a new image
-    model.addItem(new_vol, None, new_vol_name,
-                  model._data[0].get_header(),
-                  None, None, 255, 'green')
-    return
-
-
 def gen_label_color(color):
     icon_image = QImage(QSize(32, 32), QImage.Format_RGB888)
     icon_image.fill(color.rgb())

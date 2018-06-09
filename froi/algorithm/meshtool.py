@@ -819,6 +819,35 @@ def binary_expand(bin_data, faces, n=1):
     return out_data
 
 
+def label_edge_detection(data, faces):
+    """
+    edge detection for labels
+
+    Parameters
+    ----------
+    data : 1-D numpy array
+        Each array index is corresponding to vertex id in the faces.
+        Each element is a label id.
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+
+    Return
+    ------
+    out_data : 1-D numpy array
+        the edges of the labels
+    """
+    vertices = np.nonzero(data)[0]
+    out_data = np.zeros_like(data)
+
+    neighbors = get_n_ring_neighbor(faces)
+    for v_id in vertices:
+        neighbors_values = [data[_] for _ in neighbors[v_id]]
+        if min(neighbors_values) != max(neighbors_values):
+            out_data[v_id] = data[v_id]
+
+    return out_data
+
+
 if __name__ == '__main__':
     from nibabel.freesurfer import read_geometry
     from froi.io.surf_io import read_scalar_data

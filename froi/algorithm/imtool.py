@@ -111,7 +111,7 @@ def binarize(data, threshold):
     return (data > threshold).astype(np.int8)
 
 
-def multi_label_edge_detection(data):
+def label_edge_detection(data):
     """Detect the edge in the image with multi-labels."""
     f = nd.generate_binary_structure(len(data.shape), 1)
     # the unwanted thick bounds

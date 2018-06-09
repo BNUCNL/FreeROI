@@ -12,6 +12,8 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from version import __version__
+from algorithm.imtool import label_edge_detection as vol_label_edge_detection
+from algorithm.meshtool import label_edge_detection as surf_label_edge_detection
 from core.labelconfig import LabelConfig
 from utils import get_icon_dir
 from widgets.listwidget import LayerView
@@ -31,7 +33,6 @@ from widgets.clusterdialog import ClusterDialog
 from widgets.regularroidialog import RegularROIDialog
 from widgets.regularroifromcsvfiledialog import RegularROIFromCSVFileDialog
 from widgets.roi2gwmidialog import Roi2gwmiDialog
-from widgets.no_gui_tools import edge_detection
 from widgets.roimergedialog import ROIMergeDialog
 from widgets.opendialog import OpenDialog
 from widgets.labelmanagedialog import LabelManageDialog
@@ -185,6 +186,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binarization'].setEnabled(True)
         self._actions['binaryerosion'].setEnabled(True)
         self._actions['binarydilation'].setEnabled(True)
+        self._actions['edge_dete'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -193,6 +195,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binarization'].setEnabled(True)
         self._actions['binaryerosion'].setEnabled(True)
         self._actions['binarydilation'].setEnabled(True)
+        self._actions['edge_dete'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -560,7 +563,7 @@ class BpMainWindow(QMainWindow):
                                                    self._icon_dir, 'edge_detection.png')),
                                              self.tr("Edge Detection"),
                                              self)
-        self._actions['edge_dete'].triggered.connect(self._edge_detection)
+        self._actions['edge_dete'].triggered.connect(self._label_edge_detection)
         self._actions['edge_dete'].setEnabled(False)
 
         # Atlas information
@@ -1372,9 +1375,56 @@ class BpMainWindow(QMainWindow):
         regular_roi_from_csv_file = RegularROIFromCSVFileDialog(self.volume_model)
         regular_roi_from_csv_file.exec_()
 
-    def _edge_detection(self):
-        """Detect the image edge."""
-        edge_detection(self.volume_model)
+    def _label_edge_detection(self):
+        """edge detection for labels"""
+        if self.tabWidget.currentWidget() is self.list_view:
+            # get information from the model
+            index = self.volume_model.currentIndex()
+            data = self.volume_model.data(index, Qt.UserRole + 6)
+            name = self.volume_model.data(index, Qt.DisplayRole)
+            new_name = "edge_" + name
+
+            # detect edges
+            new_data = vol_label_edge_detection(data)
+
+            # save result as a new overlay
+            self.volume_model.addItem(new_data, None, new_name,
+                                      self.volume_model.data(index, Qt.UserRole + 11),
+                                      None, None, 255, 'green')
+
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            # get information from the model
+            index = self.surface_model.current_index()
+            depth = self.surface_model.index_depth(index)
+
+            if depth != 2:
+                QMessageBox.warning(self,
+                                    'Warning!',
+                                    'Get overlay failed!\nYou may have not selected any overlay!',
+                                    QMessageBox.Yes)
+                return
+            if not self.surface_model.data(index, Qt.UserRole + 7):
+                QMessageBox.warning(self,
+                                    'Warning!',
+                                    "Current overlay isn't for ROIs.\nThis tool should be used for ROIs",
+                                    QMessageBox.Yes)
+                return
+
+            data = self.surface_model.data(index, Qt.UserRole + 5)
+            name = self.surface_model.data(index, Qt.DisplayRole)
+            new_name = "edge_" + name
+
+            # detect the edges
+            new_data = surf_label_edge_detection(data,
+                                                 self.surface_model.data(index.parent(), Qt.UserRole + 6).faces)
+
+            # save result as a new overlay
+            self.surface_model.add_item(index,
+                                        source=new_data.astype(int),
+                                        islabel=True,
+                                        name=new_name)
+        else:
+            return
 
     def _roi_merge(self):
         """ROI merge dialog."""
@@ -1594,7 +1644,6 @@ class BpMainWindow(QMainWindow):
         self._actions['regular_roi_from_csv'].setEnabled(status)
         self._actions['label_management'].setEnabled(status)
         self._actions['r2i'].setEnabled(status)
-        self._actions['edge_dete'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
 
     def _surf_func_module_set_enabled(self, status):
