@@ -1,4 +1,4 @@
-__author__ = 'zhouguangfu'
+__author__ = 'zhouguangfu, chenxiayu'
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
@@ -7,13 +7,13 @@ from PyQt4.QtGui import *
 import numpy as np
 from scipy.ndimage import morphology
 
-from ..algorithm import imtool
+from froi.algorithm.meshtool import binary_expand
 
 
-class BinarydilationDialog(QDialog):
+class BinDilationDialog(QDialog):
     """A dialog for action of binarydilation."""
     def __init__(self, model, parent=None):
-        super(BinarydilationDialog, self).__init__(parent)
+        super(BinDilationDialog, self).__init__(parent)
         self._model = model
 
         self._init_gui()
@@ -22,33 +22,13 @@ class BinarydilationDialog(QDialog):
     def _init_gui(self):
         """Initialize GUI."""
         # set dialog title
-        self.setWindowTitle("Binarydilation")
+        self.setWindowTitle("BinaryDilation")
 
         # initialize widgets
-        source_label = QLabel("Source")
-        self.source_combo = QComboBox()
-
-        vol_list = self._model.getItemList()
-        self.source_combo.addItems(vol_list)
-        row = self._model.currentIndex().row()
-        self.source_combo.setCurrentIndex(row)
-
         structure_label = QLabel("Structure")
         self.structure_combo = QComboBox()
-        self.structure_combo.addItem("3x3x3")
-        self.structure_combo.addItem("5x5x5")
-        self.structure_combo.addItem("7x7x7")
-        self.structure_combo.addItem("9x9x9")
-        # origin_label = QLabel("Origin")
-        # self.origin_edit = QLineEdit()
-        # self.origin_edit.setText('0')
-        border_value_label = QLabel("BorderValue")
-        self.border_value_combo = QComboBox()
-        self.border_value_combo.addItem("0")
-        self.border_value_combo.addItem("1")
         out_label = QLabel("Output volume name")
         self.out_edit = QLineEdit()
-        
 
         # layout config
         grid_layout = QGridLayout()
@@ -70,38 +50,99 @@ class BinarydilationDialog(QDialog):
         vbox_layout.addLayout(hbox_layout)
 
         self.setLayout(vbox_layout)
-        self._create_output()
 
     def _create_actions(self):
-        self.source_combo.currentIndexChanged.connect(self._create_output)
         self.run_button.clicked.connect(self._binary_dilation)
         self.cancel_button.clicked.connect(self.done)
 
-    def _create_output(self):
-        source_name = self.source_combo.currentText()
-        output_name = '_'.join([str(source_name), 'binarydilation'])
+    def _binary_dilation(self):
+        raise NotImplementedError
+
+
+class VolBinDilationDialog(BinDilationDialog):
+
+    def __init__(self, model, parent=None):
+        super(VolBinDilationDialog, self).__init__(model, parent)
+
+        self.index = self._model.currentIndex()
+
+        # fill output editor
+        source_name = self._model.data(self.index, Qt.DisplayRole)
+        output_name = '_'.join(['binDilation', source_name])
         self.out_edit.setText(output_name)
+
+        # fill structure combo box
+        self.structure_combo.addItem("3x3x3")
+        self.structure_combo.addItem("4x4x4")
+        self.structure_combo.addItem("5x5x5")
+        self.structure_combo.addItem("6x6x6")
 
     def _binary_dilation(self):
         vol_name = str(self.out_edit.text())
         num = self.structure_combo.currentIndex() + 3
-        self.structure_array = np.ones((num, num, num), dtype=np.int)
-        # self.orgin = self.origin_edit.text()
+        structure = np.ones((num, num, num), dtype=np.int)
 
         if not vol_name:
             self.out_edit.setFocus()
             return
 
-        source_idx = self._model.index(self.source_combo.currentIndex())
-        source_data = self._model.data(source_idx, Qt.UserRole + 6)
+        source_data = self._model.data(self.index, Qt.UserRole + 6)
+        binary_vol = source_data > self._model.data(self.index, Qt.UserRole)
 
-        binary_vol = imtool.binarize(source_data,
-                                     (source_data.max() + source_data.min()) / 2)
         new_vol = morphology.binary_dilation(binary_vol,
-                                             structure=self.structure_array,
+                                             structure=structure,
                                              border_value=1)
         self._model.addItem(new_vol.astype(np.int8),
                             name=vol_name,
-                            header=self._model.data(source_idx, Qt.UserRole + 11)
-                            )
+                            header=self._model.data(self.index, Qt.UserRole + 11))
+        self.done(0)
+
+
+class SurfBinDilationDialog(BinDilationDialog):
+
+    def __init__(self, model, parent=None):
+        super(SurfBinDilationDialog, self).__init__(model, parent)
+
+        self.index = self._model.current_index()
+        depth = self._model.index_depth(self.index)
+        if depth != 2:
+            QMessageBox.warning(self,
+                                'Warning!',
+                                'Get overlay failed!\nYou may have not selected any overlay!',
+                                QMessageBox.Yes)
+            # raise error to prevent dialog from being created
+            raise RuntimeError("You may have not selected any overlay!")
+
+        # fill output editor
+        source_name = self._model.data(self.index, Qt.DisplayRole)
+        output_name = '_'.join(['binDilation', source_name])
+        self.out_edit.setText(output_name)
+
+        # fill structure combo box
+        self.structure_combo.addItem("1-ring")
+        self.structure_combo.addItem("2-ring")
+        self.structure_combo.addItem("3-ring")
+        self.structure_combo.addItem("4-ring")
+
+    def _binary_dilation(self):
+        out_name = str(self.out_edit.text())
+        n_ring = self.structure_combo.currentIndex() + 1
+
+        if not out_name:
+            self.out_edit.setFocus()
+            return
+
+        source_data = self._model.data(self.index, Qt.UserRole + 5)
+        if self._model.data(self.index, Qt.UserRole + 7):
+            bin_data = source_data != 0
+        else:
+            bin_data = source_data > self._model.data(self.index, Qt.UserRole)
+
+        new_data = binary_expand(bin_data,
+                                 faces=self._model.data(self.index.parent(), Qt.UserRole + 6).faces,
+                                 n=n_ring)
+        self._model.add_item(self.index,
+                             source=new_data.astype(np.int8),
+                             islabel=True,
+                             name=out_name)
         self.done(0)

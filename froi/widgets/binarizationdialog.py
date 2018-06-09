@@ -1,4 +1,4 @@
-__author__ = 'zhouguangfu'
+__author__ = 'zhouguangfu, chenxiayu'
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
@@ -23,17 +23,9 @@ class BinarizationDialog(QDialog):
         self.setWindowTitle("Binarization")
 
         # initialize widgets
-        source_label = QLabel("Source")
-        self.source_combo = QComboBox()
         threshold_label = QLabel("Threshold")
         self.threshold_edit = QLineEdit()
-        self.threshold_edit.setText(str(
-                self._model._data[self._model.currentIndex().row()].get_view_min()))
-        vol_list = self._model.getItemList()
-        self.source_combo.addItems(vol_list)
-        row = self._model.currentIndex().row()
-        self.source_combo.setCurrentIndex(row)
-        out_label = QLabel("Output volume name")
+        out_label = QLabel("Output name")
         self.out_edit = QLineEdit()
 
         # layout config
@@ -56,42 +48,101 @@ class BinarizationDialog(QDialog):
         vbox_layout.addLayout(hbox_layout)
 
         self.setLayout(vbox_layout)
-        self._create_output()
 
     def _create_actions(self):
-        self.source_combo.currentIndexChanged.connect(self._create_output)
-        self.threshold_edit.editingFinished.connect(self._create_output)
         self.run_button.clicked.connect(self._binarize)
         self.cancel_button.clicked.connect(self.done)
 
-    def _create_output(self):
-        source_name = self.source_combo.currentText()
-        output_name = '_'.join(['bin', str(source_name)])
+    def _binarize(self):
+        raise NotImplementedError
+
+
+class VolBinarizationDialog(BinarizationDialog):
+
+    def __init__(self, model, parent=None):
+        super(VolBinarizationDialog, self).__init__(model, parent)
+
+        self.index = self._model.currentIndex()
+
+        # fill output editor
+        source_name = self._model.data(self.index, Qt.DisplayRole)
+        output_name = '_'.join(['bin', source_name])
         self.out_edit.setText(output_name)
 
+        # fill threshold editor
+        threshold = self._model.data(self.index, Qt.UserRole)
+        self.threshold_edit.setText(str(threshold))
+
     def _binarize(self):
-        vol_name = str(self.out_edit.text())
+        out_name = str(self.out_edit.text())
         threshold = self.threshold_edit.text()
 
-        if not vol_name:
+        if not out_name:
             self.out_edit.setFocus()
-            return
+            return None
         if not threshold:
             self.threshold_edit.setFocus()
-            return
+            return None
 
         try:
             threshold = float(threshold)
         except ValueError:
             self.threshold_edit.selectAll()
-            return
+            return None
 
-        source_idx = self._model.index(self.source_combo.currentIndex())
-        source_data = self._model.data(source_idx, Qt.UserRole + 6)
+        source_data = self._model.data(self.index, Qt.UserRole + 6)
         new_vol = imtool.binarize(source_data, threshold)
         self._model.addItem(new_vol,
-                            name=vol_name,
-                            header=self._model.data(source_idx, Qt.UserRole + 11)
-                            )
+                            name=out_name,
+                            header=self._model.data(self.index, Qt.UserRole + 11))
         self.done(0)
 
+
+class SurfBinarizationDialog(BinarizationDialog):
+
+    def __init__(self, model, parent=None):
+        super(SurfBinarizationDialog, self).__init__(model, parent)
+
+        self.index = self._model.current_index()
+        depth = self._model.index_depth(self.index)
+        if depth != 2:
+            QMessageBox.warning(self,
+                                'Warning!',
+                                'Get overlay failed!\nYou may have not selected any overlay!',
+                                QMessageBox.Yes)
+            # raise error to prevent dialog from being created
+            raise RuntimeError("You may have not selected any overlay!")
+
+        # fill output editor
+        source_name = self._model.data(self.index, Qt.DisplayRole)
+        output_name = '_'.join(['bin', source_name])
+        self.out_edit.setText(output_name)
+
+        # fill threshold editor
+        threshold = self._model.data(self.index, Qt.UserRole)
+        self.threshold_edit.setText(str(threshold))
+
+    def _binarize(self):
+        out_name = str(self.out_edit.text())
+        threshold = self.threshold_edit.text()
+
+        if not out_name:
+            self.out_edit.setFocus()
+            return None
+        if not threshold:
+            self.threshold_edit.setFocus()
+            return None
+
+        try:
+            threshold = float(threshold)
+        except ValueError:
+            self.threshold_edit.selectAll()
+            return None
+
+        source_data = self._model.data(self.index, Qt.UserRole + 5)
+        new_data = imtool.binarize(source_data, threshold)
+        self._model.add_item(self.index,
+                             source=new_data,
+                             name=out_name,
+                             islabel=True)
+        self.done(0)

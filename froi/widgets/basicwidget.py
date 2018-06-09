@@ -13,7 +13,7 @@ from intersectdialog import IntersectDialog
 from localmaxdialog import LocalMaxDialog
 from no_gui_tools import inverse_image
 from smoothingdialog import SmoothingDialog
-from binarizationdialog import BinarizationDialog
+from binarizationdialog import VolBinarizationDialog
 
 
 class BasicWidget(QDialog):
@@ -157,6 +157,6 @@ class BasicWidget(QDialog):
         new_dialog.exec_()
 
     def _binary_clicked(self):
-        new_dialog = BinarizationDialog(self._model)
+        new_dialog = VolBinarizationDialog(self._model)
         new_dialog.exec_()
 

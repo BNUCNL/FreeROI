@@ -752,6 +752,102 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
 
     return graph
 
+
+def binary_shrink(bin_data, faces, n=1):
+    """
+    shrink bin_data
+
+    Parameters
+    ----------
+    bin_data : 1-D numpy array
+        Each array index is corresponding to vertex id in the faces.
+        Each element is a bool.
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    n : integer
+        specify which ring should be got
+
+    Return
+    ------
+    out_data : 1-D numpy array with bool elements
+        The output of the bin_data after binary shrink
+    """
+    if bin_data.dtype != np.bool:
+        raise TypeError("The input dtype must be bool")
+    vertices = np.where(bin_data)[0]
+    out_data = np.zeros_like(bin_data)
+
+    n_ring_neighbors = get_n_ring_neighbor(faces, n)
+    for v_id in vertices:
+        neighbors_values = [bin_data[_] for _ in n_ring_neighbors[v_id]]
+        if np.all(neighbors_values):
+            out_data[v_id] = True
+
+    return out_data
+
+
+def binary_expand(bin_data, faces, n=1):
+    """
+    expand bin_data
+
+    Parameters
+    ----------
+    bin_data : 1-D numpy array
+        Each array index is corresponding to vertex id in the faces.
+        Each element is a bool.
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+    n : integer
+        specify which ring should be got
+
+    Return
+    ------
+    out_data : 1-D numpy array with bool elements
+        The output of the bin_data after binary expand
+    """
+    if bin_data.dtype != np.bool:
+        raise TypeError("The input dtype must be bool")
+    vertices = np.where(bin_data)[0]
+    out_data = bin_data.copy()
+
+    n_ring_neighbors = get_n_ring_neighbor(faces, n)
+    for v_id in vertices:
+        neighbors_values = [bin_data[_] for _ in n_ring_neighbors[v_id]]
+        if not np.all(neighbors_values):
+            out_data[list(n_ring_neighbors[v_id])] = True
+
+    return out_data
+
+
+def label_edge_detection(data, faces):
+    """
+    edge detection for labels
+
+    Parameters
+    ----------
+    data : 1-D numpy array
+        Each array index is corresponding to vertex id in the faces.
+        Each element is a label id.
+    faces : numpy array
+        the array of shape [n_triangles, 3]
+
+    Return
+    ------
+    out_data : 1-D numpy array
+        the edges of the labels
+    """
+    vertices = np.nonzero(data)[0]
+    out_data = np.zeros_like(data)
+
+    neighbors = get_n_ring_neighbor(faces)
+    for v_id in vertices:
+        neighbors_values = [data[_] for _ in neighbors[v_id]]
+        if min(neighbors_values) != max(neighbors_values):
+            out_data[v_id] = data[v_id]
+
+    return out_data
+
+
 if __name__ == '__main__':
     from nibabel.freesurfer import read_geometry
     from froi.io.surf_io import read_scalar_data

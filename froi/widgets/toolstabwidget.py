@@ -4,7 +4,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from no_gui_tools import edge_detection
+from froi.algorithm.imtool import label_edge_detection
 from roimergedialog import ROIMergeDialog
 from roi2gwmidialog import Roi2gwmiDialog
 from regularroidialog import RegularROIDialog
@@ -67,8 +67,19 @@ class ToolsTabWidget(QDialog):
 
     def _edge_detection_clicked(self):
         """Edge detection clicked."""
-        if self.detection_button.isEnabled():
-            edge_detection(self._model)
+        # get information from the model
+        index = self._model.currentIndex()
+        data = self._model.data(index, Qt.UserRole + 6)
+        name = self._model.data(index, Qt.DisplayRole)
+        new_name = "edge_" + name
+
+        # detect edges
+        new_data = label_edge_detection(data)
+
+        # save result as a new overlay
+        self._model.addItem(new_data, None, new_name,
+                            self._model.data(index, Qt.UserRole + 11),
+                            None, None, 255, 'green')
 
     def _roimerge_clicked(self):
         """Roi merge clicked."""

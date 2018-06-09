@@ -288,8 +288,8 @@ class TreeModel(QAbstractItemModel):
                 index = self.parent(index)
                 depth += 1
 
-    def add_item(self, index, source=None, vmin=None, vmax=None,
-                 colormap='jet', alpha=1.0, visible=True, islabel=False):
+    def add_item(self, index, source=None, vmin=None, vmax=None, colormap='jet',
+                 alpha=1.0, visible=True, islabel=False, name=None):
 
         if not index.isValid():
             if not isinstance(source, Surface):
@@ -304,7 +304,7 @@ class TreeModel(QAbstractItemModel):
             if source is None:
                 source = np.zeros((surf_item.vertices_count(),))
             surf_item.load_overlay(source, vmin=vmin, vmax=vmax, colormap=colormap, alpha=alpha,
-                                   visible=visible, islabel=islabel)
+                                   visible=visible, islabel=islabel, name=name)
             self.insertRow(index.row(), None, parent)
         self.repaint_surface.emit()
         return True
