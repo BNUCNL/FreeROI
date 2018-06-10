@@ -143,6 +143,7 @@ class SurfBinErosionDialog(BinErosionDialog):
                                  n=n_ring)
         self._model.add_item(self.index,
                              source=new_data.astype(np.int8),
+                             colormap="blue",
                              islabel=True,
                              name=out_name)
         self.done(0)

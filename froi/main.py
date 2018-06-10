@@ -144,7 +144,8 @@ class BpMainWindow(QMainWindow):
             self.default_grid_scale_factor = float(self.grid_scale_factor) / 100
         else:
             # self.setWindowState(Qt.WindowMaximized)
-            self.setMinimumSize(1000, 800)
+            screen_geo = QDesktopWidget().screenGeometry()
+            self.setMinimumSize(screen_geo.width()*2/3, screen_geo.height()*8/9)
             self.default_orth_scale_factor = 1.0
             self.default_grid_scale_factor = 2.0
 
@@ -1424,6 +1425,7 @@ class BpMainWindow(QMainWindow):
             # save result as a new overlay
             self.surface_model.add_item(index,
                                         source=new_data.astype(int),
+                                        colormap=self.surface_model.data(index, Qt.UserRole + 3),
                                         islabel=True,
                                         name=new_name)
         else:
