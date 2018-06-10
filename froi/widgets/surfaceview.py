@@ -68,7 +68,8 @@ class SurfaceView(QWidget):
         super(SurfaceView, self).__init__(parent)
 
         # initialize GUI
-        self.setMinimumSize(800, 850)
+        screen_geo = QDesktopWidget().screenGeometry()
+        self.setMinimumSize(screen_geo.width()/3, screen_geo.height()*2/3)
         self.setBackgroundRole(QPalette.Dark)
 
         # get mayavi scene

@@ -144,5 +144,6 @@ class SurfBinarizationDialog(BinarizationDialog):
         self._model.add_item(self.index,
                              source=new_data,
                              name=out_name,
-                             islabel=True)
+                             islabel=True,
+                             colormap="blue")
         self.done(0)
