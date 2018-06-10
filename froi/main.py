@@ -13,6 +13,7 @@ from PyQt4.QtGui import *
 
 from version import __version__
 from algorithm.imtool import label_edge_detection as vol_label_edge_detection
+from algorithm.imtool import inverse_transformation
 from algorithm.meshtool import label_edge_detection as surf_label_edge_detection
 from core.labelconfig import LabelConfig
 from utils import get_icon_dir
@@ -24,7 +25,7 @@ from widgets.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from widgets.binarizationdialog import VolBinarizationDialog, SurfBinarizationDialog
 from widgets.intersectdialog import IntersectDialog
 from widgets.localmaxdialog import LocalMaxDialog
-from widgets.no_gui_tools import inverse_image, gen_label_color
+from widgets.no_gui_tools import gen_label_color
 from widgets.smoothingdialog import SmoothingDialog
 from widgets.growdialog import GrowDialog
 from widgets.watersheddialog import WatershedDialog
@@ -187,6 +188,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binaryerosion'].setEnabled(True)
         self._actions['binarydilation'].setEnabled(True)
         self._actions['edge_dete'].setEnabled(True)
+        self._actions['inverse'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -196,6 +198,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binaryerosion'].setEnabled(True)
         self._actions['binarydilation'].setEnabled(True)
         self._actions['edge_dete'].setEnabled(True)
+        self._actions['inverse'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1595,7 +1598,38 @@ class BpMainWindow(QMainWindow):
 
     def _inverse(self):
         """Inverse the given image."""
-        inverse_image(self.volume_model)
+        if self.tabWidget.currentWidget() is self.list_view:
+            index = self.volume_model.currentIndex()
+            data = self.volume_model.data(index, Qt.UserRole + 6)
+            name = self.volume_model.data(index, Qt.DisplayRole)
+            # inverse process
+            new_data = inverse_transformation(data)
+            new_name = 'inv_' + name
+            # save result as a new image
+            self.volume_model.addItem(new_data, None, new_name,
+                                      self.volume_model.data(index, Qt.UserRole + 11))
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            index = self.surface_model.current_index()
+            depth = self.surface_model.index_depth(index)
+
+            if depth != 2:
+                QMessageBox.warning(self,
+                                    'Warning!',
+                                    'Get overlay failed!\nYou may have not selected any overlay!',
+                                    QMessageBox.Yes)
+                return
+
+            data = self.surface_model.data(index, Qt.UserRole + 5)
+            name = self.surface_model.data(index, Qt.DisplayRole)
+            new_data = inverse_transformation(data)
+            new_name = "inv_" + name
+
+            # save result as a new overlay
+            self.surface_model.add_item(index,
+                                        source=new_data,
+                                        name=new_name)
+        else:
+            return
 
     def _smooth(self):
         """Image smooth dialog."""
@@ -1630,7 +1664,6 @@ class BpMainWindow(QMainWindow):
         self._actions['meants'].setEnabled(status)
         self._actions['voxelstats'].setEnabled(status)
         self._actions['localmax'].setEnabled(status)
-        self._actions['inverse'].setEnabled(status)
         self._actions['smoothing'].setEnabled(status)
         self._actions['atlas'].setEnabled(status)
         self._actions['region_grow'].setEnabled(status)

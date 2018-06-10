@@ -11,9 +11,9 @@ from slicdialog import SLICDialog
 from clusterdialog import ClusterDialog
 from intersectdialog import IntersectDialog
 from localmaxdialog import LocalMaxDialog
-from no_gui_tools import inverse_image
 from smoothingdialog import SmoothingDialog
 from binarizationdialog import VolBinarizationDialog
+from froi.algorithm.imtool import inverse_transformation
 
 
 class BasicWidget(QDialog):
@@ -150,7 +150,17 @@ class BasicWidget(QDialog):
         new_dialog.exec_()
 
     def _inverse_clicked(self):
-        inverse_image(self._model)
+        """Inverse current selected image by multiplying with -1."""
+        # get data and name from the current selected image
+        index = self._model.currentIndex()
+        data = self._model.data(index, Qt.UserRole + 6)
+        name = self._model.data(index, Qt.DisplayRole)
+        # inverse process
+        new_data = inverse_transformation(data)
+        new_name = 'inv_' + name
+        # save result as a new image
+        self._model.addItem(new_data, None, new_name,
+                            self._model.data(index, Qt.UserRole + 11))
 
     def _smooth_clicked(self):
         new_dialog = SmoothingDialog(self._model)
@@ -159,4 +169,3 @@ class BasicWidget(QDialog):
     def _binary_clicked(self):
         new_dialog = VolBinarizationDialog(self._model)
         new_dialog.exec_()
-
