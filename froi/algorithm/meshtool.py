@@ -753,7 +753,7 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
     return graph
 
 
-def binary_shrink(bin_data, faces, n=1):
+def binary_shrink(bin_data, faces, n=1, n_ring_neighbors=None):
     """
     shrink bin_data
 
@@ -766,27 +766,35 @@ def binary_shrink(bin_data, faces, n=1):
         the array of shape [n_triangles, 3]
     n : integer
         specify which ring should be got
+    n_ring_neighbors : list
+        If this parameter is not None, two parameters ('faces', 'n') will be ignored.
+        It is used to save time when someone repeatedly uses the function with
+            a same n_ring_neighbors which can be got by get_n_ring_neighbor.
+        The indices are vertices' id of a mesh.
+        One index's corresponding element is a collection of vertices which connect with the index.
 
     Return
     ------
-    out_data : 1-D numpy array with bool elements
+    new_data : 1-D numpy array with bool elements
         The output of the bin_data after binary shrink
     """
     if bin_data.dtype != np.bool:
         raise TypeError("The input dtype must be bool")
     vertices = np.where(bin_data)[0]
-    out_data = np.zeros_like(bin_data)
+    new_data = np.zeros_like(bin_data)
 
-    n_ring_neighbors = get_n_ring_neighbor(faces, n)
+    if n_ring_neighbors is None:
+        n_ring_neighbors = get_n_ring_neighbor(faces, n)
+
     for v_id in vertices:
         neighbors_values = [bin_data[_] for _ in n_ring_neighbors[v_id]]
         if np.all(neighbors_values):
-            out_data[v_id] = True
+            new_data[v_id] = True
 
-    return out_data
+    return new_data
 
 
-def binary_expand(bin_data, faces, n=1):
+def binary_expand(bin_data, faces, n=1, n_ring_neighbors=None):
     """
     expand bin_data
 
@@ -799,27 +807,35 @@ def binary_expand(bin_data, faces, n=1):
         the array of shape [n_triangles, 3]
     n : integer
         specify which ring should be got
+    n_ring_neighbors : list
+        If this parameter is not None, two parameters ('faces' and 'n') will be ignored.
+        It is used to save time when someone repeatedly uses the function with
+            a same n_ring_neighbors which can be got by get_n_ring_neighbor.
+        The indices are vertices' id of a mesh.
+        One index's corresponding element is a collection of vertices which connect with the index.
 
     Return
     ------
-    out_data : 1-D numpy array with bool elements
+    new_data : 1-D numpy array with bool elements
         The output of the bin_data after binary expand
     """
     if bin_data.dtype != np.bool:
         raise TypeError("The input dtype must be bool")
     vertices = np.where(bin_data)[0]
-    out_data = bin_data.copy()
+    new_data = bin_data.copy()
 
-    n_ring_neighbors = get_n_ring_neighbor(faces, n)
+    if n_ring_neighbors is None:
+        n_ring_neighbors = get_n_ring_neighbor(faces, n)
+
     for v_id in vertices:
         neighbors_values = [bin_data[_] for _ in n_ring_neighbors[v_id]]
         if not np.all(neighbors_values):
-            out_data[list(n_ring_neighbors[v_id])] = True
+            new_data[list(n_ring_neighbors[v_id])] = True
 
-    return out_data
+    return new_data
 
 
-def label_edge_detection(data, faces):
+def label_edge_detection(data, faces, edge_type="inner", neighbors=None):
     """
     edge detection for labels
 
@@ -830,22 +846,56 @@ def label_edge_detection(data, faces):
         Each element is a label id.
     faces : numpy array
         the array of shape [n_triangles, 3]
+    edge_type : str
+        "inner" means inner edges of labels.
+        "outer" means outer edges of labels.
+        "both" means both of them in one array
+        "split" means returning inner and outer edges in two arrays respectively
+    neighbors : list
+        If this parameter is not None, a parameters ('faces') will be ignored.
+        It is used to save time when someone repeatedly uses the function with
+            a same neighbors which can be got by get_n_ring_neighbor.
+        The indices are vertices' id of a mesh.
+        One index's corresponding element is a collection of vertices which connect with the index.
 
     Return
     ------
-    out_data : 1-D numpy array
-        the edges of the labels
+    inner_data : 1-D numpy array
+        the inner edges of the labels
+    outer_data : 1-D numpy array
+        the outer edges of the labels
+        It's worth noting that outer_data's element values may
+            be not strictly corresponding to labels' id when
+            there are some labels which are too close.
     """
+    # data preparation
     vertices = np.nonzero(data)[0]
-    out_data = np.zeros_like(data)
+    inner_data = np.zeros_like(data)
+    outer_data = np.zeros_like(data)
+    if neighbors is None:
+        neighbors = get_n_ring_neighbor(faces)
 
-    neighbors = get_n_ring_neighbor(faces)
+    # look for edges
     for v_id in vertices:
         neighbors_values = [data[_] for _ in neighbors[v_id]]
         if min(neighbors_values) != max(neighbors_values):
-            out_data[v_id] = data[v_id]
+            if edge_type in ("inner", "both", "split"):
+                inner_data[v_id] = data[v_id]
+            if edge_type in ("outer", "both", "split"):
+                outer_vtx = [vtx for vtx in neighbors[v_id] if data[v_id] != data[vtx]]
+                outer_data[outer_vtx] = data[v_id]
 
-    return out_data
+    # return results
+    if edge_type == "inner":
+        return inner_data
+    elif edge_type == "outer":
+        return outer_data
+    elif edge_type == "both":
+        return inner_data + outer_data
+    elif edge_type == "split":
+        return inner_data, outer_data
+    else:
+        raise ValueError("The argument 'edge_type' must be one of the (inner, outer, both, split)")
 
 
 if __name__ == '__main__':

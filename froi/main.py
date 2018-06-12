@@ -111,10 +111,10 @@ class BpMainWindow(QMainWindow):
         self._icon_dir = get_icon_dir()
 
         self.setWindowTitle('FreeROI')
-        self.center()
         self.setWindowIcon(QIcon(os.path.join(self._icon_dir, 'logo.png')))
 
         self._init_configuration()
+        self.center()
         self._create_actions()
         self._create_menus()
 
