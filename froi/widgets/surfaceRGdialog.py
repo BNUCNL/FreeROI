@@ -5,7 +5,7 @@ from matplotlib.widgets import Slider, MultiCursor
 
 from ..algorithm.regiongrow import RegionGrow
 from ..algorithm.tools import slide_win_smooth, VlineMover
-from ..algorithm.meshtool import get_n_ring_neighbor
+from ..algorithm.meshtool import get_n_ring_neighbor, LabelAssessment
 
 
 class SurfaceRGDialog(QtGui.QDialog):
@@ -58,9 +58,13 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._ring_spin.setMinimum(1)
         self._ring_spin.setValue(self.n_ring)
 
-        self._mask_label = QtGui.QLabel("mask")
+        self._mask_label = QtGui.QLabel("mask:")
         self._mask_combo = QtGui.QComboBox()
         self._fill_mask_box()
+
+        self._threshold_label = QtGui.QLabel("threshold:")
+        self._threshold_edit = QtGui.QLineEdit()
+        self._threshold_edit.setVisible(False)
 
         self._cutoff_button1 = QtGui.QPushButton('start cutoff')
         self._cutoff_button2 = QtGui.QPushButton('stop cutoff')
@@ -85,10 +89,12 @@ class SurfaceRGDialog(QtGui.QDialog):
         grid_layout.addWidget(self._ring_spin, 4, 1)
         grid_layout.addWidget(self._mask_label, 5, 0)
         grid_layout.addWidget(self._mask_combo, 5, 1)
-        grid_layout.addWidget(self._cutoff_button1, 6, 0)
-        grid_layout.addWidget(self._cutoff_button2, 6, 1)
-        grid_layout.addWidget(self._ok_button, 7, 0)
-        grid_layout.addWidget(self._cancel_button, 7, 1)
+        grid_layout.addWidget(self._threshold_label, 6, 0)
+        grid_layout.addWidget(self._threshold_edit, 6, 1)
+        grid_layout.addWidget(self._cutoff_button1, 7, 0)
+        grid_layout.addWidget(self._cutoff_button2, 7, 1)
+        grid_layout.addWidget(self._ok_button, 8, 0)
+        grid_layout.addWidget(self._cancel_button, 8, 1)
         self.setLayout(grid_layout)
 
     def _create_actions(self):
@@ -104,10 +110,15 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.connect(self._cancel_button, QtCore.SIGNAL("clicked()"), self.close)
         self._surf_view.seed_picked.connect(self._set_seeds_edit_text)
         self.model.rowsMoved.connect(self._fill_mask_box)
+        self.model.rowsMoved.connect(self._init_thr_editor)
         self.model.rowsInserted.connect(self._fill_mask_box)
+        self.model.rowsInserted.connect(self._init_thr_editor)
         self.model.rowsRemoved.connect(self._fill_mask_box)
+        self.model.rowsRemoved.connect(self._init_thr_editor)
         self.model.dataChanged.connect(self._fill_mask_box)
+        self.model.dataChanged.connect(self._init_thr_editor)
         self.connect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._fill_mask_box)
+        self.connect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._init_thr_editor)
 
     def _start_cutoff(self):
         self._cutoff_button1.setEnabled(False)
@@ -144,13 +155,18 @@ class SurfaceRGDialog(QtGui.QDialog):
             self._stop_edit.setVisible(False)
             self._mask_label.setVisible(False)
             self._mask_combo.setVisible(False)
+            self._threshold_label.setVisible(True)
+            self._threshold_edit.setVisible(True)
             self._cutoff_button1.setVisible(True)
             self._cutoff_button2.setVisible(True)
+            self._init_thr_editor()
         else:
             self._stop_label.setVisible(True)
             self._stop_edit.setVisible(True)
             self._mask_label.setVisible(True)
             self._mask_combo.setVisible(True)
+            self._threshold_label.setVisible(False)
+            self._threshold_edit.setVisible(False)
             self._cutoff_button1.setVisible(False)
             self._cutoff_button2.setVisible(False)
             if self._is_cutting:
@@ -246,6 +262,18 @@ class SurfaceRGDialog(QtGui.QDialog):
                 mask = mask > thresh
             return mask
 
+    def _init_thr_editor(self):
+
+        index = self.model.current_index()
+        depth = self.model.index_depth(index)
+        if depth == 2:
+            thr = self.model.data(index, QtCore.Qt.UserRole)
+            self._threshold_edit.setText(str(thr))
+            self._threshold_edit.setEnabled(True)
+        else:
+            self._threshold_edit.setText("None")
+            self._threshold_edit.setEnabled(False)
+
     def _start_surfRG(self):
 
         index = self.model.current_index()
@@ -321,6 +349,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                     self.slider_axes[r_idx] = slider_ax
                     self.sm_sliders.append(sm_slider)
 
+                self.axes[-1][0].set_xlabel('contrast step/component')
                 self.axes[-1][1].set_xlabel('contrast step/component')
                 self.cursor = MultiCursor(fig.canvas, self.axes.ravel(),
                                           ls='dashed', lw=0.5, c='g', horizOn=True)
@@ -352,19 +381,82 @@ class SurfaceRGDialog(QtGui.QDialog):
             rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria)
 
         elif self.rg_type == 'crg':
-            if depth == 2:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
-                thresh = self.model.data(index, QtCore.Qt.UserRole)
-                scalar_data = np.mean(scalar_data, 1)  # FIXME not suitable for multi-feature data
-                mask = scalar_data.reshape((scalar_data.shape[0],))
-                mask[mask < thresh] = 0
-                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
-            else:
-                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
 
-            for cut_vtx in self.cut_line:
-                edge_list[cut_vtx] = set()
-            rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
+            if depth == 1:
+                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
+                rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
+
+            elif depth == 2:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+                scalar_data = np.mean(scalar_data, 1)  # FIXME not suitable for multi-feature data
+                mask_data = scalar_data.reshape((scalar_data.shape[0],))
+                neighbors = get_n_ring_neighbor(geometry.faces)
+
+                self.thresholds = self._threshold_edit.text().split(',')
+                while '' in self.thresholds:
+                    self.thresholds.remove('')
+
+                self.crg_results = list()
+                for thr in self.thresholds:
+                    if thr == "None":
+                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
+                    else:
+                        mask = mask_data > float(thr)
+                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
+
+                    for cut_vtx in self.cut_line:
+                        edge_list[cut_vtx] = set()
+
+                    self.crg_results.append(rg.connectivity_grow(self.seeds_id, edge_list))
+
+                if len(self.thresholds) > 1:
+                    n_region = len(self.seeds_id)
+                    # get assessments, and rg_result
+                    self.crg_results = np.array(self.crg_results)
+                    label_assess = LabelAssessment()
+                    self.region_assessments = list()
+                    rg_result = list()
+                    for r_idx in range(n_region):
+                        multi_thr_regions = map(list, self.crg_results[:, r_idx])
+                        assessment = list()
+                        for region in multi_thr_regions:
+                            assessment.append(label_assess.transition_level(region, scalar_data, None, neighbors))
+                        best_thr_idx = np.argmax(assessment)
+                        rg_result.append(self.crg_results[best_thr_idx, r_idx])
+                        self.region_assessments.append(assessment)
+
+                    # plot
+                    fig, self.axes = plt.subplots(n_region)
+                    _ = np.zeros(self.axes.shape)
+                    self.axes = np.c_[self.axes, _]
+                    self.vline_movers = np.zeros_like(self.axes[:, 0])  # store vline movers
+                    self.cursors = np.zeros_like(self.axes)  # store cursors, hold references
+                    self.slider_axes = np.zeros_like(self.axes[:, 0])
+                    self.sm_sliders = []  # store smooth sliders, hold references
+                    for r_idx in range(n_region):
+                        # plot assessment curve
+                        self.r_idx_sm = r_idx
+                        self.smoothness = 0
+                        self._sm_update_axes()
+
+                        # add slider
+                        ax_pos = self.axes[r_idx][0].get_position()
+                        slider_ax = fig.add_axes([ax_pos.x1 - 0.15, ax_pos.y0 + 0.005, 0.15, 0.015])
+                        sm_slider = Slider(slider_ax, 'smoothness', 0, 10, 0, '%d', dragging=False)
+                        sm_slider.on_changed(self._on_smooth_changed)
+                        self.slider_axes[r_idx] = slider_ax
+                        self.sm_sliders.append(sm_slider)
+
+                    self.axes[-1][0].set_xlabel('thresholds')
+                    self.cursor = MultiCursor(fig.canvas, self.axes[:, 0],
+                                              ls='dashed', lw=0.5, c='g', horizOn=True)
+                    fig.canvas.set_window_title('assessment curves')
+                    fig.canvas.mpl_connect('button_press_event', self._on_clicked)
+                    plt.show()
+                else:
+                    rg_result = self.crg_results[0]
+            else:
+                return
 
         else:
             raise RuntimeError("The region growing type must be arg, srg and crg at present!")
@@ -391,17 +483,23 @@ class SurfaceRGDialog(QtGui.QDialog):
     def _on_clicked(self, event):
         if event.button == 3 and event.inaxes in self.axes[:, 0]:
             # do something on right click
-            # find current evolved region
             r_idx = np.where(self.axes[:, 0] == event.inaxes)[0][0]
-            r = self.evolved_regions[r_idx]
+            index = int(self.vline_movers[r_idx].x[0])
 
-            # get vertices included in the evolved region
-            index = self.vline_movers[r_idx].x[0]
-            end_index = int((index+1) * self.assess_step)
-            labeled_vertices = set()
-            for region in r.get_component()[:end_index]:
-                labeled_vertices.update(region.get_vertices())
-            labeled_vertices = list(labeled_vertices)
+            if self.rg_type == "arg":
+                # find current evolved region
+                r = self.evolved_regions[r_idx]
+
+                # get vertices included in the evolved region
+                end_index = int((index+1) * self.assess_step)
+                labeled_vertices = set()
+                for region in r.get_component()[:end_index]:
+                    labeled_vertices.update(region.get_vertices())
+                labeled_vertices = list(labeled_vertices)
+            elif self.rg_type == "crg":
+                labeled_vertices = list(self.crg_results[index][r_idx])
+            else:
+                return
 
             # visualize these labeled vertices
             data = np.zeros((self.vertices_count,), np.int)
@@ -425,11 +523,15 @@ class SurfaceRGDialog(QtGui.QDialog):
             self._sm_update_axes()
 
     def _sm_update_axes(self):
+        self.axes[self.r_idx_sm][0].cla()
         smoothed_curve = slide_win_smooth(self.region_assessments[self.r_idx_sm], self.smoothness)
-        self.axes[self.r_idx_sm][0].plot(smoothed_curve, 'b.-')
+        if self.rg_type == "crg":
+            self.axes[self.r_idx_sm][0].plot(self.thresholds, smoothed_curve, "b.-")
+        elif self.rg_type == "arg":
+            self.axes[self.r_idx_sm][0].plot(smoothed_curve, "b.-")
+        else:
+            return
         self.axes[self.r_idx_sm][0].set_title('curve for seed {}'.format(self.r_idx_sm))
-        if self.r_idx_sm == len(self.axes)-1:
-            self.axes[self.r_idx_sm][0].set_xlabel('contrast step/component')
         self.axes[self.r_idx_sm][0].set_ylabel('assessed value')
 
         # initialize vline
