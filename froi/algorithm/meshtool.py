@@ -898,6 +898,52 @@ def label_edge_detection(data, faces, edge_type="inner", neighbors=None):
         raise ValueError("The argument 'edge_type' must be one of the (inner, outer, both, split)")
 
 
+class LabelAssessment(object):
+
+    @staticmethod
+    def transition_level(label, data, faces, neighbors=None):
+        """
+        Calculate the transition level on the region's boundary.
+        The result is regarded as the region's assessed value.
+        Adapted from (Chantal et al. 2002).
+
+        Parameters
+        ----------
+        label : list
+            a collection of vertices with the label
+        data : numpy array
+            scalar data with the shape (#vertices, #features)
+        faces : numpy array
+            the array of shape [n_triangles, 3]
+        neighbors : list
+        If this parameter is not None, a parameters ('faces') will be ignored.
+        It is used to save time when someone repeatedly uses the function with
+            a same neighbors which can be got by get_n_ring_neighbor.
+        The indices are vertices' id of a mesh.
+        One index's corresponding element is a collection of vertices which connect with the index.
+
+        Return
+        ------
+        assessed_value : float
+            Larger is often better.
+        """
+        label_data = np.zeros_like(data, dtype=np.int8)
+        label_data[label] = 1
+
+        inner_data = label_edge_detection(label_data, faces, "inner", neighbors)
+        inner_edge = np.nonzero(inner_data)[0]
+
+        count = 0
+        sum_tmp = 0
+        for vtx_i in inner_edge:
+            for vtx_o in neighbors[vtx_i]:
+                if label_data[vtx_o] == 0:
+                    couple_signal = np.r_[np.atleast_2d(data[vtx_i]), np.atleast_2d(data[vtx_o])]
+                    sum_tmp += pdist(couple_signal)[0]
+                    count += 1
+        return sum_tmp / float(count)
+
+
 if __name__ == '__main__':
     from nibabel.freesurfer import read_geometry
     from froi.io.surf_io import read_scalar_data

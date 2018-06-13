@@ -873,6 +873,11 @@ class Scalar(object):
             vertices = np.where(self._data[:, 0] == label)[0]
         save2label(fpath, vertices, hemi_coords=hemi_coords)
 
+    def copy(self):
+        scalar = Scalar(self._data, self._vmin, self._vmax, self._colormap,
+                        self._alpha, self._visible, self._islabel, self._name)
+        return scalar
+
 
 class Surface(object):
     """Surface: container for geometry data and scalar data."""
