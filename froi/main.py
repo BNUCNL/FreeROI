@@ -194,6 +194,11 @@ class BpMainWindow(QMainWindow):
             self._actions['atlas'].setEnabled(False)
 
     def _init_surf_actions(self):
+        self._actions['duplicate_image'].setEnabled(True)
+        self._actions['remove_image'].setEnabled(True)
+        self._actions['undo'].setEnabled(False)
+        self._actions['redo'].setEnabled(False)
+        self._spinbox.setEnabled(False)
         self._surf_func_module_set_enabled(True)
         self._actions['binarization'].setEnabled(True)
         self._actions['binaryerosion'].setEnabled(True)
@@ -704,13 +709,32 @@ class BpMainWindow(QMainWindow):
 
     def _duplicate_image(self):
         """Duplicate image."""
-        index = self.volume_model.currentIndex()
-        dup_img = self.volume_model._data[index.row()].duplicate()
-        self.volume_model.insertRow(0, dup_img)
-        self.list_view.setCurrentIndex(self.volume_model.index(0))
+        if self.tabWidget.currentWidget() is self.list_view:
+            index = self.volume_model.currentIndex()
+            dup_img = self.volume_model._data[index.row()].duplicate()
+            self.volume_model.insertRow(0, dup_img)
+            self.list_view.setCurrentIndex(self.volume_model.index(0))
+            # change button status
+            self._actions['remove_image'].setEnabled(True)
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            index = self.surface_model.current_index()
+            depth = self.surface_model.index_depth(index)
+            if depth != 2:
+                QMessageBox.warning(self,
+                                    'Warning!',
+                                    'Get overlay failed!\nYou may have not selected any overlay!',
+                                    QMessageBox.Yes)
+                return
 
-        # change button status
-        self._actions['remove_image'].setEnabled(True)
+            self.surface_model.add_item(index,
+                                        source=self.surface_model.data(index, Qt.UserRole + 5),
+                                        vmin=self.surface_model.data(index, Qt.UserRole),
+                                        vmax=self.surface_model.data(index, Qt.UserRole + 1),
+                                        colormap=self.surface_model.data(index, Qt.UserRole + 3),
+                                        alpha=self.surface_model.data(index, Qt.UserRole + 2),
+                                        visible=self.surface_model.data(index, Qt.UserRole + 8),
+                                        islabel=self.surface_model.data(index, Qt.UserRole + 7),
+                                        name=self.surface_model.data(index, Qt.DisplayRole))
 
     def _add_volume_img(self, source, name=None, header=None, view_min=None,
                         view_max=None, alpha=255, colormap='gray'):
@@ -862,7 +886,6 @@ class BpMainWindow(QMainWindow):
                 self.centralWidget().layout().addWidget(self.surface_view)
 
             self.surface_view.set_phi_theta(*view)
-            self._actions['remove_image'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',
@@ -874,7 +897,6 @@ class BpMainWindow(QMainWindow):
         actions_status['orth_view'] = self._actions['orth_view'].isEnabled()
         actions_status['hand'] = self._actions['hand'].isEnabled()
         actions_status['snapshot'] = self._actions['snapshot'].isEnabled()
-        actions_status['duplicate_image'] = self._actions['duplicate_image'].isEnabled()
         actions_status['orth_view'] = self._actions['orth_view'].isEnabled()
         actions_status['cross_hover_view'] = self._actions['cross_hover_view'].isEnabled()
         actions_status['original_view'] = self._actions['original_view'].isEnabled()
@@ -890,7 +912,6 @@ class BpMainWindow(QMainWindow):
         self._actions['orth_view'].setEnabled(False)
         self._actions['hand'].setEnabled(False)
         self._actions['snapshot'].setEnabled(False)
-        self._actions['duplicate_image'].setEnabled(False)
         self._actions['orth_view'].setEnabled(False)
         self._actions['cross_hover_view'].setEnabled(False)
         self._actions['original_view'].setEnabled(False)
@@ -909,7 +930,6 @@ class BpMainWindow(QMainWindow):
             self._actions['grid_view'].setEnabled(actions_status['grid_view'])
             self._actions['hand'].setEnabled(actions_status['hand'])
             self._actions['snapshot'].setEnabled(actions_status['snapshot'])
-            self._actions['duplicate_image'].setEnabled(actions_status['duplicate_image'])
             self._actions['orth_view'].setEnabled(actions_status['orth_view'])
             self._actions['cross_hover_view'].setEnabled(actions_status['cross_hover_view'])
             self._actions['original_view'].setEnabled(actions_status['original_view'])

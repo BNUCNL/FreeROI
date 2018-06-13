@@ -113,6 +113,8 @@ class TreeModel(QAbstractItemModel):
                 return item.get_data()
             elif role == Qt.UserRole + 7:
                 return item.is_label()
+            elif role == Qt.UserRole + 8:
+                return item.is_visible()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 
