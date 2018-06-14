@@ -190,6 +190,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binarydilation'].setEnabled(True)
         self._actions['edge_dete'].setEnabled(True)
         self._actions['inverse'].setEnabled(True)
+        self._actions['label_management'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -205,6 +206,7 @@ class BpMainWindow(QMainWindow):
         self._actions['binarydilation'].setEnabled(True)
         self._actions['edge_dete'].setEnabled(True)
         self._actions['inverse'].setEnabled(True)
+        self._actions['label_management'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1327,7 +1329,6 @@ class BpMainWindow(QMainWindow):
 
     def _init_vol_roidialog(self, model):
         """Initialize volume ROI Dialog."""
-        self._actions['label_management'].setEnabled(False)
         self.vol_roidialog = VolROIDialog(model, self._vol_label_config_center, self)
         self.vol_roidialog.vx_edit_enabled.connect(self._voxel_edit_enable)
         self.vol_roidialog.roi_edit_enabled.connect(self._vol_roi_edit_enable)
@@ -1335,7 +1336,6 @@ class BpMainWindow(QMainWindow):
 
     def _init_surf_roidialog(self, model):
         """Initialize Surface ROI Dialog."""
-        self._actions['label_management'].setEnabled(False)
         self.surf_roidialog = SurfROIDialog(model, self._surf_label_config_center, self)
         self.surf_roidialog.vx_edit_enabled.connect(self._vertex_edit_enable)
         self.surf_roidialog.roi_edit_enabled.connect(self._surf_roi_edit_enable)
@@ -1697,7 +1697,6 @@ class BpMainWindow(QMainWindow):
         self._actions['greyerosion'].setEnabled(status)
         self._actions['regular_roi'].setEnabled(status)
         self._actions['regular_roi_from_csv'].setEnabled(status)
-        self._actions['label_management'].setEnabled(status)
         self._actions['r2i'].setEnabled(status)
         self._actions['roi_merge'].setEnabled(status)
 

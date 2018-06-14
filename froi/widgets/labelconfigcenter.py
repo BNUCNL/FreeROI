@@ -48,6 +48,7 @@ from drawsettings import DrawSettings
 #         self._label_index.insert(index.row(), (label, current_index))
 #         self.dataChanged.emit(index, index)
 
+
 class LabelConfigCenter(QGroupBox, DrawSettings):
     """A Qwidget for label config chooser."""
     single_roi_view_update = pyqtSignal()

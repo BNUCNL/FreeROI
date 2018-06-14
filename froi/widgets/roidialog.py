@@ -26,7 +26,8 @@ class ROIDialog(QDialog, DrawSettings):
     def _init_gui(self):
         self.setWindowModality(Qt.NonModal)
         self.setWindowTitle("Edit")
-        self.setFixedSize(400, 600)
+        screen_geo = QDesktopWidget().screenGeometry()
+        self.setMinimumSize(screen_geo.width() * 2 / 15, screen_geo.height() * 8 / 45)
         self.setWindowFlags(Qt.Tool |
                             Qt.CustomizeWindowHint |
                             Qt.WindowTitleHint)

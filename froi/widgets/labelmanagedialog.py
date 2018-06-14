@@ -16,7 +16,8 @@ class LabelManageDialog(QDialog, DrawSettings):
     """A dialog window for label selection."""
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
-    def __init__(self,label_configs, list_view_model, label_models, label_config_dir,
+
+    def __init__(self, label_configs, list_view_model, label_models, label_config_dir,
                  label_config_suffix, parent=None):
         """Initialize a dialog widget."""
         super(LabelManageDialog, self).__init__(parent)
@@ -77,7 +78,6 @@ class LabelManageDialog(QDialog, DrawSettings):
             self.del_btn.setEnabled(True)
             self.edit_btn.setEnabled(True)
 
-
     def _add_label(self):
         """Add a new label."""
         add_label_group_dialog = AddLabelGroupDialog(self)
@@ -95,7 +95,7 @@ class LabelManageDialog(QDialog, DrawSettings):
 
             new_label_group_name = new_label_group_name.replace(" ", "_")
             lbl_path = os.path.join(self._label_config_dir,
-                                    new_label_group_name + '.'+ self._label_config_suffix)
+                                    new_label_group_name + '.' + self._label_config_suffix)
             f = open(lbl_path, "w")
             f.close()
             new_label_config = map(LabelConfig, glob.glob(lbl_path))
@@ -126,5 +126,3 @@ class LabelManageDialog(QDialog, DrawSettings):
         label_edit_dialog = LabelEditDialog(self._label_models[index], self._label_configs[index])
         label_edit_dialog.setWindowTitle("Edit " + self._label_configs[index].get_name())
         label_edit_dialog.exec_()
-
-
