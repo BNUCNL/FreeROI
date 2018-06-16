@@ -299,6 +299,7 @@ class SurfaceView(QWidget):
         if isinstance(surface_model, TreeModel):
             self.surface_model = surface_model
             self._create_connections()
+            self._show_surface()
         else:
             raise ValueError("The model must be the instance of the TreeModel!")
 
