@@ -196,7 +196,6 @@ class BpMainWindow(QMainWindow):
 
     def _init_surf_actions(self):
         self._actions['duplicate_image'].setEnabled(True)
-        self._actions['remove_image'].setEnabled(True)
         self._actions['undo'].setEnabled(False)
         self._actions['redo'].setEnabled(False)
         self._spinbox.setEnabled(False)
@@ -729,7 +728,7 @@ class BpMainWindow(QMainWindow):
                 return
 
             self.surface_model.add_item(index,
-                                        source=self.surface_model.data(index, Qt.UserRole + 5),
+                                        source=self.surface_model.data(index, Qt.UserRole + 5).copy(),
                                         vmin=self.surface_model.data(index, Qt.UserRole),
                                         vmax=self.surface_model.data(index, Qt.UserRole + 1),
                                         colormap=self.surface_model.data(index, Qt.UserRole + 3),
@@ -888,6 +887,7 @@ class BpMainWindow(QMainWindow):
                 self.centralWidget().layout().addWidget(self.surface_view)
 
             self.surface_view.set_phi_theta(*view)
+            self._actions['remove_image'].setEnabled(True)
         else:
             QMessageBox.question(self,
                                 'FreeROI',

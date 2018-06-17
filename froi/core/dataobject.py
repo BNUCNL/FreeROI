@@ -874,7 +874,7 @@ class Scalar(object):
         save2label(fpath, vertices, hemi_coords=hemi_coords)
 
     def copy(self):
-        scalar = Scalar(self._data, self._vmin, self._vmax, self._colormap,
+        scalar = Scalar(self._data.copy(), self._vmin, self._vmax, self._colormap,
                         self._alpha, self._visible, self._islabel, self._name)
         return scalar
 

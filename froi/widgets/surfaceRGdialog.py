@@ -64,6 +64,7 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         self._threshold_label = QtGui.QLabel("threshold:")
         self._threshold_edit = QtGui.QLineEdit()
+        self._threshold_label.setVisible(False)
         self._threshold_edit.setVisible(False)
 
         self._cutoff_button1 = QtGui.QPushButton('start cutoff')

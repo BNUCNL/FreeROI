@@ -7,6 +7,7 @@
 
 import numpy as np
 from PyQt4.QtCore import *
+from traits.trait_handlers import HandleWeakRef
 
 from froi.core.dataobject import Surface
 
@@ -271,6 +272,9 @@ class TreeModel(QAbstractItemModel):
         surface_idx = self.get_surface_index(index)
         if surface_idx is None:
             return overlay_list
+        if isinstance(surface_idx.internalPointer(), HandleWeakRef):
+            # FIXME This condition complex is an expedient.
+            return overlay_list
 
         for row in range(self.rowCount(surface_idx)):
             idx = self.index(row, 0, surface_idx)
@@ -284,7 +288,7 @@ class TreeModel(QAbstractItemModel):
 
         depth = 0
         while True:
-            if not index.isValid():
+            if not hasattr(index, "isValid") or not index.isValid():
                 return depth
             else:
                 index = self.parent(index)
