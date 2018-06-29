@@ -549,6 +549,18 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def close(self):
 
+        self._surf_view.seed_picked.disconnect(self._set_seeds_edit_text)
+        self.model.rowsMoved.disconnect(self._fill_mask_box)
+        self.model.rowsMoved.disconnect(self._init_thr_editor)
+        self.model.rowsInserted.disconnect(self._fill_mask_box)
+        self.model.rowsInserted.disconnect(self._init_thr_editor)
+        self.model.rowsRemoved.disconnect(self._fill_mask_box)
+        self.model.rowsRemoved.disconnect(self._init_thr_editor)
+        self.model.dataChanged.disconnect(self._fill_mask_box)
+        self.model.dataChanged.disconnect(self._init_thr_editor)
+        self.disconnect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._fill_mask_box)
+        self.disconnect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._init_thr_editor)
+
         if self._is_cutting:
             self._stop_cutoff()
             self.cut_line = []
