@@ -32,7 +32,7 @@ class SurfaceTreeView(QWidget):
                         'vlag',
                         'jet']
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model, label_config_center, parent=None):
         """TreeView initialization."""
         super(SurfaceTreeView, self).__init__(parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
@@ -40,20 +40,20 @@ class SurfaceTreeView(QWidget):
         self._temp_dir = None
         self._icon_dir = get_icon_dir()
 
-        self._init_gui()
-
         if isinstance(model, QAbstractItemModel):
             self._model = model
-            self._tree_view.setModel(model)
         else:
             raise ValueError('Input must be a TreeModel!')
+        self._label_config_center = label_config_center
 
+        self._init_gui()
         self._create_action()
 
     def _init_gui(self):
         """Initialize a GUI designation."""
         # initialize QTreeView
         self._tree_view = QTreeView()
+        self._tree_view.setModel(self._model)
 
         # initialize visibility controller
         visibility_label = QLabel('Visibility')
@@ -97,8 +97,8 @@ class SurfaceTreeView(QWidget):
         self._view_min = QLineEdit()
         scalar_colormap_label = QLabel('Colormap:')
         self._scalar_colormap = QComboBox()
-        self._scalar_colormap.addItems(self.builtin_colormap)
         self._scalar_colormap.setEditable(True)
+        self._update_colormap_box()
 
         # layout for ScalarData settings
         scalar_layout = QGridLayout()
@@ -191,6 +191,9 @@ class SurfaceTreeView(QWidget):
         self._phi_edit.editingFinished.connect(self._set_phi_theta)
         self._theta_edit.editingFinished.connect(self._set_phi_theta)
         self.connect(self._model, SIGNAL("phi_theta_to_edit"), self._update_phi_theta)
+        # When model is empty, we also have to update the current index for model.
+        # Otherwise, the old current_index in model will refer to something that is unpredictable.
+        self.connect(self._model, SIGNAL("modelEmpty"), self._disp_current_para)
 
         self._rightclick_add = self.contextMenu.addAction(u'Add')
         self._rightclick_del = self.contextMenu.addAction(u'Delete')
@@ -217,7 +220,7 @@ class SurfaceTreeView(QWidget):
                 self._down_button.setEnabled(True)
 
             # geometry information
-            idx = self._model.get_surface_index()
+            idx = self._model.get_surface_index(index)
             self._geo_name_edit.setText(self._model.data(idx, Qt.DisplayRole))
 
             # min/max value
@@ -244,8 +247,8 @@ class SurfaceTreeView(QWidget):
 
             self._tree_view.setFocus()
 
-            # Set current index
-            self._model.setCurrentIndex(self._tree_view.currentIndex())
+        # Set current index
+        self._model.setCurrentIndex(self._tree_view.currentIndex())
 
     def _set_view_min(self):
         """Set current selected item's view_min value."""
@@ -270,8 +273,17 @@ class SurfaceTreeView(QWidget):
     def _set_colormap(self):
         """Set colormap of current selected item."""
         index = self._tree_view.currentIndex()
-        value = self._scalar_colormap.currentText()
-        self._model.setData(index, str(value), role=Qt.UserRole + 3)
+        row = self._scalar_colormap.currentIndex()
+        builtin_len = len(self.builtin_colormap)
+        if row < builtin_len:
+            colormap = str(self._scalar_colormap.currentText())
+        else:
+            colormap = self._label_config_center.get_label_config(row - builtin_len)
+        self._model.setData(index, colormap, role=Qt.UserRole + 3)
+
+    def _update_colormap_box(self):
+        self._scalar_colormap.addItems(self.builtin_colormap +
+                                       self._label_config_center.get_all_labelconfig_names())
 
     def _set_alpha(self):
         """Set alpha value of current selected item."""

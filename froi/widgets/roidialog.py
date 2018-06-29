@@ -94,10 +94,6 @@ class ROIDialog(QDialog, DrawSettings):
         self.vx_btn.clicked.connect(self._vx_clicked)
         self.ROI_btn.clicked.connect(self._ROI_clicked)
         self.ROI_batch_btn.clicked.connect(self._ROI_batch_clicked)
-        self._model.rowsInserted.connect(self._fill_target_box)
-        self._model.rowsMoved.connect(self._fill_target_box)
-        self._model.rowsRemoved.connect(self._fill_target_box)
-        self._model.dataChanged.connect(self._fill_target_box)
         self.target_box.currentIndexChanged.connect(
             self._update_last_target_name)
         # self.action_box.currentIndexChanged[QString].connect(
@@ -180,6 +176,22 @@ class ROIDialog(QDialog, DrawSettings):
         self.selected_rois = []
         self.roi_edit.clear()
 
+    def show_dialog(self):
+        self._model.rowsInserted.connect(self._fill_target_box)
+        self._model.rowsMoved.connect(self._fill_target_box)
+        self._model.rowsRemoved.connect(self._fill_target_box)
+        self._model.dataChanged.connect(self._fill_target_box)
+        self._vx_clicked()
+        self._fill_target_box()
+        self.show()
+
+    def hide_dialog(self):
+        self._model.rowsInserted.disconnect(self._fill_target_box)
+        self._model.rowsMoved.disconnect(self._fill_target_box)
+        self._model.rowsRemoved.disconnect(self._fill_target_box)
+        self._model.dataChanged.disconnect(self._fill_target_box)
+        self.hide()
+
     def hideEvent(self, e):
         """Reimplement hide event."""
         self._pos = self.pos()
@@ -259,7 +271,6 @@ class SurfROIDialog(ROIDialog):
 
         self._init_gui()
         self._create_actions()
-        self.connect(self._model, SIGNAL("currentIndexChanged"), self._fill_target_box)
 
     def _fill_target_box(self):
         self._last_target_update_enable = False
@@ -274,6 +285,14 @@ class SurfROIDialog(ROIDialog):
                 break
         self.target_box.setCurrentIndex(last_target_idx)
         self._last_target_update_enable = True
+
+    def show_dialog(self):
+        self.connect(self._model, SIGNAL("currentIndexChanged"), self._fill_target_box)
+        super(SurfROIDialog, self).show_dialog()
+
+    def hide_dialog(self):
+        self.disconnect(self._model, SIGNAL("currentIndexChanged"), self._fill_target_box)
+        super(SurfROIDialog, self).hide_dialog()
 
     def _run(self):
         super(SurfROIDialog, self)._run()

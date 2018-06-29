@@ -385,6 +385,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
             if depth == 1:
                 edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
+                for cut_vtx in self.cut_line:
+                    edge_list[cut_vtx] = set()
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
@@ -546,6 +548,18 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.smoothness = None
 
     def close(self):
+
+        self._surf_view.seed_picked.disconnect(self._set_seeds_edit_text)
+        self.model.rowsMoved.disconnect(self._fill_mask_box)
+        self.model.rowsMoved.disconnect(self._init_thr_editor)
+        self.model.rowsInserted.disconnect(self._fill_mask_box)
+        self.model.rowsInserted.disconnect(self._init_thr_editor)
+        self.model.rowsRemoved.disconnect(self._fill_mask_box)
+        self.model.rowsRemoved.disconnect(self._init_thr_editor)
+        self.model.dataChanged.disconnect(self._fill_mask_box)
+        self.model.dataChanged.disconnect(self._init_thr_editor)
+        self.disconnect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._fill_mask_box)
+        self.disconnect(self.model, QtCore.SIGNAL("currentIndexChanged"), self._init_thr_editor)
 
         if self._is_cutting:
             self._stop_cutoff()

@@ -94,7 +94,7 @@ class LabelConfigCenter(QGroupBox, DrawSettings):
         labcon_layout = QGridLayout()
         labcon_layout.addWidget(self.config_combobox)
         labcon_layout.addWidget(self.label_list_view)
-        labcon_layout.addLayout(hboxlayout,2,0)
+        labcon_layout.addLayout(hboxlayout, 2, 0)
         self.setLayout(labcon_layout)
 
     def _update_labels(self):

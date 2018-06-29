@@ -6,10 +6,12 @@ from no_gui_tools import gen_label_color
 from drawsettings import DrawSettings
 from addlabeldialog import *
 
+
 class LabelEditDialog(QDialog, DrawSettings):
     """A dialog window for label selection."""
     color_changed = pyqtSignal()
     label_edit_enabled = pyqtSignal()
+
     def __init__(self, label_model, label_configs, parent=None):
         """Initialize a dialog widget."""
         super(LabelEditDialog, self).__init__(parent)
@@ -67,7 +69,7 @@ class LabelEditDialog(QDialog, DrawSettings):
         new_label = add_dialog.get_new_label()
         if new_label:
             text_index_icon_item = QStandardItem(gen_label_color(new_label[2]),
-                                             str(new_label[0]) + '  ' + new_label[1])
+                                                 str(new_label[0]) + '  ' + new_label[1])
             self._label_configs.add_label(new_label[1], new_label[0], new_label[2])
             order_index = self._label_configs.get_index_list().index(new_label[0])
             self._label_model.insertRow(order_index, text_index_icon_item)
@@ -107,5 +109,3 @@ class LabelEditDialog(QDialog, DrawSettings):
             self._label_model.insertRow(row, text_index_icon_item)
             self._label_configs.edit_label(label, edit_label[1], edit_label[2])
             self._label_configs.save()
-
-

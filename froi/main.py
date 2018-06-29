@@ -832,7 +832,7 @@ class BpMainWindow(QMainWindow):
             self._surf_label_config_center.size_edit.setRange(0, 10)
             self._surf_label_config_center.size_edit.setValue(1)
             self.surface_model = TreeModel([])
-            self.surface_tree_view = SurfaceTreeView(self.surface_model)
+            self.surface_tree_view = SurfaceTreeView(self.surface_model, self._surf_label_config_center)
             self.surface_tree_view_control = self.surface_tree_view.get_treeview()
             self._init_surf_roidialog(self.surface_model)
 
@@ -1266,13 +1266,9 @@ class BpMainWindow(QMainWindow):
             if self.tabWidget.currentWidget() is self.list_view:
                 if isinstance(self.volume_view, OrthView):
                     self._actions['hand'].setChecked(False)
-                self.vol_roidialog._vx_clicked()
-                self.vol_roidialog._fill_target_box()
-                self.vol_roidialog.show()
+                self.vol_roidialog.show_dialog()
             elif self.tabWidget.currentWidget() is self.surface_tree_view:
-                self.surf_roidialog._vx_clicked()
-                self.surf_roidialog._fill_target_box()
-                self.surf_roidialog.show()
+                self.surf_roidialog.show_dialog()
         else:
             self._actions['edit'].setChecked(True)
 
@@ -1280,10 +1276,10 @@ class BpMainWindow(QMainWindow):
         """Disable the roi dialog."""
         if hasattr(self, "vol_roidialog"):
             if self.vol_roidialog.isVisible():
-                self.vol_roidialog.hide()
+                self.vol_roidialog.hide_dialog()
         if hasattr(self, "surf_roidialog"):
             if self.surf_roidialog.isVisible():
-                self.surf_roidialog.hide()
+                self.surf_roidialog.hide_dialog()
         self._actions['edit'].setChecked(False)
 
     def _atlas_dialog(self):

@@ -242,7 +242,7 @@ class TreeModel(QAbstractItemModel):
 
     def setCurrentIndex(self, index):
         """Set current row."""
-        if 0 <= index.row() <= self.rowCount(index.parent()):
+        if -1 <= index.row() <= self.rowCount(index.parent()):
             self._current_index = index
             self.emit(SIGNAL("currentIndexChanged"))
         else:
@@ -271,9 +271,6 @@ class TreeModel(QAbstractItemModel):
         overlay_list = []
         surface_idx = self.get_surface_index(index)
         if surface_idx is None:
-            return overlay_list
-        if isinstance(surface_idx.internalPointer(), HandleWeakRef):
-            # FIXME This condition complex is an expedient.
             return overlay_list
 
         for row in range(self.rowCount(surface_idx)):
@@ -320,6 +317,8 @@ class TreeModel(QAbstractItemModel):
             return None
         self.removeRow(index.row(), index.parent())
         self.repaint_surface.emit()
+        if len(self._data) == 0:
+            self.emit(SIGNAL("modelEmpty"))
         return True
 
     def set_vertices_value(self, value, index=None, vertices=None, roi=None,
