@@ -385,6 +385,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
             if depth == 1:
                 edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
+                for cut_vtx in self.cut_line:
+                    edge_list[cut_vtx] = set()
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:

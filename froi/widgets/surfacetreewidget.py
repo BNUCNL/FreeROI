@@ -276,7 +276,7 @@ class SurfaceTreeView(QWidget):
         row = self._scalar_colormap.currentIndex()
         builtin_len = len(self.builtin_colormap)
         if row < builtin_len:
-            colormap = self._scalar_colormap.currentText()
+            colormap = str(self._scalar_colormap.currentText())
         else:
             colormap = self._label_config_center.get_label_config(row - builtin_len)
         self._model.setData(index, colormap, role=Qt.UserRole + 3)
