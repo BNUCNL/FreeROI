@@ -986,7 +986,11 @@ class Surface(object):
         data = np.mean(data, 1)
         data = data.reshape((data.shape[0],))
 
-        return aq.array2qrgba(data, ol.get_alpha()*255, ol.get_colormap(),
+        colormap = ol.get_colormap()
+        if isinstance(colormap, LabelConfig):
+            colormap = colormap.get_colormap()
+
+        return aq.array2qrgba(data, ol.get_alpha()*255, colormap,
                               (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
 
     def get_composite_rgb(self):

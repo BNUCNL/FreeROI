@@ -165,12 +165,12 @@ def gray2qimage(array, normalize=False):
     return result
 
 
-def byte_view(qimage, byteorder = 'little'):
+def byte_view(qimage, byteorder='little'):
     """Return the bytes in the view with the given byteorder."""
     raw = _qimageview(qimage)
     result = raw.view(_np.uint8).reshape(raw.shape + (-1, ))
     if byteorder and byteorder != _sys.byteorder:
-        result = result[...,::-1]
+        result = result[..., ::-1]
     return result
 
 
