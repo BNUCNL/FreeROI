@@ -4,6 +4,7 @@ import numpy as np
 import nibabel as nib
 
 from ..algorithm.graph_tool import node_attr2array
+from .io import GiftiReader, CiftiReader
 
 
 def read_mgh_mgz(filepath):
@@ -64,7 +65,8 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     islabel = False
     if suffix0 in ('curv', 'thickness'):
         data = nib.freesurfer.read_morph_data(fpath)
-        data = data.astype(np.float64)
+        data = data.astype(np.float64)  # necessary for visualization
+        data = np.atleast_2d(data).T
 
     elif suffix0 == 'label':
         islabel = True
@@ -80,25 +82,14 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
                 raise RuntimeError('vertices number mismatch!')
 
     elif suffix0 == 'nii':
-        nii_file = nib.load(fpath)
         if suffix1 in ('dscalar', 'dtseries', 'dlabel'):
             if suffix1 == 'dlabel':
                 islabel = True
-
-            _data = nii_file.get_data()
-            brain_model = [i for i in nii_file.header.get_index_map(1).brain_models
-                           if i.brain_structure == brain_structure][0]
-
-            offset = brain_model.index_offset
-            count = brain_model.index_count
-            vertices = list(brain_model.vertex_indices)
-            n_vtx = brain_model.surface_number_of_vertices
-            data = np.zeros((n_vtx, _data.shape[0]), np.float64)
-            for row in range(_data.shape[0]):
-                data[vertices, row] = _data[row][offset:offset+count]
+            reader = CiftiReader(fpath)
+            data = reader.get_data(brain_structure, True).T
         else:
             Warning('The data will be regarded as a nifti file.')
-            _data = nii_file.get_data()
+            _data = nib.load(fpath).get_data()
             data = []
             if _data.ndim == 4:
                 for idx in range(_data.shape[3]):
@@ -124,7 +115,8 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     elif suffix0 == 'gii':
         if suffix1 == 'label':
             islabel = True
-        data = nib.load(fpath).darrays[0].data.T
+        data = nib.load(fpath).darrays[0].data
+        data = np.atleast_2d(data).T
 
     else:
         raise RuntimeError('Unsupported data type.')
@@ -134,9 +126,39 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
             raise RuntimeError('vertices number mismatch!')
 
     if data.dtype.byteorder == '>':
+        # may be useful for visualization
         data.byteswap(True)
 
     return data, islabel
+
+
+def read_geometry(fpath):
+    """
+    read surface geometry data
+    Parameters:
+    ----------
+    fpath: str
+        a path to the file
+
+    Returns:
+    -------
+        coords: numpy array
+            shape (vertices, 3)
+            Each row is a vertex coordinate
+        faces: numpy array
+            shape (triangles, 3)
+    """
+    if fpath.endswith('.surf.gii'):
+        # GIFTI style geometry filename
+        reader = GiftiReader(fpath)
+        coords, faces = reader.coords, reader.faces
+    elif fpath.endswith('.inflated') or fpath.endswith('.white') or fpath.endswith('pial'):
+        # FreeSurfer style geometry filename
+        coords, faces = nib.freesurfer.read_geometry(fpath)
+    else:
+        raise RuntimeError("This function isn't able to deal with the file format at present!")
+
+    return coords, faces
 
 
 def node_attr2text(fpath, graph, attrs, fmt='%d', comments='#!ascii\n', **kwargs):

@@ -17,7 +17,7 @@ from PyQt4.QtGui import *
 
 from froi.algorithm import meshtool as mshtool
 from froi.algorithm import array2qimage as aq
-from ..io.surf_io import read_scalar_data, save2label
+from ..io.surf_io import read_scalar_data, read_geometry, save2label
 from ..io.io import save2nifti
 from labelconfig import LabelConfig
 
@@ -649,18 +649,16 @@ class Geometry(object):
             applied. If != 0.0, an additional offset will be used.
 
         """
+        self._coords, self._faces = read_geometry(geo_path)
         geo_dir, self._name = os.path.split(geo_path)
         name_split = self._name.split('.')
         self._suffix = name_split[-1]
         if self._suffix in ('pial', 'inflated', 'white'):
             # FreeSurfer style geometry filename
-            self._coords, self._faces = nib.freesurfer.read_geometry(geo_path)
             self._hemi_rl = name_split[0]
             curv_name = '{}.curv'.format(self._hemi_rl)
         elif self._suffix == 'gii':
             # GIFTI style geometry filename
-            darrays = nib.load(geo_path).darrays
-            self._coords, self._faces = darrays[0].data, darrays[1].data
             self._hemi_rl = 'lh' if name_split[1] == 'L' else 'rh'
             name_split[2] = 'curvature'
             name_split[-2] = 'shape'
