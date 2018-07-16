@@ -4,6 +4,7 @@ import numpy as np
 import nibabel as nib
 
 from ..algorithm.graph_tool import node_attr2array
+from .io import GiftiReader
 
 
 def read_mgh_mgz(filepath):
@@ -137,6 +138,35 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
         data.byteswap(True)
 
     return data, islabel
+
+
+def read_geometry(fpath):
+    """
+    read surface geometry data
+    Parameters:
+    ----------
+    fpath: str
+        a path to the file
+
+    Returns:
+    -------
+        coords: numpy array
+            shape (vertices, 3)
+            Each row is a vertex coordinate
+        faces: numpy array
+            shape (triangles, 3)
+    """
+    if fpath.endswith('.surf.gii'):
+        # GIFTI style geometry filename
+        reader = GiftiReader(fpath)
+        coords, faces = reader.coords, reader.faces
+    elif fpath.endswith('.inflated') or fpath.endswith('.white') or fpath.endswith('pial'):
+        # FreeSurfer style geometry filename
+        coords, faces = nib.freesurfer.read_geometry(fpath)
+    else:
+        raise RuntimeError("This function isn't able to deal with the file format at present!")
+
+    return coords, faces
 
 
 def node_attr2text(fpath, graph, attrs, fmt='%d', comments='#!ascii\n', **kwargs):
