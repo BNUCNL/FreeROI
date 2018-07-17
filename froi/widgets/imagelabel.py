@@ -32,14 +32,22 @@ class ImageLabel(QLabel):
         self.image = None
         self.pm = None
 
+        self.voxel_scaler_base = min([self.model.get_voxel_size_x(),
+                                      self.model.get_voxel_size_y(),
+                                      self.model.get_voxel_size_z()])
+        self.voxel_scaler = [item*1.0/self.voxel_scaler_base for item in
+                             [self.model.get_voxel_size_x(),
+                              self.model.get_voxel_size_y(),
+                              self.model.get_voxel_size_z()]]
+
         # for drawing
         self.drawing = False
         self.voxels = set() 
 
     def sizeHint(self):
         """ Size hint configuration."""
-        default_size = QSize(self.background.shape[1],
-                             self.background.shape[0])
+        default_size = QSize(self.background.shape[1]*self.voxel_scaler[1],
+                             self.background.shape[0]*self.voxel_scaler[0])
         scale_factor = self.model.get_scale_factor('grid')
         return default_size * scale_factor
 
@@ -71,7 +79,12 @@ class ImageLabel(QLabel):
             image = qrgba2qimage(blend)
             self.image = image
         pm = QPixmap.fromImage(self.image)
-        pm = pm.scaled(pm.size() * self.model.get_scale_factor('grid'))
+        pm = pm.scaled(pm.size().width() * self.voxel_scaler[1] \
+                         * self.model.get_scale_factor('grid'),
+                       pm.size().height() * self.voxel_scaler[0] \
+                         * self.model.get_scale_factor('grid'),
+                       Qt.IgnoreAspectRatio,
+                       Qt.FastTransformation)
         self.pm = pm
         self.voxels_painter.drawPixmap(0, 0, pm, 0, 0, 
                                        pm.size().width(), pm.size().height())
@@ -82,26 +95,31 @@ class ImageLabel(QLabel):
 
         # draw crosshair on picture
         if self.model.display_cross() and self.is_current_slice():
+            self.voxels_painter.setPen(QColor(0, 255, 0, 255))
             scale = self.model.get_scale_factor('grid')
             current_pos = self.model.get_cross_pos()
-            horizon_src = ((current_pos[0] + 0.5) * scale, 0)
-            horizon_targ = ((current_pos[0] + 0.5) * scale,
+            horizon_vscale = self.voxel_scaler[1]
+            horizon_src = ((current_pos[0] + 0.5) * horizon_vscale * scale, 0)
+            horizon_targ = ((current_pos[0] + 0.5) * horizon_vscale * scale,
                             self.pm.size().height())
-            self.voxels_painter.setPen(QColor(0, 255, 0, 255))
             self.voxels_painter.drawLine(horizon_src[0],
                                          horizon_src[1],
                                          horizon_targ[0],
                                          horizon_targ[1])
+            vertical_vscale = self.voxel_scaler[0]
             vertical_src = (0,
-                            (self.model.getX() - current_pos[1] - 0.5) * scale)
+                            (self.model.getX() - current_pos[1] - 0.5) \
+                                * vertical_vscale * scale)
             vertical_targ = (self.pm.size().width(),
-                             (self.model.getX() - current_pos[1] - 0.5) * scale)
+                             (self.model.getX() - current_pos[1] - 0.5) \
+                                * vertical_vscale * scale)
             self.voxels_painter.drawLine(vertical_src[0],
                                          vertical_src[1],
                                          vertical_targ[0],
                                          vertical_targ[1])
 
         self.voxels_painter.end()
+        self.resize(self.pm.size().width(), self.pm.size().height())
 
     def mousePressEvent(self, e):
         if not self._mouse_in(e.x(), e.y()):
@@ -121,8 +139,10 @@ class ImageLabel(QLabel):
                 self.drawing = False
             else:
                 scale = self.model.get_scale_factor('grid')
-                y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
-                x = int(np.floor(e.x()/scale))
+                height_vscale = self.voxel_scaler[0]
+                width_vscale = self.voxel_scaler[1]
+                y = self.model.getX()-1-int(np.floor(e.y()/height_vscale/scale))
+                x = int(np.floor(e.x()/width_vscale/scale))
                 roi_val = self.model.get_current_roi_val(x, y, self.n_slice)
                 if roi_val != 0:
                     t_value = self.painter_status.get_drawing_value()
@@ -130,14 +150,18 @@ class ImageLabel(QLabel):
         else:
             if self.painter_status.is_roi_selection():
                 scale = self.model.get_scale_factor('grid')
-                y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
-                x = int(np.floor(e.x()/scale))
+                height_vscale = self.voxel_scaler[0]
+                width_vscale = self.voxel_scaler[1]
+                y = self.model.getX()-1-int(np.floor(e.y()/height_vscale/scale))
+                x = int(np.floor(e.x()/width_vscale/scale))
                 roi_val = self.model.get_current_roi_val(x, y, self.n_slice)
                 if roi_val != 0:
                     self.painter_status.get_draw_settings()._update_roi(roi_val)
             scale = self.model.get_scale_factor('grid')
-            y = self.model.getX() - 1 - int(np.floor(e.y()/scale))
-            x = int(np.floor(e.x()/scale))
+            height_vscale = self.voxel_scaler[0]
+            width_vscale = self.voxel_scaler[1]
+            y = self.model.getX()-1-int(np.floor(e.y()/height_vscale/scale))
+            x = int(np.floor(e.x()/width_vscale/scale))
             self.model.set_cross_pos([x, y, self.n_slice])
        
     def mouseMoveEvent(self, e):
@@ -165,9 +189,11 @@ class ImageLabel(QLabel):
         if self.painter_status.is_drawing_valid() and (not
            self.painter_status.is_roi_tool()):
             scale = self.model.get_scale_factor('grid')
-            pix_to_vox = lambda (x,y,z): (int(np.floor(x/scale)), 
+            height_vscale = self.voxel_scaler[0]
+            width_vscale = self.voxel_scaler[1]
+            pix_to_vox = lambda (x,y,z): (int(np.floor(x/width_vscale/scale)), 
                                           self.model.getX() - 1 - \
-                                            int(np.floor(y/scale)), 
+                                          int(np.floor(y/height_vscale/scale)), 
                                           z)
             voxels = map(pix_to_vox, list(self.voxels))
             if voxels:
