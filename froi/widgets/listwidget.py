@@ -118,7 +118,7 @@ class LayerView(QWidget):
         self._space_z = QLineEdit()
         #self._space_z.setReadOnly(True)
         # Set time point
-        time_point_label = QLabel('Volume:')
+        volume_index_label = QLabel('Volume:')
         self._volume_index_spinbox = QSpinBox()
         self._volume_index_spinbox.setValue(0)
         # voxel value
@@ -126,15 +126,15 @@ class LayerView(QWidget):
         self._coord_value = QLineEdit()
         self._coord_value.setReadOnly(True)
         # RAS sapce name
-        space_label = QLabel('Coordinate space: ')
+        space_label = QLabel('Coordinate space:')
         space_name = QLabel(self._model.get_space_name())
         # layout
-        tv_layout = QHBoxLayout()
-        tv_layout.addWidget(time_point_label)
-        tv_layout.addWidget(self._volume_index_spinbox)
-        tv_layout.addWidget(coord_value_label)
-        tv_layout.addWidget(self._coord_value)
+        value_layout = QHBoxLayout()
+        value_layout.addWidget(coord_value_label)
+        value_layout.addWidget(self._coord_value)
         space_layout = QHBoxLayout()
+        space_layout.addWidget(volume_index_label)
+        space_layout.addWidget(self._volume_index_spinbox)
         space_layout.addWidget(space_label)
         space_layout.addWidget(space_name)
         glayout = QGridLayout()
@@ -147,7 +147,7 @@ class LayerView(QWidget):
         glayout.addWidget(coord_z_label, 2, 0)
         glayout.addWidget(self._coord_z, 2, 1)
         glayout.addWidget(self._space_z, 2, 2)
-        glayout.addLayout(tv_layout, 3, 0, 1, 4)
+        glayout.addLayout(value_layout, 3, 0, 1, 4)
         glayout.addLayout(space_layout, 4, 0, 1, 4)
        
         self._cursor_info_panel = QGroupBox('Cursor')
