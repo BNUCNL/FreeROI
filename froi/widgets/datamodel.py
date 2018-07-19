@@ -453,6 +453,18 @@ class VolumeListModel(QAbstractListModel):
         """Get layer index."""
         return self._data[0].get_data_shape()[2]
 
+    def get_voxel_size_x(self):
+        """Get voxel size of height-axis."""
+        return self._data[0].get_header()['pixdim'][2]
+
+    def get_voxel_size_y(self):
+        """Get voxel size of width-axis."""
+        return self._data[0].get_header()['pixdim'][1]
+
+    def get_voxel_size_z(self):
+        """Get voxel size of layer-axis."""
+        return self._data[0].get_header()['pixdim'][3]
+    
     def set_time_point(self, tpoint):
         """Set time point for every volume."""
         if isinstance(tpoint, int) and not tpoint < 0:
