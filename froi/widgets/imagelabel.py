@@ -366,9 +366,12 @@ class ImageLabel3d(QLabel):
         scale = self.model.get_scale_factor('orth') * self._expanding_factor
         if self.painter_status.is_drawing_valid() and (not 
            self.painter_status.is_roi_tool()):
-            pix_to_vox = lambda (x, y, z): (int(np.rint(x/scale)), 
-                                            int(np.rint(y/scale)), 
-                                            int(np.rint(z/scale)))
+            pix_to_vox = lambda (x, y, z): (int(np.rint(x \
+                                            / self.voxel_scaler[1] / scale)), 
+                                            int(np.rint(y \
+                                            / self.voxel_scaler[0] / scale)), 
+                                            int(np.rint(z \
+                                            / self.voxel_scaler[2] / scale)))
             voxels = map(pix_to_vox, list(self.holder.voxels))
             if voxels:
                 self.model.modify_voxels(voxels,
