@@ -1437,7 +1437,7 @@ class BpMainWindow(QMainWindow):
                                     QMessageBox.Yes)
                 return
 
-            data = self.surface_model.data(index, Qt.UserRole + 5)
+            data = self.surface_model.data(index, Qt.UserRole + 10)
             name = self.surface_model.data(index, Qt.DisplayRole)
             new_name = "edge_" + name
 
@@ -1644,7 +1644,7 @@ class BpMainWindow(QMainWindow):
                                     QMessageBox.Yes)
                 return
 
-            data = self.surface_model.data(index, Qt.UserRole + 5)
+            data = self.surface_model.data(index, Qt.UserRole + 10)
             name = self.surface_model.data(index, Qt.DisplayRole)
             new_data = inverse_transformation(data)
             new_name = "inv_" + name

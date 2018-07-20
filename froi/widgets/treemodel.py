@@ -118,7 +118,7 @@ class TreeModel(QAbstractItemModel):
             elif role == Qt.UserRole + 9:
                 return item.current_map_index
             elif role == Qt.UserRole + 10:
-                return item.get_data().shape[1]
+                return item.get_current_map()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 

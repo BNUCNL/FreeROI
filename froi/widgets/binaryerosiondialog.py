@@ -132,7 +132,7 @@ class SurfBinErosionDialog(BinErosionDialog):
             self.out_edit.setFocus()
             return
 
-        source_data = self._model.data(self.index, Qt.UserRole + 5)
+        source_data = self._model.data(self.index, Qt.UserRole + 10)
         if self._model.data(self.index, Qt.UserRole + 7):
             bin_data = source_data != 0
         else:

@@ -166,9 +166,9 @@ class SurfaceView(QWidget):
                 if hemi.overlays:
                     top_ol = hemi.overlays[-1]
                     if not top_ol.is_label() and top_ol.get_alpha() == 1. and top_ol.is_visible()\
-                            and top_ol.get_min() <= np.min(top_ol.get_data()):
+                            and top_ol.get_min() <= np.min(top_ol.get_current_map()):
                         # colorbar is only meaningful for this situation
-                        scalars = top_ol.get_data()[:, 0].copy()  # raw data shape is (n_vtx, 1)
+                        scalars = top_ol.get_current_map().copy()  # raw data shape is (n_vtx, 1)
                         iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
                         sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
                         self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]

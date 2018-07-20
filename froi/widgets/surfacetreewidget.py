@@ -249,7 +249,8 @@ class SurfaceTreeView(QWidget):
             self._scalar_colormap.setCurrentIndex(idx)
 
             # map index settings
-            n_maps = self._model.data(index, Qt.UserRole + 10)
+            data = self._model.data(index, Qt.UserRole + 5)
+            n_maps = 0 if data is None else data.shape[1]
             if n_maps > 1:
                 self._map_idx_spinbox.setEnabled(True)
                 self._map_idx_spinbox.setRange(0, n_maps - 1)
@@ -277,7 +278,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_min.text()
         if value == '':
-            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 5).min()))
+            self._view_min.setText(str(self._model.data(index, Qt.UserRole + 10).min()))
             self._view_min.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole)
@@ -287,7 +288,7 @@ class SurfaceTreeView(QWidget):
         index = self._tree_view.currentIndex()
         value = self._view_max.text()
         if value == '':
-            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 5).max()))
+            self._view_max.setText(str(self._model.data(index, Qt.UserRole + 10).max()))
             self._view_max.setCursorPosition(0)
         else:
             self._model.setData(index, value, role=Qt.UserRole + 1)
