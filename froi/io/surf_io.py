@@ -63,7 +63,7 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     suffix0 = fname.split('.')[-1]
     suffix1 = fname.split('.')[-2]
     islabel = False
-    if suffix0 in ('curv', 'thickness'):
+    if suffix0 in ('curv', 'thickness', 'sulc', 'area'):
         data = nib.freesurfer.read_morph_data(fpath)
         data = data.astype(np.float64)  # necessary for visualization
         data = np.atleast_2d(data).T
