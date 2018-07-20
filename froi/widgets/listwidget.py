@@ -118,7 +118,7 @@ class LayerView(QWidget):
         self._space_z = QLineEdit()
         #self._space_z.setReadOnly(True)
         # Set time point
-        time_point_label = QLabel('Volume:')
+        volume_index_label = QLabel('Volume:')
         self._volume_index_spinbox = QSpinBox()
         self._volume_index_spinbox.setValue(0)
         # voxel value
@@ -126,15 +126,15 @@ class LayerView(QWidget):
         self._coord_value = QLineEdit()
         self._coord_value.setReadOnly(True)
         # RAS sapce name
-        space_label = QLabel('Coordinate space: ')
+        space_label = QLabel('Coordinate space:')
         space_name = QLabel(self._model.get_space_name())
         # layout
-        tv_layout = QHBoxLayout()
-        tv_layout.addWidget(time_point_label)
-        tv_layout.addWidget(self._volume_index_spinbox)
-        tv_layout.addWidget(coord_value_label)
-        tv_layout.addWidget(self._coord_value)
+        value_layout = QHBoxLayout()
+        value_layout.addWidget(coord_value_label)
+        value_layout.addWidget(self._coord_value)
         space_layout = QHBoxLayout()
+        space_layout.addWidget(volume_index_label)
+        space_layout.addWidget(self._volume_index_spinbox)
         space_layout.addWidget(space_label)
         space_layout.addWidget(space_name)
         glayout = QGridLayout()
@@ -147,7 +147,7 @@ class LayerView(QWidget):
         glayout.addWidget(coord_z_label, 2, 0)
         glayout.addWidget(self._coord_z, 2, 1)
         glayout.addWidget(self._space_z, 2, 2)
-        glayout.addLayout(tv_layout, 3, 0, 1, 4)
+        glayout.addLayout(value_layout, 3, 0, 1, 4)
         glayout.addLayout(space_layout, 4, 0, 1, 4)
        
         self._cursor_info_panel = QGroupBox('Cursor')
@@ -218,7 +218,7 @@ class LayerView(QWidget):
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
         self._volume_index_spinbox.setKeyboardTracking(False)
-        self._volume_index_spinbox.valueChanged.connect(self._set_time_point)
+        self._volume_index_spinbox.valueChanged.connect(self._set_volume_idx)
         # set voxel ijk position
         self._coord_x.valueChanged.connect(self.set_cross_pos)
         self._coord_y.valueChanged.connect(self.set_cross_pos)
@@ -228,10 +228,10 @@ class LayerView(QWidget):
         self._space_y.editingFinished.connect(self.set_space_pos)
         self._space_z.editingFinished.connect(self.set_space_pos)
 
-    def _set_time_point(self):
+    def _set_volume_idx(self):
         """Set time point for model."""
-        tpoint = self._volume_index_spinbox.value()
-        self._model.set_time_point(tpoint)
+        idx = self._volume_index_spinbox.value()
+        self._model.set_time_point(idx)
 
     def _disp_current_para(self):
         """Display current model's parameters."""
@@ -266,15 +266,16 @@ class LayerView(QWidget):
                     100 / 255
             self._visibility.setValue(current_alpha)
 
-            # time point setting
+            # volume index settings
             if self._model.data(index, Qt.UserRole + 8):
                 self._volume_index_spinbox.setEnabled(True)
                 self._volume_index_spinbox.setRange(0, 
                         self._model.data(index, Qt.UserRole + 10) - 1)
-                time_point = self._model.data(index, Qt.UserRole + 9)
-                if not time_point == self._volume_index_spinbox.value():
-                    self._volume_index_spinbox.setValue(time_point)
+                volume_idx = self._model.data(index, Qt.UserRole + 9)
+                if volume_idx != self._volume_index_spinbox.value():
+                    self._volume_index_spinbox.setValue(volume_idx)
             else:
+                self._volume_index_spinbox.setValue(0)
                 self._volume_index_spinbox.setEnabled(False)
 
             self._list_view.setFocus()

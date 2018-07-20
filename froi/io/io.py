@@ -25,21 +25,21 @@ class GiftiReader(object):
 
     @property
     def coords(self):
-        if self._fpath.endswith('surf.gii'):
+        if self._fpath.endswith('.surf.gii'):
             return self.full_data.darrays[0].data
         else:
             return None
 
     @property
     def faces(self):
-        if self._fpath.endswith('surf.gii'):
+        if self._fpath.endswith('.surf.gii'):
             return self.full_data.darrays[1].data
         else:
             return None
 
     @property
     def scalar_data(self):
-        if self._fpath.endswith('surf.gii'):
+        if self._fpath.endswith('.surf.gii'):
             return None
         else:
             return self.full_data.darrays[0].data

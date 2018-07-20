@@ -751,7 +751,7 @@ class Scalar(object):
             data name
         :param data: numpy array
             the row indices are correspond with surface vertices's id
-            a column is one of vertices' features
+            a column is a map
         :param vmin: float
             threshold for overlay display
         :param vmax: float
@@ -784,9 +784,22 @@ class Scalar(object):
         self._alpha = alpha
         self._visible = visible
         self._islabel = islabel
+        self._current_map_index = 0
+
+    @property
+    def current_map_index(self):
+        return self._current_map_index
+
+    @current_map_index.setter
+    def current_map_index(self, index):
+        if 0 <= index < self._data.shape[1]:
+            self._current_map_index = index
 
     def get_data(self):
         return self._data
+
+    def get_current_map(self):
+        return self._data[:, self._current_map_index]
 
     def set_vertices_value(self, vertices, value):
         self._data[vertices, 0] = value
@@ -980,10 +993,7 @@ class Surface(object):
         :return: array
         """
 
-        data = ol.get_data()
-        data = np.mean(data, 1)
-        data = data.reshape((data.shape[0],))
-
+        data = ol.get_current_map()
         colormap = ol.get_colormap()
         if isinstance(colormap, LabelConfig):
             colormap = colormap.get_colormap()

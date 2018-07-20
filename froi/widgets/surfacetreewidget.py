@@ -99,17 +99,27 @@ class SurfaceTreeView(QWidget):
         self._scalar_colormap = QComboBox()
         self._scalar_colormap.setEditable(True)
         self._update_colormap_box()
+        map_idx_label = QLabel('Map:')
+        self._map_idx_spinbox = QSpinBox()
+        self._map_idx_spinbox.setValue(0)
+        self._map_idx_spinbox.setEnabled(False)
 
         # layout for ScalarData settings
-        scalar_layout = QGridLayout()
-        scalar_layout.addWidget(max_label, 0, 0)
-        scalar_layout.addWidget(self._view_max, 0, 1)
-        scalar_layout.addWidget(self._up_button, 0, 2)
-        scalar_layout.addWidget(min_label, 1, 0)
-        scalar_layout.addWidget(self._view_min, 1, 1)
-        scalar_layout.addWidget(self._down_button, 1, 2)
-        scalar_layout.addWidget(scalar_colormap_label, 2, 0)
-        scalar_layout.addWidget(self._scalar_colormap, 2, 1, 1, 2)
+        scalar_layout1 = QGridLayout()
+        scalar_layout1.addWidget(max_label, 0, 0)
+        scalar_layout1.addWidget(self._view_max, 0, 1)
+        scalar_layout1.addWidget(self._up_button, 0, 2)
+        scalar_layout1.addWidget(min_label, 1, 0)
+        scalar_layout1.addWidget(self._view_min, 1, 1)
+        scalar_layout1.addWidget(self._down_button, 1, 2)
+        scalar_layout2 = QHBoxLayout()
+        scalar_layout2.addWidget(scalar_colormap_label)
+        scalar_layout2.addWidget(self._scalar_colormap)
+        scalar_layout2.addWidget(map_idx_label)
+        scalar_layout2.addWidget(self._map_idx_spinbox)
+        scalar_layout = QVBoxLayout()
+        scalar_layout.addLayout(scalar_layout1)
+        scalar_layout.addLayout(scalar_layout2)
         scalar_group_box = QGroupBox('Overlay display settings')
         scalar_group_box.setLayout(scalar_layout)
 
@@ -185,6 +195,7 @@ class SurfaceTreeView(QWidget):
         self._view_min.editingFinished.connect(self._set_view_min)
         self._view_max.editingFinished.connect(self._set_view_max)
         self._scalar_colormap.currentIndexChanged.connect(self._set_colormap)
+        self._map_idx_spinbox.valueChanged.connect(self._set_map_idx)
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
@@ -194,6 +205,7 @@ class SurfaceTreeView(QWidget):
         # When model is empty, we also have to update the current index for model.
         # Otherwise, the old current_index in model will refer to something that is unpredictable.
         self.connect(self._model, SIGNAL("modelEmpty"), self._disp_current_para)
+        self.connect(self._model, SIGNAL("mapChanged"), self._disp_current_para)
 
         self._rightclick_add = self.contextMenu.addAction(u'Add')
         self._rightclick_del = self.contextMenu.addAction(u'Delete')
@@ -235,6 +247,16 @@ class SurfaceTreeView(QWidget):
                 cur_colormap = cur_colormap.get_name()
             idx = self._scalar_colormap.findText(cur_colormap)
             self._scalar_colormap.setCurrentIndex(idx)
+
+            # map index settings
+            n_maps = self._model.data(index, Qt.UserRole + 10)
+            if n_maps > 1:
+                self._map_idx_spinbox.setEnabled(True)
+                self._map_idx_spinbox.setRange(0, n_maps - 1)
+                self._map_idx_spinbox.setValue(self._model.data(index, Qt.UserRole + 9))
+            else:
+                self._map_idx_spinbox.setValue(0)
+                self._map_idx_spinbox.setEnabled(False)
 
             # alpha slider setting
             current_alpha = self._model.data(index, Qt.UserRole + 2) * 100
@@ -280,6 +302,11 @@ class SurfaceTreeView(QWidget):
         else:
             colormap = self._label_config_center.get_label_config(row - builtin_len)
         self._model.setData(index, colormap, role=Qt.UserRole + 3)
+
+    def _set_map_idx(self):
+        idx = self._map_idx_spinbox.value()
+        qmodel_index = self._tree_view.currentIndex()
+        self._model.setData(qmodel_index, idx, role=Qt.UserRole + 4)
 
     def _update_colormap_box(self):
         self._scalar_colormap.addItems(self.builtin_colormap +
