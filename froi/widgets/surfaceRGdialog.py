@@ -253,9 +253,7 @@ class SurfaceRGDialog(QtGui.QDialog):
             row -= 1
             surface_idx = self.model.get_surface_index()
             mask_idx = self.model.index(row, 0, surface_idx)
-            mask = self.model.data(mask_idx, QtCore.Qt.UserRole + 5)
-            mask = np.mean(mask, 1)  # FIXME not suitable for multi-feature data
-            mask = mask.reshape((mask.shape[0],))
+            mask = self.model.data(mask_idx, QtCore.Qt.UserRole + 10)
             if self.model.data(mask_idx, QtCore.Qt.UserRole + 7):
                 mask = mask != 0
             else:
@@ -390,9 +388,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
-                scalar_data = np.mean(scalar_data, 1)  # FIXME not suitable for multi-feature data
-                mask_data = scalar_data.reshape((scalar_data.shape[0],))
+                mask_data = self.model.data(index, QtCore.Qt.UserRole + 10)
                 neighbors = get_n_ring_neighbor(geometry.faces)
 
                 self.thresholds = self._threshold_edit.text().split(',')

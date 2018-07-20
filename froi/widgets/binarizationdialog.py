@@ -139,7 +139,7 @@ class SurfBinarizationDialog(BinarizationDialog):
             self.threshold_edit.selectAll()
             return None
 
-        source_data = self._model.data(self.index, Qt.UserRole + 5)
+        source_data = self._model.data(self.index, Qt.UserRole + 10)
         new_data = imtool.binarize(source_data, threshold)
         self._model.add_item(self.index,
                              source=new_data,

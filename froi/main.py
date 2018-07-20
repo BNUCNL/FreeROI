@@ -52,6 +52,7 @@ from widgets.surfacetreewidget import SurfaceTreeView
 from widgets.surfaceview import SurfaceView
 from widgets.scribingdialog import ScribingDialog
 from widgets.surfaceRGdialog import SurfaceRGDialog
+from widgets.prob_map_dialog import SurfProbMapDialog
 
 
 class BpMainWindow(QMainWindow):
@@ -421,6 +422,11 @@ class BpMainWindow(QMainWindow):
                                              self)
         self._actions['smoothing'].triggered.connect(self._smooth)
         self._actions['smoothing'].setEnabled(False)
+
+        # Calculate probability map action
+        self._actions['probability_map'] = QAction(self.tr('ProbabilityMap'), self)
+        self._actions['probability_map'].triggered.connect(self._prob_map)
+        self._actions['probability_map'].setEnabled(False)
 
         # Region Growing action
         self._actions['region_grow'] = QAction(QIcon(os.path.join(
@@ -1172,6 +1178,7 @@ class BpMainWindow(QMainWindow):
         basic_tools.addAction(self._actions['localmax'])
         basic_tools.addAction(self._actions['inverse'])
         basic_tools.addAction(self._actions['smoothing'])
+        basic_tools.addAction(self._actions['probability_map'])
         basic_tools.addAction(self._actions['meants'])
         basic_tools.addAction(self._actions['voxelstats'])
         # Segment tools
@@ -1430,7 +1437,7 @@ class BpMainWindow(QMainWindow):
                                     QMessageBox.Yes)
                 return
 
-            data = self.surface_model.data(index, Qt.UserRole + 5)
+            data = self.surface_model.data(index, Qt.UserRole + 10)
             name = self.surface_model.data(index, Qt.DisplayRole)
             new_name = "edge_" + name
 
@@ -1637,7 +1644,7 @@ class BpMainWindow(QMainWindow):
                                     QMessageBox.Yes)
                 return
 
-            data = self.surface_model.data(index, Qt.UserRole + 5)
+            data = self.surface_model.data(index, Qt.UserRole + 10)
             name = self.surface_model.data(index, Qt.DisplayRole)
             new_data = inverse_transformation(data)
             new_name = "inv_" + name
@@ -1653,6 +1660,11 @@ class BpMainWindow(QMainWindow):
         """Image smooth dialog."""
         new_dialog = SmoothingDialog(self.volume_model)
         new_dialog.exec_()
+
+    def _prob_map(self):
+        """Calculate probability map"""
+        dialog = SurfProbMapDialog(self.surface_model)
+        dialog.exec_()
 
     def _region_grow(self):
         """Image region grow dialog."""
@@ -1702,6 +1714,7 @@ class BpMainWindow(QMainWindow):
         """
         self._actions['scribing'].setEnabled(status)
         self._actions['surf_region_grow'].setEnabled(status)
+        self._actions['probability_map'].setEnabled(status)
 
     def _snapshot(self):
         """Capture images from OrthView."""
