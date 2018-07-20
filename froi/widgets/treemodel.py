@@ -7,7 +7,6 @@
 
 import numpy as np
 from PyQt4.QtCore import *
-from traits.trait_handlers import HandleWeakRef
 
 from froi.core.dataobject import Surface
 
@@ -109,13 +108,17 @@ class TreeModel(QAbstractItemModel):
             elif role == Qt.UserRole + 4:
                 if self._point_id == -1:
                     return None
-                return item.get_data()[self._point_id][0]
+                return item.get_current_map()[self._point_id]
             elif role == Qt.UserRole + 5:
                 return item.get_data()
             elif role == Qt.UserRole + 7:
                 return item.is_label()
             elif role == Qt.UserRole + 8:
                 return item.is_visible()
+            elif role == Qt.UserRole + 9:
+                return item.current_map_index
+            elif role == Qt.UserRole + 10:
+                return item.get_data().shape[1]
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 
@@ -193,6 +196,12 @@ class TreeModel(QAbstractItemModel):
             elif role == Qt.UserRole + 3:
                 if item.get_colormap() != value:
                     item.set_colormap(value)
+                else:
+                    return False
+            elif role == Qt.UserRole + 4:
+                if item.current_map_index != value:
+                    item.current_map_index = value
+                    self.emit(SIGNAL("mapChanged"))
                 else:
                     return False
 
