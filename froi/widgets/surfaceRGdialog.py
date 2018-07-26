@@ -388,7 +388,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
-                mask_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
                 neighbors = get_n_ring_neighbor(geometry.faces)
 
                 self.thresholds = self._threshold_edit.text().split(',')
@@ -400,7 +400,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                     if thr == "None":
                         edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
                     else:
-                        mask = mask_data > float(thr)
+                        mask = scalar_data > float(thr)
                         edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
 
                     for cut_vtx in self.cut_line:
