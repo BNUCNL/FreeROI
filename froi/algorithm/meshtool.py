@@ -475,7 +475,8 @@ def get_n_ring_neighbor(faces, n=1, ordinal=False, mask=None):
         True: get the n_th ring neighbor
         False: get the n ring neighbor
     mask : 1-D numpy array
-        specify a area where the ROI is in.
+        specify a area where the ROI is
+        non-ROI element's value is zero
     Returns
     -------
     lists
@@ -606,7 +607,7 @@ def _get_vtx_neighbor(vtx, faces, mask=None):
     return neighbors
 
 
-def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
+def mesh2edge_list(faces, n=1, ordinal=False, mask=None, vtx_signal=None,
                    weight_type=('dissimilar', 'euclidean'), weight_normalization=False):
     """
     get edge_list according to mesh's geometry and vtx_signal
@@ -620,6 +621,9 @@ def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
     ordinal : bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
+    mask : 1-D numpy array
+        specify a area where the ROI is
+        non-ROI element's value is zero
     vtx_signal : numpy array
         NxM array, N is the number of vertices,
         M is the number of measurements and time points.
@@ -640,8 +644,7 @@ def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
     edge_data : list
         edge data of the edges-zip(row_ind, col_ind)
     """
-
-    n_ring_neighbors = get_n_ring_neighbor(faces, n, ordinal)
+    n_ring_neighbors = get_n_ring_neighbor(faces, n, ordinal, mask)
 
     row_ind = [i for i, neighbors in enumerate(n_ring_neighbors) for v_id in neighbors]
     col_ind = [v_id for neighbors in n_ring_neighbors for v_id in neighbors]
@@ -659,6 +662,7 @@ def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
                 max_dissimilar = np.max(edge_data)
                 min_dissimilar = np.min(edge_data)
                 edge_data = [(max_dissimilar-dist)/(max_dissimilar-min_dissimilar) for dist in edge_data]
+
         elif weight_type[0] == 'similar':
             if weight_type[1] == 'pearson correlation':
                 edge_data = [pearsonr(vtx_signal[i], vtx_signal[j])[0] for i, j in zip(row_ind, col_ind)]
@@ -669,13 +673,14 @@ def mesh2edge_list(faces, n=1, ordinal=False, vtx_signal=None,
                 max_similar = np.max(edge_data)
                 min_similar = np.min(edge_data)
                 edge_data = [(simi-min_similar)/(max_similar-min_similar) for simi in edge_data]
+
         else:
             raise TypeError("The weight_type-{} is not supported now!".format(weight_type))
 
     return row_ind, col_ind, edge_data
 
 
-def mesh2adjacent_matrix(faces, n=1, ordinal=False, vtx_signal=None,
+def mesh2adjacent_matrix(faces, n=1, ordinal=False, mask=None, vtx_signal=None,
                          weight_type=('dissimilar', 'euclidean'), weight_normalization=False):
     """
     get adjacent matrix according to mesh's geometry and vtx_signal
@@ -688,6 +693,9 @@ def mesh2adjacent_matrix(faces, n=1, ordinal=False, vtx_signal=None,
     ordinal : bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
+    mask : 1-D numpy array
+        specify a area where the ROI is
+        non-ROI element's value is zero
     vtx_signal : numpy array
         NxM array, N is the number of vertices,
         M is the number of measurements and time points.
@@ -703,17 +711,16 @@ def mesh2adjacent_matrix(faces, n=1, ordinal=False, vtx_signal=None,
     -------
     adjacent_matrix : coo matrix
     """
-
     n_vtx = np.max(faces) + 1
-    row_ind, col_ind, edge_data = mesh2edge_list(faces, n, ordinal, vtx_signal,
+    row_ind, col_ind, edge_data = mesh2edge_list(faces, n, ordinal, mask, vtx_signal,
                                                  weight_type, weight_normalization)
     adjacent_matrix = sparse.coo_matrix((edge_data, (row_ind, col_ind)), (n_vtx, n_vtx))
 
     return adjacent_matrix
 
 
-def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
-               weight_type=('dissimilar', 'euclidean'), weight_normalization=False):
+def mesh2graph(faces, n=1, ordinal=False, mask=None, vtx_signal=None,
+               weight_type=('dissimilar', 'euclidean'), weight_normalization=True):
     """
     create graph according to mesh's geometry and vtx_signal
 
@@ -725,6 +732,9 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
     ordinal : bool
         True: get the n_th ring neighbor
         False: get the n ring neighbor
+    mask : 1-D numpy array
+        specify a area where the ROI is
+        non-ROI element's value is zero
     vtx_signal : numpy array
         NxM array, N is the number of vertices,
         M is the number of measurements and time points.
@@ -740,10 +750,19 @@ def mesh2graph(faces, n=1, ordinal=False, vtx_signal=None,
     -------
     graph : nx.Graph
     """
-
-    row_ind, col_ind, edge_data = mesh2edge_list(faces, n, ordinal, vtx_signal,
+    row_ind, col_ind, edge_data = mesh2edge_list(faces, n, ordinal, mask, vtx_signal,
                                                  weight_type, weight_normalization)
     graph = Graph()
+    # Actually, add_weighted_edges_from is only used to add edges. If we intend to create graph by the method only,
+    # all of the graph's nodes must have at least one edge. However, maybe some special graphs contain nodes
+    # which have no edge connected. So we need add extra nodes.
+    if mask is None:
+        n_vtx = np.max(faces) + 1
+        graph.add_nodes_from(range(n_vtx))
+    else:
+        vertices = np.nonzero(mask)[0]
+        graph.add_nodes_from(vertices)
+
     # add_weighted_edges_from is faster than from_scipy_sparse_matrix and from_numpy_matrix
     # add_weighted_edges_from is also faster than default constructor
     # To get more related information, please refer to
