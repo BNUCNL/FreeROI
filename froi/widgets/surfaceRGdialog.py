@@ -382,9 +382,9 @@ class SurfaceRGDialog(QtGui.QDialog):
         elif self.rg_type == 'crg':
 
             if depth == 1:
-                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
-                for cut_vtx in self.cut_line:
-                    edge_list[cut_vtx] = set()
+                mask = np.ones(np.max(geometry.faces) + 1)
+                mask[self.cut_line] = 0
+                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
@@ -397,14 +397,11 @@ class SurfaceRGDialog(QtGui.QDialog):
 
                 self.crg_results = list()
                 for thr in self.thresholds:
-                    if thr == "None":
-                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
-                    else:
-                        mask = scalar_data > float(thr)
-                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
-
-                    for cut_vtx in self.cut_line:
-                        edge_list[cut_vtx] = set()
+                    mask = np.ones(np.max(geometry.faces) + 1)
+                    if thr != "None":
+                        mask[scalar_data <= float(thr)] = 0
+                    mask[self.cut_line] = 0
+                    edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
 
                     self.crg_results.append(rg.connectivity_grow(self.seeds_id, edge_list))
 
