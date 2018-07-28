@@ -659,8 +659,20 @@ def mesh2edge_list(faces, n=1, ordinal=False, mask=None, vtx_signal=None,
     else:
         # calculate weights according to mesh's geometry and vertices' signal
         if weight_type[0] == 'dissimilar':
-            edge_data = [pdist(np.c_[vtx_signal[i], vtx_signal[j]].T,
-                               metric=weight_type[1])[0] for i, j in zip(row_ind, col_ind)]
+            if weight_type[1] == 'euclidean':
+                edge_data = [pdist(vtx_signal[[i, j]], metric=weight_type[1])[0]
+                             for i, j in zip(row_ind, col_ind)]
+            elif weight_type[1] == 'relative_euclidean':
+                edge_data = []
+                for i, j in zip(row_ind, col_ind):
+                    euclidean = pdist(vtx_signal[[i, j]], metric='euclidean')[0]
+                    sum_ij = np.sum(abs(vtx_signal[[i, j]]))
+                    if sum_ij:
+                        edge_data.append(float(euclidean) / sum_ij)
+                    else:
+                        edge_data.append(0)
+            else:
+                raise RuntimeError("The weight_type-{} is not supported now!".format(weight_type))
 
             if weight_normalization:
                 max_dissimilar = np.max(edge_data)
@@ -670,8 +682,10 @@ def mesh2edge_list(faces, n=1, ordinal=False, mask=None, vtx_signal=None,
         elif weight_type[0] == 'similar':
             if weight_type[1] == 'pearson correlation':
                 edge_data = [pearsonr(vtx_signal[i], vtx_signal[j])[0] for i, j in zip(row_ind, col_ind)]
+            elif weight_type[1] == 'mean':
+                edge_data = [np.mean(vtx_signal[[i, j]]) for i, j in zip(row_ind, col_ind)]
             else:
-                raise TypeError("The weight_type-{} is not supported now!".format(weight_type))
+                raise RuntimeError("The weight_type-{} is not supported now!".format(weight_type))
 
             if weight_normalization:
                 max_similar = np.max(edge_data)
@@ -924,7 +938,7 @@ def label_edge_detection(data, faces, edge_type="inner", neighbors=None):
 class LabelAssessment(object):
 
     @staticmethod
-    def transition_level(label, data, faces, neighbors=None):
+    def transition_level(label, data, faces, neighbors=None, relative=False):
         """
         Calculate the transition level on the region's boundary.
         The result is regarded as the region's assessed value.
@@ -939,11 +953,13 @@ class LabelAssessment(object):
         faces : numpy array
             the array of shape [n_triangles, 3]
         neighbors : list
-        If this parameter is not None, a parameters ('faces') will be ignored.
-        It is used to save time when someone repeatedly uses the function with
-            a same neighbors which can be got by get_n_ring_neighbor.
-        The indices are vertices' id of a mesh.
-        One index's corresponding element is a collection of vertices which connect with the index.
+            If this parameter is not None, the parameter ('faces') will be ignored.
+            It is used to save time when someone repeatedly uses the function with
+                a same neighbors which can be got by get_n_ring_neighbor.
+            The indices are vertices' id of a mesh.
+            One index's corresponding element is a collection of vertices which connect with the index.
+        relative: bool
+            If True, divide the transition level by the sum of the couple's absolute value.
 
         Return
         ------
@@ -961,8 +977,12 @@ class LabelAssessment(object):
         for vtx_i in inner_edge:
             for vtx_o in neighbors[vtx_i]:
                 if label_data[vtx_o] == 0:
-                    couple_signal = np.r_[np.atleast_2d(data[vtx_i]), np.atleast_2d(data[vtx_o])]
-                    sum_tmp += pdist(couple_signal)[0]
+                    couple_signal = data[[vtx_i, vtx_o]]
+                    euclidean = float(pdist(couple_signal)[0])
+                    if relative:
+                        denominator = np.sum(abs(couple_signal))
+                        euclidean = euclidean / denominator if denominator else 0
+                    sum_tmp += euclidean
                     count += 1
         return sum_tmp / float(count) if count else 0
 
