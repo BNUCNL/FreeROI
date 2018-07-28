@@ -416,14 +416,17 @@ class SurfaceRGDialog(QtGui.QDialog):
                         multi_thr_regions = map(list, self.crg_results[:, r_idx])
                         assessment = list()
                         for region in multi_thr_regions:
-                            assessment.append(label_assess.transition_level(region, scalar_data, None, neighbors))
+                            assessment.append(label_assess.transition_level(region,
+                                                                            scalar_data.reshape(scalar_data.shape[0],
+                                                                                                1),
+                                                                            None, neighbors))
                         best_thr_idx = np.argmax(assessment)
                         rg_result.append(self.crg_results[best_thr_idx, r_idx])
                         self.region_assessments.append(assessment)
 
                     # plot
                     fig, self.axes = plt.subplots(n_region)
-                    _ = np.zeros(self.axes.shape)
+                    _ = np.zeros(1) if not isinstance(self.axes, np.ndarray) else np.zeros(self.axes.shape)
                     self.axes = np.c_[self.axes, _]
                     self.vline_movers = np.zeros_like(self.axes[:, 0])  # store vline movers
                     self.cursors = np.zeros_like(self.axes)  # store cursors, hold references
