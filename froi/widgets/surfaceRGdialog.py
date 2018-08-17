@@ -382,13 +382,13 @@ class SurfaceRGDialog(QtGui.QDialog):
         elif self.rg_type == 'crg':
 
             if depth == 1:
-                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
-                for cut_vtx in self.cut_line:
-                    edge_list[cut_vtx] = set()
+                mask = np.ones(np.max(geometry.faces) + 1)
+                mask[self.cut_line] = 0
+                edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
-                mask_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
                 neighbors = get_n_ring_neighbor(geometry.faces)
 
                 self.thresholds = self._threshold_edit.text().split(',')
@@ -397,14 +397,11 @@ class SurfaceRGDialog(QtGui.QDialog):
 
                 self.crg_results = list()
                 for thr in self.thresholds:
-                    if thr == "None":
-                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring)
-                    else:
-                        mask = mask_data > float(thr)
-                        edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
-
-                    for cut_vtx in self.cut_line:
-                        edge_list[cut_vtx] = set()
+                    mask = np.ones(np.max(geometry.faces) + 1)
+                    if thr != "None":
+                        mask[scalar_data <= float(thr)] = 0
+                    mask[self.cut_line] = 0
+                    edge_list = get_n_ring_neighbor(geometry.faces, n=self.n_ring, mask=mask)
 
                     self.crg_results.append(rg.connectivity_grow(self.seeds_id, edge_list))
 
@@ -419,14 +416,17 @@ class SurfaceRGDialog(QtGui.QDialog):
                         multi_thr_regions = map(list, self.crg_results[:, r_idx])
                         assessment = list()
                         for region in multi_thr_regions:
-                            assessment.append(label_assess.transition_level(region, scalar_data, None, neighbors))
+                            assessment.append(label_assess.transition_level(region,
+                                                                            scalar_data.reshape(scalar_data.shape[0],
+                                                                                                1),
+                                                                            None, neighbors))
                         best_thr_idx = np.argmax(assessment)
                         rg_result.append(self.crg_results[best_thr_idx, r_idx])
                         self.region_assessments.append(assessment)
 
                     # plot
                     fig, self.axes = plt.subplots(n_region)
-                    _ = np.zeros(self.axes.shape)
+                    _ = np.zeros(1) if not isinstance(self.axes, np.ndarray) else np.zeros(self.axes.shape)
                     self.axes = np.c_[self.axes, _]
                     self.vline_movers = np.zeros_like(self.axes[:, 0])  # store vline movers
                     self.cursors = np.zeros_like(self.axes)  # store cursors, hold references
