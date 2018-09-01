@@ -772,13 +772,13 @@ class Scalar(object):
             raise ValueError("The data stored by ScalarData must be 2D")
 
         if vmin is None:
-            self._vmin = np.min(data)
+            self._vmin = np.min(self._data, 0)
         else:
-            self._vmin = vmin
+            self._vmin = np.ones((self._data.shape[1],)) * vmin
         if vmax is None:
-            self._vmax = np.max(data)
+            self._vmax = np.max(self._data, 0)
         else:
-            self._vmax = vmax
+            self._vmax = np.ones((self._data.shape[1],)) * vmax
 
         self._colormap = colormap
         self._alpha = alpha
@@ -817,16 +817,30 @@ class Scalar(object):
             raise TypeError("The name of data must be a string")
     
     def get_min(self):
-        return self._vmin
-
-    def set_min(self, vmin):
-        self._vmin = float(vmin)
+        return np.min(self._data)
 
     def get_max(self):
-        return self._vmax
+        return np.max(self._data)
 
-    def set_max(self, vmax):
-        self._vmax = float(vmax)
+    def get_vmin(self, map_index=None):
+        if map_index is None:
+            map_index = self.current_map_index
+        return self._vmin[map_index]
+
+    def set_vmin(self, vmin, map_index):
+        if map_index is None:
+            map_index = self.current_map_index
+        self._vmin[map_index] = float(vmin)
+
+    def get_vmax(self, map_index=None):
+        if map_index is None:
+            map_index = self.current_map_index
+        return self._vmax[map_index]
+
+    def set_vmax(self, vmax, map_index):
+        if map_index is None:
+            map_index = self.current_map_index
+        self._vmax[map_index] = float(vmax)
 
     def get_colormap(self):
         return self._colormap
@@ -999,7 +1013,7 @@ class Surface(object):
             colormap = colormap.get_colormap()
 
         return aq.array2qrgba(data, ol.get_alpha()*255, colormap,
-                              (ol.get_min(), ol.get_max()))  # The scalar_data's alpha is belong to [0, 1].
+                              (ol.get_vmin(), ol.get_vmax()))  # The scalar_data's alpha is belong to [0, 1].
 
     def get_composite_rgb(self):
 
