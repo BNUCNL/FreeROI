@@ -98,9 +98,9 @@ class TreeModel(QAbstractItemModel):
         elif depth == 2:
             item = index.internalPointer()
             if role == Qt.UserRole:
-                return item.get_min()
+                return item.get_vmin()
             elif role == Qt.UserRole + 1:
-                return item.get_max()
+                return item.get_vmax()
             elif role == Qt.UserRole + 2:
                 return item.get_alpha()
             elif role == Qt.UserRole + 3:
@@ -179,13 +179,13 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
             elif role == Qt.UserRole:
-                if str(item.get_min()) != value:
-                    item.set_min(value)
+                if str(item.get_vmin()) != value:
+                    item.set_vmin(value)
                 else:
                     return False
             elif role == Qt.UserRole + 1:
-                if str(item.get_max()) != value:
-                    item.set_max(value)
+                if str(item.get_vmax()) != value:
+                    item.set_vmax(value)
                 else:
                     return False
             elif role == Qt.UserRole + 2:
