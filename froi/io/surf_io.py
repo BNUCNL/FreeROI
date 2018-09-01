@@ -88,25 +88,26 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
             reader = CiftiReader(fpath)
             data = reader.get_data(brain_structure, True).T
         else:
-            Warning('The data will be regarded as a nifti file.')
-            _data = nib.load(fpath).get_data()
-            data = []
-            if _data.ndim == 4:
-                for idx in range(_data.shape[3]):
-                    data.append(np.ravel(_data[..., idx], order='F'))
+            Warning('The data will be regarded as a nifti file.\n'
+                    'If the data in the file is a 1D array, it will be regard as one surface map.\n'
+                    'If the data in the file is a 2D array, each row of it will be regard as a surface map.\n'
+                    'If the number of dimension is larger than 2, an error will be thrown.')
+            data = nib.load(fpath).get_data()
+            if data.ndim > 2:
+                raise ValueError("The number of dimension of data array is larger than 2.")
             else:
-                data.append(np.ravel(_data, order="F"))
-            data = np.array(data).T
+                data = np.atleast_2d(data).T
 
     elif suffix0 == 'gz' and suffix1 == 'nii':
-        _data = nib.load(fpath).get_data()
-        data = []
-        if _data.ndim == 4:
-            for idx in range(_data.shape[3]):
-                data.append(np.ravel(_data[..., idx], order='F'))
+        Warning('The data will be regarded as a nifti file.\n'
+                'If the data in the file is a 1D array, it will be regard as one surface map.\n'
+                'If the data in the file is a 2D array, each row of it will be regard as a surface map.\n'
+                'If the number of dimension is larger than 2, an error will be thrown.')
+        data = nib.load(fpath).get_data()
+        if data.ndim > 2:
+            raise ValueError("The number of dimension of data array is larger than 2.")
         else:
-            data.append(np.ravel(_data, order="F"))
-        data = np.array(data).T
+            data = np.atleast_2d(data).T
 
     elif suffix0 in ('mgh', 'mgz'):
         data = read_mgh_mgz(fpath)
