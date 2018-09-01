@@ -827,7 +827,7 @@ class Scalar(object):
             map_index = self.current_map_index
         return self._vmin[map_index]
 
-    def set_vmin(self, vmin, map_index):
+    def set_vmin(self, vmin, map_index=None):
         if map_index is None:
             map_index = self.current_map_index
         self._vmin[map_index] = float(vmin)
@@ -837,7 +837,7 @@ class Scalar(object):
             map_index = self.current_map_index
         return self._vmax[map_index]
 
-    def set_vmax(self, vmax, map_index):
+    def set_vmax(self, vmax, map_index=None):
         if map_index is None:
             map_index = self.current_map_index
         self._vmax[map_index] = float(vmax)
