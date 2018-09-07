@@ -7,52 +7,59 @@ from ..algorithm.graph_tool import node_attr2array
 from .io import GiftiReader, CiftiReader
 
 
-def read_mgh_mgz(filepath):
+def read_mgh(fpath):
+    """
+    read MGH/MGZ file data
+    If the data in the file is a 3D array, it will be raveled as a surface map.
+    If the data in the file is a 4D array, the first 3 dimensions will be raveled as a surface map,
+    and the forth dimension is the number of surface maps.
+    If the number of dimension is neither 3 nor 4, an error will be thrown.
+    NOTE!!! MGH file format seemingly has 3D dimensions at least. As a result, it essentially
+    regards the first dimensions as a volume and the forth dimension as the number of volumes.
+    References:
+        https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat
+    :param fpath: str
+    :return: data: numpy array
+    """
+    data = nib.load(fpath).get_data()
 
-    ext = os.path.splitext(filepath)[1]
-    if ext == ".mgz":
-        openfile = gzip.open
-    elif ext == ".mgh":
-        openfile = open
+    if data.ndim == 3:
+        data = np.atleast_2d(np.ravel(data, order='F')).T
+    elif data.ndim == 4:
+        _data = []
+        for idx in range(data.shape[3]):
+            _data.append(np.ravel(data[..., idx], order='F'))
+        data = np.array(_data).T
     else:
-        raise ValueError("The data must be a mgh or mgz file!")
+        raise ValueError("The number of dimension is neither 3 nor 4")
 
-    fobj = openfile(filepath, "rb")
-    # We have to use np.fromstring here as gzip fileobjects don't work
-    # with np.fromfile; same goes for try/finally instead of with statement
-    try:
-        v = np.fromstring(fobj.read(4), ">i4")[0]
-        if v != 1:
-            # I don't actually know what versions this code will read, so to be
-            # on the safe side, let's only let version 1 in for now.
-            # Scalar data might also be in curv format (e.g. lh.thickness)
-            # in which case the first item in the file is a magic number.
-            raise NotImplementedError("Scalar data file version not supported")
-        ndim1 = np.fromstring(fobj.read(4), ">i4")[0]
-        ndim2 = np.fromstring(fobj.read(4), ">i4")[0]
-        ndim3 = np.fromstring(fobj.read(4), ">i4")[0]
-        nframes = np.fromstring(fobj.read(4), ">i4")[0]
-        datatype = np.fromstring(fobj.read(4), ">i4")[0]
-        # Set the number of bytes per voxel and numpy data type according to
-        # FS codes
-        databytes, typecode = {0: (1, ">i1"), 1: (4, ">i4"), 3: (4, ">f4"),
-                               4: (2, ">h")}[datatype]
-        # Ignore the rest of the header here, just seek to the data
-        fobj.seek(284)
-        nbytes = ndim1 * ndim2 * ndim3 * nframes * databytes
-        # Read in all the data, keep it in flat representation
-        # (is this ever a problem?)
-        _data = np.fromstring(fobj.read(nbytes), typecode)
-    finally:
-        fobj.close()
+    return data
 
-    data = []
-    if _data.ndim == 4:
-        for idx in range(_data.shape[3]):
-            data.append(np.ravel(_data[..., idx], order='F'))
+
+def read_nifti(fpath):
+    """
+    read Nifti file data
+    If the data in the file is a 1D array, it will be regard as a surface map.
+    If the data in the file is a 2D array, each row of it will be regard as a surface map.
+    If the data in the file is a 3D array, it will be raveled as a surface map.
+    If the data in the file is a 4D array, the first 3 dimensions will be raveled as a surface map,
+    and the forth dimension is the number of surface maps.
+    If the number of dimension is larger than 4, an error will be thrown.
+    :param fpath: str
+    :return: data: numpy array
+    """
+    data = nib.load(fpath).get_data()
+    if data.ndim <= 2:
+        data = np.atleast_2d(data).T
+    elif data.ndim == 3:
+        data = np.atleast_2d(np.ravel(data, order='F')).T
+    elif data.ndim == 4:
+        _data = []
+        for idx in range(data.shape[3]):
+            _data.append(np.ravel(data[..., idx], order='F'))
+        data = np.array(_data).T
     else:
-        data.append(np.ravel(_data, order="F"))
-    data = np.array(data).T
+        raise ValueError("The number of dimension of data array is larger than 4.")
 
     return data
 
@@ -65,7 +72,6 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     islabel = False
     if suffix0 in ('curv', 'thickness', 'sulc', 'area'):
         data = nib.freesurfer.read_morph_data(fpath)
-        data = data.astype(np.float64)  # necessary for visualization
         data = np.atleast_2d(data).T
 
     elif suffix0 == 'label':
@@ -88,30 +94,13 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
             reader = CiftiReader(fpath)
             data = reader.get_data(brain_structure, True).T
         else:
-            Warning('The data will be regarded as a nifti file.\n'
-                    'If the data in the file is a 1D array, it will be regard as one surface map.\n'
-                    'If the data in the file is a 2D array, each row of it will be regard as a surface map.\n'
-                    'If the number of dimension is larger than 2, an error will be thrown.')
-            data = nib.load(fpath).get_data()
-            if data.ndim > 2:
-                raise ValueError("The number of dimension of data array is larger than 2.")
-            else:
-                data = np.atleast_2d(data).T
+            data = read_nifti(fpath)
 
     elif suffix0 == 'gz' and suffix1 == 'nii':
-        Warning('The data will be regarded as a nifti file.\n'
-                'If the data in the file is a 1D array, it will be regard as one surface map.\n'
-                'If the data in the file is a 2D array, each row of it will be regard as a surface map.\n'
-                'If the number of dimension is larger than 2, an error will be thrown.')
-        data = nib.load(fpath).get_data()
-        if data.ndim > 2:
-            raise ValueError("The number of dimension of data array is larger than 2.")
-        else:
-            data = np.atleast_2d(data).T
+        data = read_nifti(fpath)
 
     elif suffix0 in ('mgh', 'mgz'):
-        data = read_mgh_mgz(fpath)
-        data = data.astype(np.float64)
+        data = read_mgh(fpath)
 
     elif suffix0 == 'gii':
         if suffix1 == 'label':
@@ -125,6 +114,9 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     if n_vtx is not None:
         if data.shape[0] != n_vtx:
             raise RuntimeError('vertices number mismatch!')
+
+    if not islabel:
+        data = data.astype(np.float64)  # necessary for visualization
 
     if data.dtype.byteorder == '>':
         # may be useful for visualization
