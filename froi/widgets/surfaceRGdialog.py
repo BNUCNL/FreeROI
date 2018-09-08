@@ -22,6 +22,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self.seeds_id = []
         self.stop_criteria = [500]
         self.n_ring = 1
+        self._data_selection = ["current map", "current series"]
         self.group_idx = 'new'  # specify current seed group's index
         self.cut_line = []  # a list of vertices' id which plot a line
         self.r_idx_sm = None
@@ -58,6 +59,10 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._ring_spin.setMinimum(1)
         self._ring_spin.setValue(self.n_ring)
 
+        self._data_label = QtGui.QLabel("data:")
+        self._data_combo = QtGui.QComboBox()
+        self._data_combo.addItems(self._data_selection)
+
         self._mask_label = QtGui.QLabel("mask:")
         self._mask_combo = QtGui.QComboBox()
         self._fill_mask_box()
@@ -88,14 +93,16 @@ class SurfaceRGDialog(QtGui.QDialog):
         grid_layout.addWidget(self._stop_edit, 3, 1)
         grid_layout.addWidget(ring_label, 4, 0)
         grid_layout.addWidget(self._ring_spin, 4, 1)
-        grid_layout.addWidget(self._mask_label, 5, 0)
-        grid_layout.addWidget(self._mask_combo, 5, 1)
-        grid_layout.addWidget(self._threshold_label, 6, 0)
-        grid_layout.addWidget(self._threshold_edit, 6, 1)
-        grid_layout.addWidget(self._cutoff_button1, 7, 0)
-        grid_layout.addWidget(self._cutoff_button2, 7, 1)
-        grid_layout.addWidget(self._ok_button, 8, 0)
-        grid_layout.addWidget(self._cancel_button, 8, 1)
+        grid_layout.addWidget(self._data_label, 5, 0)
+        grid_layout.addWidget(self._data_combo, 5, 1)
+        grid_layout.addWidget(self._mask_label, 6, 0)
+        grid_layout.addWidget(self._mask_combo, 6, 1)
+        grid_layout.addWidget(self._threshold_label, 7, 0)
+        grid_layout.addWidget(self._threshold_edit, 7, 1)
+        grid_layout.addWidget(self._cutoff_button1, 8, 0)
+        grid_layout.addWidget(self._cutoff_button2, 8, 1)
+        grid_layout.addWidget(self._ok_button, 9, 0)
+        grid_layout.addWidget(self._cancel_button, 9, 1)
         self.setLayout(grid_layout)
 
     def _create_actions(self):
@@ -154,6 +161,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         if self.rg_type == 'crg':
             self._stop_label.setVisible(False)
             self._stop_edit.setVisible(False)
+            self._data_label.setVisible(False)
+            self._data_combo.setVisible(False)
             self._mask_label.setVisible(False)
             self._mask_combo.setVisible(False)
             self._threshold_label.setVisible(True)
@@ -164,6 +173,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         else:
             self._stop_label.setVisible(True)
             self._stop_edit.setVisible(True)
+            self._data_label.setVisible(True)
+            self._data_combo.setVisible(True)
             self._mask_label.setVisible(True)
             self._mask_combo.setVisible(True)
             self._threshold_label.setVisible(False)
@@ -300,7 +311,11 @@ class SurfaceRGDialog(QtGui.QDialog):
                     QtGui.QMessageBox.Yes
                 )
                 return None
-            scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+            if self._data_combo.currentText() == self._data_selection[0]:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = np.atleast_2d(scalar_data).T
+            else:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
             mask = self._get_current_mask()
 
             # ------------------select a assessment function-----------------
@@ -373,7 +388,11 @@ class SurfaceRGDialog(QtGui.QDialog):
                     QtGui.QMessageBox.Yes
                 )
                 return None
-            scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+            if self._data_combo.currentText() == self._data_selection[0]:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = np.atleast_2d(scalar_data).T
+            else:
+                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
             mask = self._get_current_mask()
 
             rg.surf2regions(geometry, scalar_data, mask, self.n_ring)

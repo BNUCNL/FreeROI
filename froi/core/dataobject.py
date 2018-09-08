@@ -1064,7 +1064,7 @@ class Surface(object):
 
         for ol in self.overlays[-1::-1]:
             if not ol.is_label() and ol.get_alpha() == 1. and ol.is_visible()\
-                    and ol.get_min() <= np.min(ol.get_current_map()):
+                    and ol.get_vmin() <= np.min(ol.get_current_map()):
                 return self.overlays.index(ol)
 
         # 0 means that the render will start with the bottom overlay.
