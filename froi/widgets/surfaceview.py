@@ -163,20 +163,18 @@ class SurfaceView(QWidget):
             scalars = np.array(self.c_id2v_id)
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
-                if hemi.overlays:
-                    top_ol = hemi.overlays[-1]
-                    if top_ol.is_opaque():
-                        # colorbar is only meaningful for this situation
-                        scalars = top_ol.get_current_map().copy()  # raw data shape is (n_vtx, 1)
-                        iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
-                        sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
-                        self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]
-                        self.rgba_lut = self.rgba_lut[self.c_id2v_id]
-                        self.is_cbar = True
-                        # TODO use the raw scalar data to create the colorbar
-                        # scalar2idx = normalize_arr(scalars, True, len(scalars)-1)
-                        # scalars = scalar2idx.astype(np.int32)
-                        scalars[self.c_id2v_id] = np.array(range(vertex_number))
+                if hemi.top_visible_layer is not None and hemi.top_visible_layer.is_opaque():
+                    # colorbar is only meaningful for this situation
+                    scalars = hemi.top_visible_layer.get_current_map().copy()  # raw data shape is (n_vtx, 1)
+                    iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
+                    sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
+                    self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]
+                    self.rgba_lut = self.rgba_lut[self.c_id2v_id]
+                    self.is_cbar = True
+                    # TODO use the raw scalar data to create the colorbar
+                    # scalar2idx = normalize_arr(scalars, True, len(scalars)-1)
+                    # scalars = scalar2idx.astype(np.int32)
+                    scalars[self.c_id2v_id] = np.array(range(vertex_number))
 
             mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                                  self.coords[:, 1],

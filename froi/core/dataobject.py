@@ -1052,6 +1052,13 @@ class Surface(object):
         return 'CIFTI_STRUCTURE_CORTEX_LEFT' if self.hemi_rl == 'lh'\
             else 'CIFTI_STRUCTURE_CORTEX_RIGHT'
 
+    @property
+    def top_visible_layer(self):
+        for ol in self.overlays[-1::-1]:
+            if ol.is_visible():
+                return ol
+        return None
+
     def get_colormap(self):
         return self._colormap_geo
 
