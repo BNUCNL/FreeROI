@@ -869,6 +869,11 @@ class Scalar(object):
     def is_label(self):
         return self._islabel
 
+    def is_opaque(self):
+        if not self.is_label() and self.get_alpha() == 1. and self.is_visible() \
+                and self.get_vmin() <= np.min(self.get_current_map()):
+            return True
+
     def save2nifti(self, fpath, header=None):
         """Save to a nifti file."""
         if self._data.shape[1] == 1:
@@ -1063,8 +1068,7 @@ class Surface(object):
         """
 
         for ol in self.overlays[-1::-1]:
-            if not ol.is_label() and ol.get_alpha() == 1. and ol.is_visible()\
-                    and ol.get_vmin() <= np.min(ol.get_current_map()):
+            if ol.is_opaque():
                 return self.overlays.index(ol)
 
         # 0 means that the render will start with the bottom overlay.
