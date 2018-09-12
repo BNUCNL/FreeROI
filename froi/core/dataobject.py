@@ -930,7 +930,6 @@ class Surface(object):
         self.overlays = list()
         self._visible = True
         self._colormap_geo = 'gray'  # FIXME to make the colormap take effect for geometry
-        self.bin_curv = None
         self.load_geometry(geo_path, offset=offset)
 
     def load_geometry(self, geo_path, offset=None):
@@ -942,8 +941,9 @@ class Surface(object):
         else:
             self.geometries[geo.name] = Geometry(geo_path, offset)
             self.set_current_geometry(geo.name)
-            if self.bin_curv is None:
-                self.bin_curv = geo.get_bin_curv()
+            bin_curv = geo.get_bin_curv()
+            if bin_curv is not None:
+                self.load_overlay(bin_curv, -1, 1.5, 'gray', name='bin_curv')
 
     def remove_geometry(self, geo_name):
         if geo_name in self.geometries.keys():
@@ -1023,7 +1023,6 @@ class Surface(object):
     def get_composite_rgb(self):
 
         start_render_index = self._get_start_render_index()
-        # start_render_index = 0
 
         # get rgba arrays according to each overlay
         rgba_list = []
@@ -1032,12 +1031,10 @@ class Surface(object):
                 rgba_list.append(self.get_rgba(ol))
 
         # automatically add the background array
-        if self.bin_curv is not None:
-            background = aq.array2qrgba(self.bin_curv, 255.0, 'gray', (-1, 1.5))
-        else:
-            background = np.ones((self.vertices_count(), 4)) * 127.5
-        rgba_list.insert(0, background)
+        # The forth column won't be used.
+        background = np.ones((self.vertices_count(), 4)) * 127.5
 
+        rgba_list.insert(0, background)
         return aq.qcomposition(rgba_list)
 
     def vertices_count(self):

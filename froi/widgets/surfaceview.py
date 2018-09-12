@@ -165,50 +165,46 @@ class SurfaceView(QWidget):
             self.v_id2c_id = np.arange(vertex_number)
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
-                top_ol = hemi.top_visible_layer
-                if top_ol is not None and top_ol.is_opaque():
+                self.top_ol = hemi.top_visible_layer
+                if self.top_ol is not None and self.top_ol.is_opaque():
                     self._is_top_visible_opaque = True
                     # get scalars
-                    self.scalars = top_ol.get_current_map().copy()
-                    self.scalars[self.scalars > top_ol.get_vmax()] = top_ol.get_vmax()
+                    self.scalars = self.top_ol.get_current_map().copy()
                     # get LUT
                     data = np.arange(256)
-                    colormap = top_ol.get_colormap()
+                    colormap = self.top_ol.get_colormap()
                     if isinstance(colormap, LabelConfig):
                         colormap = colormap.get_colormap()
-                    self.lut_opaque = array2qrgba(data, top_ol.get_alpha(), colormap)
+                    self.lut_opaque = array2qrgba(data, self.top_ol.get_alpha(), colormap)
                     self.lut_opaque[:, 3] = 255
                 else:
                     self._is_top_visible_opaque = False
             else:
                 self._is_top_visible_opaque = False
 
+            self.mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
+                                                                                      self.coords[:, 1],
+                                                                                      self.coords[:, 2],
+                                                                                      self.faces)
+            self.mesh.data.point_data.normals = nn
+            self.mesh.data.cell_data.normals = None
             if self._is_top_visible_opaque:
-                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
-                                                                                     self.coords[:, 1],
-                                                                                     self.coords[:, 2],
-                                                                                     self.faces,
-                                                                                     scalars=self.scalars)
-                mesh.data.point_data.normals = nn
-                mesh.data.cell_data.normals = None
+                self.mesh.mlab_source.scalars = self.scalars
 
                 # generate the surface
-                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh,
+                                                                           vmin=self.top_ol.get_vmin(),
+                                                                           vmax=self.top_ol.get_vmax())
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
 
                 # colorbar is only meaningful for this situation
                 self.cbar = mlab.colorbar(self.surf)
+
             else:
-                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
-                                                                                     self.coords[:, 1],
-                                                                                     self.coords[:, 2],
-                                                                                     self.faces,
-                                                                                     scalars=self.v_id2c_id)
-                mesh.data.point_data.normals = nn
-                mesh.data.cell_data.normals = None
+                self.mesh.mlab_source.scalars = self.v_id2c_id
 
                 # generate the surface
-                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
                 # self.surf.module_manager.scalar_lut_manager.load_lut_from_list(self.rgba_lut/255.)  # bad speed
 
@@ -267,10 +263,17 @@ class SurfaceView(QWidget):
                 toggle_color(self.tmp_lut[c_id])
                 if self._is_top_visible_opaque:
                     self.cbar.visible = False
-                    self.surf.mlab_source.scalars = self.v_id2c_id
+                    # self.surf.mlab_source.scalars = self.v_id2c_id
+                    self.mesh.mlab_source.scalars = self.v_id2c_id
+                    self.surf.remove()
+                    self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
         elif self._is_top_visible_opaque:
-            self.surf.mlab_source.scalars = self.scalars
+            self.mesh.mlab_source.scalars = self.scalars
+            self.surf.remove()
+            self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh,
+                                                                       vmin=self.top_ol.get_vmin(),
+                                                                       vmax=self.top_ol.get_vmax())
             self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
             self.cbar.visible = True
 
