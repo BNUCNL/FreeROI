@@ -99,7 +99,7 @@ class SurfaceView(QWidget):
         self.path = []
         self.cbar = None
         self._view = None
-        self._is_top_visible_opaque = False  # Is the top visible overlay is opaque?
+        self._only_top_displayed = False  # Is only the top visible overlay is displayed?
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surf_viz_widget)
@@ -166,21 +166,15 @@ class SurfaceView(QWidget):
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
                 self.top_ol = hemi.top_visible_layer
+                other_ol_visibility = [ol.is_visible() for ol in hemi.overlays if ol is not self.top_ol]
                 if self.top_ol is not None and self.top_ol.is_opaque():
-                    self._is_top_visible_opaque = True
-                    # get scalars
-                    self.scalars = self.top_ol.get_current_map().copy()
-                    # get LUT
-                    data = np.arange(256)
-                    colormap = self.top_ol.get_colormap()
-                    if isinstance(colormap, LabelConfig):
-                        colormap = colormap.get_colormap()
-                    self.lut_opaque = array2qrgba(data, self.top_ol.get_alpha(), colormap)
-                    self.lut_opaque[:, 3] = 255
+                    self._only_top_displayed = True
+                elif self.top_ol is not None and not np.any(other_ol_visibility):
+                    self._only_top_displayed = True
                 else:
-                    self._is_top_visible_opaque = False
+                    self._only_top_displayed = False
             else:
-                self._is_top_visible_opaque = False
+                self._only_top_displayed = False
 
             self.mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                                       self.coords[:, 1],
@@ -188,9 +182,20 @@ class SurfaceView(QWidget):
                                                                                       self.faces)
             self.mesh.data.point_data.normals = nn
             self.mesh.data.cell_data.normals = None
-            if self._is_top_visible_opaque:
-                self.mesh.mlab_source.scalars = self.scalars
 
+            if self._only_top_displayed:
+                # get scalars
+                self.scalars = self.top_ol.get_current_map().copy()
+                # get LUT
+                data = np.arange(256)
+                colormap = self.top_ol.get_colormap()
+                if isinstance(colormap, LabelConfig):
+                    colormap = colormap.get_colormap()
+                self.lut_opaque = array2qrgba(data, self.top_ol.get_alpha(), colormap)
+                self.lut_opaque[:, 3] = 255
+                self.lut_opaque[0, :3] = np.ones((1, 3)) * 127.5
+
+                self.mesh.mlab_source.scalars = self.scalars
                 # generate the surface
                 self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh,
                                                                            vmin=self.top_ol.get_vmin(),
@@ -261,14 +266,14 @@ class SurfaceView(QWidget):
                 # plot point
                 c_id = self.v_id2c_id[self.point_id]
                 toggle_color(self.tmp_lut[c_id])
-                if self._is_top_visible_opaque:
+                if self._only_top_displayed:
                     self.cbar.visible = False
                     # self.surf.mlab_source.scalars = self.v_id2c_id
                     self.mesh.mlab_source.scalars = self.v_id2c_id
                     self.surf.remove()
                     self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
-        elif self._is_top_visible_opaque:
+        elif self._only_top_displayed:
             self.mesh.mlab_source.scalars = self.scalars
             self.surf.remove()
             self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh,
