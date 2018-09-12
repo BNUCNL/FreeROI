@@ -12,6 +12,8 @@ import numpy as np
 from froi.widgets.treemodel import TreeModel
 from froi.algorithm.tools import toggle_color, bfs
 from froi.algorithm.meshtool import get_n_ring_neighbor, get_vtx_neighbor
+from froi.algorithm.array2qimage import array2qrgba
+from froi.core.labelconfig import LabelConfig
 
 
 # Helpers
@@ -95,9 +97,9 @@ class SurfaceView(QWidget):
         self.old_hemi = None
         self.plot_start = None
         self.path = []
-        self.is_cbar = False
         self.cbar = None
         self._view = None
+        self._is_top_visible_opaque = False  # Is the top visible overlay is opaque?
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surf_viz_widget)
@@ -140,7 +142,7 @@ class SurfaceView(QWidget):
             # get the rgba_lut
             rgb_array = hemi.get_composite_rgb()
             hemi_vertex_number = rgb_array.shape[0]
-            alpha_channel = np.ones((hemi_vertex_number, 1), dtype=np.uint8)*255
+            alpha_channel = np.ones((hemi_vertex_number, 1), dtype=np.uint8)*255  # Mayavi uses alpha between 0~255
             hemi_lut = np.c_[rgb_array, alpha_channel]
 
             if first_hemi_flag:
@@ -159,35 +161,56 @@ class SurfaceView(QWidget):
 
         if visible_hemis:
             # generate the triangular mesh
-            self.c_id2v_id = range(vertex_number)  # idx is color index, element is vtx number
-            scalars = np.array(self.c_id2v_id)
+            # self.v_id2c_id: Each index is a vertex id and element is a color LUT's row index.
+            self.v_id2c_id = np.arange(vertex_number)
             if len(visible_hemis) == 1:
                 hemi = visible_hemis[0]
-                if hemi.top_visible_layer is not None and hemi.top_visible_layer.is_opaque():
-                    # colorbar is only meaningful for this situation
-                    scalars = hemi.top_visible_layer.get_current_map().copy()  # raw data shape is (n_vtx, 1)
-                    iv_pairs = [(idx, val) for idx, val in enumerate(scalars)]
-                    sorted_iv_pairs = sorted(iv_pairs, key=lambda x: x[1])
-                    self.c_id2v_id = [pair[0] for pair in sorted_iv_pairs]
-                    self.rgba_lut = self.rgba_lut[self.c_id2v_id]
-                    self.is_cbar = True
-                    # TODO use the raw scalar data to create the colorbar
-                    # scalar2idx = normalize_arr(scalars, True, len(scalars)-1)
-                    # scalars = scalar2idx.astype(np.int32)
-                    scalars[self.c_id2v_id] = np.array(range(vertex_number))
+                top_ol = hemi.top_visible_layer
+                if top_ol is not None and top_ol.is_opaque():
+                    self._is_top_visible_opaque = True
+                    # get scalars
+                    self.scalars = top_ol.get_current_map().copy()
+                    self.scalars[self.scalars > top_ol.get_vmax()] = top_ol.get_vmax()
+                    # get LUT
+                    data = np.arange(256)
+                    colormap = top_ol.get_colormap()
+                    if isinstance(colormap, LabelConfig):
+                        colormap = colormap.get_colormap()
+                    self.lut_opaque = array2qrgba(data, top_ol.get_alpha(), colormap)
+                    self.lut_opaque[:, 3] = 255
+                else:
+                    self._is_top_visible_opaque = False
+            else:
+                self._is_top_visible_opaque = False
 
-            mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
-                                                                                 self.coords[:, 1],
-                                                                                 self.coords[:, 2],
-                                                                                 self.faces,
-                                                                                 scalars=scalars)
-            mesh.data.point_data.normals = nn
-            mesh.data.cell_data.normals = None
+            if self._is_top_visible_opaque:
+                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
+                                                                                     self.coords[:, 1],
+                                                                                     self.coords[:, 2],
+                                                                                     self.faces,
+                                                                                     scalars=self.scalars)
+                mesh.data.point_data.normals = nn
+                mesh.data.cell_data.normals = None
 
-            # generate the surface
-            self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
-            self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
-            # self.surf.module_manager.scalar_lut_manager.load_lut_from_list(self.rgba_lut/255.)  # bad speed
+                # generate the surface
+                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
+
+                # colorbar is only meaningful for this situation
+                self.cbar = mlab.colorbar(self.surf)
+            else:
+                mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
+                                                                                     self.coords[:, 1],
+                                                                                     self.coords[:, 2],
+                                                                                     self.faces,
+                                                                                     scalars=self.v_id2c_id)
+                mesh.data.point_data.normals = nn
+                mesh.data.cell_data.normals = None
+
+                # generate the surface
+                self.surf = self.visualization.scene.mlab.pipeline.surface(mesh)
+                self.surf.module_manager.scalar_lut_manager.lut.table = self.rgba_lut
+                # self.surf.module_manager.scalar_lut_manager.load_lut_from_list(self.rgba_lut/255.)  # bad speed
 
         # add point picker observer
         if self.gcf_flag:
@@ -198,11 +221,6 @@ class SurfaceView(QWidget):
             # fig.scene.scene.interactor.add_observer('MouseMoveEvent', self._move_callback)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
-        # add colorbar
-        if self.is_cbar:
-            self.cbar = mlab.colorbar(self.surf)
-            self.is_cbar = False
-
         self._view = mlab.view()
 
     def _picker_callback(self, picker_obj, evt):
@@ -212,7 +230,6 @@ class SurfaceView(QWidget):
         self.surface_model.set_point_id(self.point_id)
 
         if self.point_id != -1:
-
             # for painter_status
             if self.painter_status.is_drawing_valid():
                 value = self.painter_status.get_drawing_value()
@@ -246,9 +263,16 @@ class SurfaceView(QWidget):
                     self.seed_picked.emit()
 
                 # plot point
-                c_id = self.c_id2v_id.index(self.point_id)
+                c_id = self.v_id2c_id[self.point_id]
                 toggle_color(self.tmp_lut[c_id])
+                if self._is_top_visible_opaque:
+                    self.cbar.visible = False
+                    self.surf.mlab_source.scalars = self.v_id2c_id
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
+        elif self._is_top_visible_opaque:
+            self.surf.mlab_source.scalars = self.scalars
+            self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
+            self.cbar.visible = True
 
         self._view = mlab.view()
         phi, theta = self._view[0], self._view[1]
@@ -287,7 +311,7 @@ class SurfaceView(QWidget):
                 )
 
             for v_id in self.path:
-                c_id = self.c_id2v_id.index(v_id)
+                c_id = self.v_id2c_id[v_id]
                 toggle_color(self.tmp_lut[c_id])
 
     # user-oriented methods

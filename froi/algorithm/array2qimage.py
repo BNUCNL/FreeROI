@@ -231,7 +231,10 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
                         except (TypeError, ValueError):
                             raise ValueError("There is no colormap about '{}'.".format(colormap))
                     # Convert from a matplotlib colormap to a lut array
-                    lut_255 = (cmap(_np.linspace(0, 1, 256)) * 255).astype(_np.int)
+                    # lut_255 = (cmap(_np.linspace(0, 1, 256)) * 255).astype(_np.int)
+                    lut_255 = (cmap(_np.linspace(0, 1, 256)) * 255)
+                    # # Is it necessary to generate a color LUT with so many colors as the number of vertices?
+                    # lut_255 = (cmap(_np.linspace(0, 1, vtx_num)) * 255)
 
                     new_array_shape = array.shape + (4,)
                     new_array = _np.zeros(new_array_shape, dtype=_np.uint8)
