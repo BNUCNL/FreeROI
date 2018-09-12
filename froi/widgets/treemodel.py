@@ -84,13 +84,8 @@ class TreeModel(QAbstractItemModel):
             if role == Qt.UserRole + 2:
                 # FIXME to remove the role after refine visible bar's display
                 return 1.0
-            if role == Qt.UserRole + 3:
+            elif role == Qt.UserRole + 3:
                 return item.get_colormap()
-            elif role == Qt.UserRole + 4:
-                if self._point_id == -1:
-                    return None
-                if item.bin_curv is not None:
-                    return item.bin_curv[self._point_id]
             elif role == Qt.UserRole + 6:
                 return item.current_geometry()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
