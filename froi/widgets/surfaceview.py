@@ -12,7 +12,7 @@ import numpy as np
 from froi.widgets.treemodel import TreeModel
 from froi.algorithm.tools import toggle_color, bfs
 from froi.algorithm.meshtool import get_n_ring_neighbor, get_vtx_neighbor
-from froi.algorithm.array2qimage import array2qrgba
+from froi.algorithm.array2qimage import array2qrgba, _normalize255
 from froi.core.labelconfig import LabelConfig
 
 
@@ -185,7 +185,13 @@ class SurfaceView(QWidget):
 
             if self._only_top_displayed:
                 # get scalars
-                self.scalars = self.top_ol.get_current_map().copy()
+                # limit it as FreeROI normalization style
+                scalars = self.top_ol.get_current_map().copy()
+                scale = 255.0
+                scalars = _normalize255(scalars,
+                                        (self.top_ol.get_vmin(), self.top_ol.get_vmax()),
+                                        scale_length=scale)
+                self.scalars = scalars*(self.top_ol.get_vmax()-self.top_ol.get_vmin())/scale + self.top_ol.get_vmin()
                 # get LUT
                 data = np.arange(256)
                 colormap = self.top_ol.get_colormap()

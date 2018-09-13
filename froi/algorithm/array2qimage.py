@@ -121,8 +121,17 @@ def _normalize255(array, normalize, scale_length=255.0):
         return array
 
     new_arr = normalize_arr(array, normalize, scale_length)
+
+    # ---FreeROI style---
+    # Make sure that only scalars which are smaller or equal to vmin will be regarded as 0.
+    # As a result, these scalars will be transparent.
     new_arr[_np.logical_and(new_arr > 0, new_arr < 1)] = 1
     return _np.round(new_arr)
+    # ---FreeROI style---
+
+    # # ---May be Mayavi style---
+    # return new_arr.astype(_np.uint8)
+    # # ---Mat be Mayavi style---
 
 
 def gray2qimage(array, normalize=False):
