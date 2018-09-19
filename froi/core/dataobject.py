@@ -876,11 +876,18 @@ class Scalar(object):
 
     def save2nifti(self, fpath, header=None):
         """Save to a nifti file."""
+        # prepare data
         if self._data.shape[1] == 1:
             new_shape = (self._data.shape[0], 1, 1)
         else:
             new_shape = (self._data.shape[0], 1, 1, self._data.shape[1])
         data = self._data.reshape(new_shape)
+
+        # prepare header
+        if header is None:
+            header = nib.Nifti2Header()
+            if self.is_label():
+                header['descrip'] = 'FreeROI label'
 
         save2nifti(fpath, data, header)
 
