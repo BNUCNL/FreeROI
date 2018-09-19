@@ -114,6 +114,8 @@ class TreeModel(QAbstractItemModel):
                 return item.current_map_index
             elif role == Qt.UserRole + 10:
                 return item.get_current_map()
+            elif role == Qt.UserRole + 11:
+                return item.is_series()
             elif role == Qt.DisplayRole or role == Qt.EditRole:
                 return item.get_name()
 

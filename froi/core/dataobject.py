@@ -874,6 +874,9 @@ class Scalar(object):
                 and self.get_vmin() <= np.min(self.get_current_map()):
             return True
 
+    def is_series(self):
+        return True if self._data.shape[1] > 1 else False
+
     def save2nifti(self, fpath, header=None):
         """Save to a nifti file."""
         # prepare data
