@@ -53,6 +53,7 @@ from widgets.surfaceview import SurfaceView
 from widgets.scribingdialog import ScribingDialog
 from widgets.surfaceRGdialog import SurfaceRGDialog
 from widgets.prob_map_dialog import SurfProbMapDialog
+from widgets.concatenate_dialog import SurfConcatenateDialog
 
 
 class BpMainWindow(QMainWindow):
@@ -422,6 +423,11 @@ class BpMainWindow(QMainWindow):
                                              self)
         self._actions['smoothing'].triggered.connect(self._smooth)
         self._actions['smoothing'].setEnabled(False)
+
+        # Concatenate overlays to one overlay
+        self._actions['concatenate'] = QAction(self.tr('Concatenate'), self)
+        self._actions['concatenate'].triggered.connect(self._concatenate)
+        self._actions['concatenate'].setEnabled(False)
 
         # Calculate probability map action
         self._actions['probability_map'] = QAction(self.tr('ProbabilityMap'), self)
@@ -1178,6 +1184,7 @@ class BpMainWindow(QMainWindow):
         basic_tools.addAction(self._actions['localmax'])
         basic_tools.addAction(self._actions['inverse'])
         basic_tools.addAction(self._actions['smoothing'])
+        basic_tools.addAction(self._actions['concatenate'])
         basic_tools.addAction(self._actions['probability_map'])
         basic_tools.addAction(self._actions['meants'])
         basic_tools.addAction(self._actions['voxelstats'])
@@ -1666,6 +1673,10 @@ class BpMainWindow(QMainWindow):
         dialog = SurfProbMapDialog(self.surface_model)
         dialog.exec_()
 
+    def _concatenate(self):
+        dialog = SurfConcatenateDialog(self.surface_model)
+        dialog.exec_()
+
     def _region_grow(self):
         """Image region grow dialog."""
         new_dialog = GrowDialog(self.volume_model, self)
@@ -1714,6 +1725,7 @@ class BpMainWindow(QMainWindow):
         """
         self._actions['scribing'].setEnabled(status)
         self._actions['surf_region_grow'].setEnabled(status)
+        self._actions['concatenate'].setEnabled(status)
         self._actions['probability_map'].setEnabled(status)
 
     def _snapshot(self):
