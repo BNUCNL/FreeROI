@@ -286,12 +286,12 @@ class SurfaceRGDialog(QtGui.QDialog):
 
     def _start_surfRG(self):
 
-        index = self.model.current_index()
-        depth = self.model.index_depth(index)
+        self.rg_qmodel_idx = self.model.current_index()
+        depth = self.model.index_depth(self.rg_qmodel_idx)
         if depth == 1:
-            geometry = self.model.data(index, QtCore.Qt.UserRole + 6)
+            geometry = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 6)
         elif depth == 2:
-            geometry = self.model.data(index.parent(), QtCore.Qt.UserRole + 6)
+            geometry = self.model.data(self.rg_qmodel_idx.parent(), QtCore.Qt.UserRole + 6)
         else:
             QtGui.QMessageBox.warning(
                 self, 'Error',
@@ -312,10 +312,10 @@ class SurfaceRGDialog(QtGui.QDialog):
                 )
                 return None
             if self._data_combo.currentText() == self._data_selection[0]:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 10)
                 scalar_data = np.atleast_2d(scalar_data).T
             else:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+                scalar_data = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 5)
             mask = self._get_current_mask()
 
             # ------------------select a assessment function-----------------
@@ -389,10 +389,10 @@ class SurfaceRGDialog(QtGui.QDialog):
                 )
                 return None
             if self._data_combo.currentText() == self._data_selection[0]:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 10)
                 scalar_data = np.atleast_2d(scalar_data).T
             else:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 5)
+                scalar_data = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 5)
             mask = self._get_current_mask()
 
             rg.surf2regions(geometry, scalar_data, mask, self.n_ring)
@@ -407,7 +407,7 @@ class SurfaceRGDialog(QtGui.QDialog):
                 rg_result = rg.connectivity_grow(self.seeds_id, edge_list)
 
             elif depth == 2:
-                scalar_data = self.model.data(index, QtCore.Qt.UserRole + 10)
+                scalar_data = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 10)
                 neighbors = get_n_ring_neighbor(geometry.faces)
 
                 self.thresholds = self._threshold_edit.text().split(',')
@@ -486,6 +486,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         """
         Add RG's result as tree items
         """
+        data = np.zeros((self.vertices_count,), np.uint8)
+        label = 1
         for r in rg_result:
             if self.rg_type == 'srg' or self.rg_type == 'arg':
                 labeled_vertices = r.get_vertices()
@@ -493,10 +495,18 @@ class SurfaceRGDialog(QtGui.QDialog):
                 labeled_vertices = list(r)
             else:
                 raise RuntimeError("The region growing type must be arg, srg and crg at present!")
-            data = np.zeros((self.vertices_count,), np.int)
-            data[labeled_vertices] = 1
-            self.model.add_item(self.model.current_index(), data,
-                                islabel=True, colormap='blue')
+
+            if np.any(data[labeled_vertices]):
+                QtGui.QMessageBox.warning(self, 'Warning',
+                                          "surfRG Group{0}'s result has overlap with other groups".format(label-1),
+                                          QtGui.QMessageBox.Yes)
+            data[labeled_vertices] = label
+            label += 1
+
+        name = 'rg_' + self.model.data(self.rg_qmodel_idx, QtCore.Qt.DisplayRole)
+        if self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 11):
+            name += str(self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9))
+        self.model.add_item(self.rg_qmodel_idx, data, islabel=True, colormap='blue', name=name)
 
     def _on_clicked(self, event):
         if event.button == 3 and event.inaxes in self.axes[:, 0]:
@@ -522,8 +532,12 @@ class SurfaceRGDialog(QtGui.QDialog):
             # visualize these labeled vertices
             data = np.zeros((self.vertices_count,), np.int)
             data[labeled_vertices] = 1
+            name = 'rg_' + self.model.data(self.rg_qmodel_idx, QtCore.Qt.DisplayRole)
+            if self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 11):
+                name += str(self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9))
+            name += '_{}'.format(r_idx)
             self.model.add_item(self.model.current_index(), data,
-                                islabel=True, colormap='blue')
+                                islabel=True, colormap='blue', name=name)
         elif event.button == 1 and event.inaxes in self.slider_axes:
             # do something on left click
             # find current evolved region

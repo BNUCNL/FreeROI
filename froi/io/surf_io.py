@@ -48,7 +48,14 @@ def read_nifti(fpath):
     :param fpath: str
     :return: data: numpy array
     """
-    data = nib.load(fpath).get_data()
+    img = nib.load(fpath)
+    # is_label judgement
+    is_label = False
+    if b'FreeROI label' in img.header['descrip']:
+        is_label = True
+
+    # get data
+    data = img.get_data()
     if data.ndim <= 2:
         data = np.atleast_2d(data).T
     elif data.ndim == 3:
@@ -61,7 +68,7 @@ def read_nifti(fpath):
     else:
         raise ValueError("The number of dimension of data array is larger than 4.")
 
-    return data
+    return data, is_label
 
 
 def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
@@ -69,13 +76,13 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     fname = os.path.basename(fpath)
     suffix0 = fname.split('.')[-1]
     suffix1 = fname.split('.')[-2]
-    islabel = False
+    is_label = False
     if suffix0 in ('curv', 'thickness', 'sulc', 'area'):
         data = nib.freesurfer.read_morph_data(fpath)
         data = np.atleast_2d(data).T
 
     elif suffix0 == 'label':
-        islabel = True
+        is_label = True
         _data = nib.freesurfer.read_label(fpath)
         if n_vtx is None:
             raise RuntimeError("Reading label as scalar data need specify the number of vertices.")
@@ -90,21 +97,21 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
     elif suffix0 == 'nii':
         if suffix1 in ('dscalar', 'dtseries', 'dlabel'):
             if suffix1 == 'dlabel':
-                islabel = True
+                is_label = True
             reader = CiftiReader(fpath)
             data = reader.get_data(brain_structure, True).T
         else:
-            data = read_nifti(fpath)
+            data, is_label = read_nifti(fpath)
 
     elif suffix0 == 'gz' and suffix1 == 'nii':
-        data = read_nifti(fpath)
+        data, is_label = read_nifti(fpath)
 
     elif suffix0 in ('mgh', 'mgz'):
         data = read_mgh(fpath)
 
     elif suffix0 == 'gii':
         if suffix1 == 'label':
-            islabel = True
+            is_label = True
         data = nib.load(fpath).darrays[0].data
         data = np.atleast_2d(data).T
 
@@ -115,14 +122,14 @@ def read_scalar_data(fpath, n_vtx=None, brain_structure=None):
         if data.shape[0] != n_vtx:
             raise RuntimeError('vertices number mismatch!')
 
-    if not islabel:
+    if not is_label:
         data = data.astype(np.float64)  # necessary for visualization
 
     if data.dtype.byteorder == '>':
         # may be useful for visualization
         data.byteswap(True)
 
-    return data, islabel
+    return data, is_label
 
 
 def read_geometry(fpath):
