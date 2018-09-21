@@ -48,7 +48,7 @@ class GiftiReader(object):
 class CiftiReader(object):
 
     def __init__(self, file_path):
-        self.full_data = nib.load(file_path)
+        self.full_data = nib.cifti2.cifti2.load(file_path)
 
     @property
     def header(self):
