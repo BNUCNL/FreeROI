@@ -18,19 +18,11 @@ class SurfaceTreeView(QWidget):
     """
     # current_changed = pyqtSignal()
     repaint_surface = pyqtSignal()
-    builtin_colormap = ['gray',
-                        'red2yellow',
-                        'blue2cyanblue',
-                        'red',
-                        'green',
-                        'blue',
-                        'rainbow',
-                        'single ROI',
-                        'rocket',
-                        'mako',
-                        'icefire',
-                        'vlag',
-                        'jet']
+    builtin_colormap = ['red', 'green', 'blue',
+                        'gray', 'red2yellow', 'blue2cyanblue', 'rainbow',
+                        'rocket', 'mako', 'icefire', 'vlag',
+                        'jet', 'hot', 'cool',
+                        'spring', 'summer', 'autumn', 'winter']
 
     def __init__(self, model, label_config_center, parent=None):
         """TreeView initialization."""
@@ -296,12 +288,9 @@ class SurfaceTreeView(QWidget):
     def _set_colormap(self):
         """Set colormap of current selected item."""
         index = self._tree_view.currentIndex()
-        row = self._scalar_colormap.currentIndex()
-        builtin_len = len(self.builtin_colormap)
-        if row < builtin_len:
-            colormap = str(self._scalar_colormap.currentText())
-        else:
-            colormap = self._label_config_center.get_label_config(row - builtin_len)
+        colormap = str(self._scalar_colormap.currentText())
+        if colormap in self._label_config_center.get_all_labelconfig_names():
+            colormap = self._label_config_center.get_label_config_by_name(colormap)
         self._model.setData(index, colormap, role=Qt.UserRole + 3)
 
     def _set_map_idx(self):
