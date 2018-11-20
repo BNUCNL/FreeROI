@@ -183,7 +183,7 @@ class SurfaceView(QWidget):
             self.mesh.data.point_data.normals = nn
             self.mesh.data.cell_data.normals = None
 
-            if self._only_top_displayed:
+            if self._only_top_displayed and not self.top_ol.is_label() and self.top_ol.get_colormap() != 'rainbow':
                 # get scalars
                 # limit it as FreeROI normalization style
                 scalars = self.top_ol.get_current_map().copy()

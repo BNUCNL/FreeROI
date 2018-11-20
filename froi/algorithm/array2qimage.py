@@ -259,16 +259,14 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
             else:
                 new_array = single_roi(array, alpha, roi)
         else:
-            if _np.isscalar(normalize):
-                new_array = array.clip(0, array.max())
+            new_array = array.clip(0)
+            if _np.isscalar(normalize) and not isinstance(normalize, bool):
                 new_array[array < 0] = 0
                 new_array[array > normalize] = 0
             elif isinstance(normalize, tuple):
-                new_array = array.clip(0, array.max())
                 new_array[array < normalize[0]] = 0
                 new_array[array > normalize[1]] = 0
             else:
-                new_array = array.clip(0, array.max())
                 new_array[array < 0] = 0
             # h, w = new_array.shape
             new_array2_shape = new_array.shape + (4,)
@@ -295,16 +293,14 @@ def array2qrgba(array, alpha, colormap, normalize=False, roi=None):
             #_np.set_printoptions(threshold=1000000)
             new_array = new_array2
     else:
-        if _np.isscalar(normalize):
-            new_array = array.clip(0, array.max())
+        new_array = array.clip(0)
+        if _np.isscalar(normalize) and not isinstance(normalize, bool):
             new_array[array < 0] = 0
             new_array[array > normalize] = 0
         elif isinstance(normalize, tuple):
-            new_array = array.clip(0, array.max())
             new_array[array < normalize[0]] = 0
             new_array[array > normalize[1]] = 0
         else:
-            new_array = array.clip(0, array.max())
             new_array[array < 0] = 0
         values = colormap.keys()
         values = [int(item) for item in values]
