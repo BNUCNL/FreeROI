@@ -99,7 +99,7 @@ class SurfaceView(QWidget):
         self.path = []
         self.cbar = None
         self._view = None
-        self._only_top_displayed = False  # Is only the top visible overlay is displayed?
+        self._show_cbar = False
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(surf_viz_widget)
@@ -168,13 +168,18 @@ class SurfaceView(QWidget):
                 self.top_ol = hemi.top_visible_layer
                 other_ol_visibility = [ol.is_visible() for ol in hemi.overlays if ol is not self.top_ol]
                 if self.top_ol is not None and self.top_ol.is_opaque():
-                    self._only_top_displayed = True
+                    _only_top_displayed = True
                 elif self.top_ol is not None and not np.any(other_ol_visibility):
-                    self._only_top_displayed = True
+                    _only_top_displayed = True
                 else:
-                    self._only_top_displayed = False
+                    _only_top_displayed = False
             else:
-                self._only_top_displayed = False
+                _only_top_displayed = False
+
+            if _only_top_displayed and not self.top_ol.is_label() and self.top_ol.get_colormap() != 'rainbow':
+                self._show_cbar = True
+            else:
+                self._show_cbar = False
 
             self.mesh = self.visualization.scene.mlab.pipeline.triangular_mesh_source(self.coords[:, 0],
                                                                                       self.coords[:, 1],
@@ -183,7 +188,7 @@ class SurfaceView(QWidget):
             self.mesh.data.point_data.normals = nn
             self.mesh.data.cell_data.normals = None
 
-            if self._only_top_displayed and not self.top_ol.is_label() and self.top_ol.get_colormap() != 'rainbow':
+            if self._show_cbar:
                 # get scalars
                 # limit it as FreeROI normalization style
                 scalars = self.top_ol.get_current_map().copy()
@@ -272,14 +277,14 @@ class SurfaceView(QWidget):
                 # plot point
                 c_id = self.v_id2c_id[self.point_id]
                 toggle_color(self.tmp_lut[c_id])
-                if self._only_top_displayed:
+                if self._show_cbar:
                     self.cbar.visible = False
                     # self.surf.mlab_source.scalars = self.v_id2c_id
                     self.mesh.mlab_source.scalars = self.v_id2c_id
                     self.surf.remove()
                     self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh)
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.tmp_lut
-        elif self._only_top_displayed:
+        elif self._show_cbar:
             self.mesh.mlab_source.scalars = self.scalars
             self.surf.remove()
             self.surf = self.visualization.scene.mlab.pipeline.surface(self.mesh,
