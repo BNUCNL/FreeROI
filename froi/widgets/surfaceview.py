@@ -214,7 +214,9 @@ class SurfaceView(QWidget):
                 self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
 
                 # colorbar is only meaningful for this situation
-                self.cbar = mlab.colorbar(self.surf)
+                self.cbar = mlab.colorbar(self.surf, orientation='vertical', label_fmt='%.2f')
+                self.cbar.scalar_bar_representation.position = [0.85, 0.1]  # position of bottom-left corner
+                self.cbar.scalar_bar_representation.position2 = [0.13, 0.8]  # distance from the bottom-left corner
 
             else:
                 self.mesh.mlab_source.scalars = self.v_id2c_id
@@ -291,6 +293,9 @@ class SurfaceView(QWidget):
                                                                        vmin=self.top_ol.get_vmin(),
                                                                        vmax=self.top_ol.get_vmax())
             self.surf.module_manager.scalar_lut_manager.lut.table = self.lut_opaque
+            # FIXME In this case, I can't use 'mlab.colorbar' to recreate the color bar and
+            # it is only able to be turned on its visibility if I want to show it again. But,
+            # it will appear with strange size, and I can't adjust it by using 'position' and 'position2'.
             self.cbar.visible = True
 
         self._view = mlab.view()
