@@ -302,7 +302,7 @@ class TreeModel(QAbstractItemModel):
 
         if not index.isValid():
             if not isinstance(source, Surface):
-                source = Surface(source)
+                source = Surface(source, 0)
             self.insertRow(index.row(), source, index)
         else:
             parent = index.parent()

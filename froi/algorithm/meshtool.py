@@ -4,6 +4,7 @@
 import os
 import subprocess
 import numpy as np
+
 from scipy import sparse
 from scipy.spatial.distance import cdist, pdist
 from scipy.stats import pearsonr
@@ -933,6 +934,32 @@ def label_edge_detection(data, faces, edge_type="inner", neighbors=None):
         return inner_data, outer_data
     else:
         raise ValueError("The argument 'edge_type' must be one of the (inner, outer, both, split)")
+
+
+def get_patch_by_crg(vertices, neighbors_list):
+    """
+    Find patches in the 'vertices', as a result, a vertex is capable of connecting with other vertices
+    in the same patch, but can't connect with vertices in other patches.
+    The function is similar as connected component detection in graph theory.
+
+    :param vertices: set
+    :param neighbors_list: list
+        The indices are vertices' id of a mesh.
+        One index's corresponding element is a collection of vertices which connect with the index.
+
+    :return: patches
+        Each element of it is a collection of vertices, that is a patch.
+    """
+    from froi.algorithm.regiongrow import RegionGrow
+
+    patches = []
+    while vertices:
+        seed = vertices.pop()
+        patch = RegionGrow().connectivity_grow([[seed]], neighbors_list)[0]
+        patches.append(list(patch))
+        vertices.difference_update(patch)
+
+    return patches
 
 
 class LabelAssessment(object):

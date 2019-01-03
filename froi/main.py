@@ -30,7 +30,7 @@ from widgets.smoothingdialog import SmoothingDialog
 from widgets.growdialog import GrowDialog
 from widgets.watersheddialog import WatershedDialog
 from widgets.slicdialog import SLICDialog
-from widgets.clusterdialog import ClusterDialog
+from widgets.clusterdialog import SurfClusterDialog, VolClusterDialog
 from widgets.regularroidialog import RegularROIDialog
 from widgets.regularroifromcsvfiledialog import RegularROIFromCSVFileDialog
 from widgets.roi2gwmidialog import Roi2gwmiDialog
@@ -193,6 +193,7 @@ class BpMainWindow(QMainWindow):
         self._actions['edge_dete'].setEnabled(True)
         self._actions['inverse'].setEnabled(True)
         self._actions['label_management'].setEnabled(True)
+        self._actions['cluster'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -208,6 +209,7 @@ class BpMainWindow(QMainWindow):
         self._actions['edge_dete'].setEnabled(True)
         self._actions['inverse'].setEnabled(True)
         self._actions['label_management'].setEnabled(True)
+        self._actions['cluster'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1694,8 +1696,13 @@ class BpMainWindow(QMainWindow):
 
     def _cluster(self):
         """Image cluster dialog."""
-        new_dialog = ClusterDialog(self.volume_model, self)
-        new_dialog.exec_()
+        if self.tabWidget.currentWidget() is self.list_view:
+            cluster_dialog = VolClusterDialog(self.volume_model)
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            cluster_dialog = SurfClusterDialog(self.surface_model)
+        else:
+            return
+        cluster_dialog.exec_()
 
     def _vol_func_module_set_enabled(self, status):
         """
@@ -1710,7 +1717,6 @@ class BpMainWindow(QMainWindow):
         self._actions['region_grow'].setEnabled(status)
         self._actions['watershed'].setEnabled(status)
         self._actions['slic'].setEnabled(status)
-        self._actions['cluster'].setEnabled(status)
         self._actions['opening'].setEnabled(status)
         self._actions['greydilation'].setEnabled(status)
         self._actions['greyerosion'].setEnabled(status)
