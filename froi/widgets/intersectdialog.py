@@ -22,24 +22,13 @@ class IntersectDialog(QDialog):
         self.setWindowTitle("Intersect")
 
         # initialize widgets
-        source_label = QLabel("Source")
-        self.source_combo = QComboBox()
         mask_label = QLabel("Mask")
         self.mask_combo = QComboBox()
-        vol_list = self._model.getItemList()
-        # self.source_combo.addItems(QStringList(vol_list))
-        self.source_combo.addItems(vol_list)
-        row = self._model.currentIndex().row()
-        self.source_combo.setCurrentIndex(row)
-        # self.mask_combo.addItems(QStringList(vol_list))
-        self.mask_combo.addItems(vol_list)
-        out_label = QLabel("Output volume name")
+        out_label = QLabel("Output name")
         self.out_edit = QLineEdit()
 
         # layout config
         grid_layout = QGridLayout()
-        #grid_layout.addWidget(source_label, 0, 0)
-        #grid_layout.addWidget(self.source_combo, 0, 1)
         grid_layout.addWidget(mask_label, 0, 0)
         grid_layout.addWidget(self.mask_combo, 0, 1)
         grid_layout.addWidget(out_label, 1, 0)
@@ -60,33 +49,89 @@ class IntersectDialog(QDialog):
         self.setLayout(vbox_layout)
 
     def _create_actions(self):
-        self.source_combo.currentIndexChanged.connect(self._create_output)
-        self.mask_combo.currentIndexChanged.connect(self._create_output)
+        self.mask_combo.currentIndexChanged.connect(self._create_output_name)
         self.run_button.clicked.connect(self._run_intersect)
         self.cancel_button.clicked.connect(self.done)
 
-    def _create_output(self):
-        source_name = self.source_combo.currentText()
-        mask_name = self.mask_combo.currentText()
-        output_name = '_'.join([str(source_name), str(mask_name)])
-        self.out_edit.setText(output_name)
+    def _create_output_name(self):
+        raise NotImplementedError
 
     def _run_intersect(self):
-        """Run an intersecting processing."""
-        vol_name = str(self.out_edit.text())
-        if not vol_name:
-            QMessageBox.critical(self, "No output volume name",
-                                 "Please specify output volume's name!")
+        raise NotImplementedError
+
+
+class VolIntersectDialog(IntersectDialog):
+
+    def __init__(self, model, parent=None):
+        super(VolIntersectDialog, self).__init__(model, parent)
+
+        self._index = self._model.currentIndex()
+        item_list = self._model.getItemList()
+        # self.mask_combo.addItems(QStringList(item_list))
+        self.mask_combo.addItems(item_list)
+
+    def _create_output_name(self):
+        src_name = self._model.data(self._index, Qt.DisplayRole)
+        mask_name = self.mask_combo.currentText()
+        out_name = '&'.join([src_name, mask_name])
+        self.out_edit.setText(out_name)
+
+    def _run_intersect(self):
+        output_name = str(self.out_edit.text())
+        if not output_name:
+            QMessageBox.critical(self, "No output name",
+                                 "Please specify output name!")
             return None
 
-        source_idx = self._model.index(self.source_combo.currentIndex())
         mask_idx = self._model.index(self.mask_combo.currentIndex())
-        source_data = self._model.data(source_idx, Qt.UserRole + 4)
+        src_data = self._model.data(self._index, Qt.UserRole + 4)
         mask_data = self._model.data(mask_idx, Qt.UserRole + 4)
-        new_vol = imtool.intersect(source_data, mask_data)
+        new_vol = imtool.intersect(src_data, mask_data)
         self._model.addItem(new_vol,
-                            name=vol_name,
-                            header=self._model.data(source_idx, Qt.UserRole + 11),
-                            colormap=self._model.data(source_idx, Qt.UserRole + 3)
+                            name=output_name,
+                            header=self._model.data(self._index, Qt.UserRole + 11),
+                            colormap=self._model.data(self._index, Qt.UserRole + 3)
                             )
+        self.done(0)
+
+
+class SurfIntersectDialog(IntersectDialog):
+
+    def __init__(self, model, parent=None):
+        super(SurfIntersectDialog, self).__init__(model, parent)
+
+        self._index = self._model.current_index()
+        depth = self._model.index_depth(self._index)
+        if depth != 2:
+            QMessageBox.warning(self,
+                                'Warning!',
+                                'Get overlay failed!\nYou may have not selected any overlay!',
+                                QMessageBox.Yes)
+            # raise error to prevent dialog from being created
+            raise RuntimeError("You may have not selected any overlay!")
+        item_list = self._model.get_overlay_list(self._index)
+        self.mask_combo.addItems(item_list)
+
+    def _create_output_name(self):
+        src_name = self._model.data(self._index, Qt.DisplayRole)
+        mask_name = self.mask_combo.currentText()
+        out_name = '&'.join([src_name, mask_name])
+        self.out_edit.setText(out_name)
+
+    def _run_intersect(self):
+        output_name = str(self.out_edit.text())
+        if not output_name:
+            QMessageBox.critical(self, "No output name",
+                                 "Please specify output name!")
+            return None
+
+        mask_idx = self._model.index(self.mask_combo.currentIndex(), 0,
+                                     self._model.get_surface_index(self._index))
+        src_data = self._model.data(self._index, Qt.UserRole + 10)
+        mask_data = self._model.data(mask_idx, Qt.UserRole + 10)
+        new_data = src_data * (mask_data > 0)
+        self._model.add_item(self._index,
+                            source=new_data,
+                            name=output_name,
+                            colormap=self._model.data(self._index, Qt.UserRole + 3))
         self.done(0)
