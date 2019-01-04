@@ -23,7 +23,7 @@ from widgets.orthwidget import OrthView
 from widgets.datamodel import VolumeListModel
 from widgets.drawsettings import PainterStatus, ViewSettings, MoveSettings
 from widgets.binarizationdialog import VolBinarizationDialog, SurfBinarizationDialog
-from widgets.intersectdialog import IntersectDialog
+from widgets.intersectdialog import VolIntersectDialog, SurfIntersectDialog
 from widgets.localmaxdialog import LocalMaxDialog
 from widgets.no_gui_tools import gen_label_color
 from widgets.smoothingdialog import SmoothingDialog
@@ -194,6 +194,7 @@ class BpMainWindow(QMainWindow):
         self._actions['inverse'].setEnabled(True)
         self._actions['label_management'].setEnabled(True)
         self._actions['cluster'].setEnabled(True)
+        self._actions['intersect'].setEnabled(True)
         if not self.volume_model.is_mni_space():
             self._actions['atlas'].setEnabled(False)
 
@@ -210,6 +211,7 @@ class BpMainWindow(QMainWindow):
         self._actions['inverse'].setEnabled(True)
         self._actions['label_management'].setEnabled(True)
         self._actions['cluster'].setEnabled(True)
+        self._actions['intersect'].setEnabled(True)
 
     def _save_configuration(self):
         """Save GUI configuration to a file."""
@@ -1617,7 +1619,12 @@ class BpMainWindow(QMainWindow):
 
     def _intersect(self):
         """Image intersect dialog."""
-        intersect_dialog = IntersectDialog(self.volume_model)
+        if self.tabWidget.currentWidget() is self.list_view:
+            intersect_dialog = VolIntersectDialog(self.volume_model)
+        elif self.tabWidget.currentWidget() is self.surface_tree_view:
+            intersect_dialog = SurfIntersectDialog(self.surface_model)
+        else:
+            return
         intersect_dialog.exec_()
 
     def _meants(self):
@@ -1708,7 +1715,6 @@ class BpMainWindow(QMainWindow):
         """
         set enabled status for actions of volume functional module.
         """
-        self._actions['intersect'].setEnabled(status)
         self._actions['meants'].setEnabled(status)
         self._actions['voxelstats'].setEnabled(status)
         self._actions['localmax'].setEnabled(status)
