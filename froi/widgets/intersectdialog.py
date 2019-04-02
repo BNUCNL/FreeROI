@@ -9,14 +9,14 @@ from ..algorithm import imtool
 
 class IntersectDialog(QDialog):
     """A dialog for action of intersection."""
-    def __init__(self, model, parent=None):
+    def __init__(self, model, parent=None, is_surf=False):
         super(IntersectDialog, self).__init__(parent)
         self._model = model
 
-        self._init_gui()
+        self._init_gui(is_surf)
         self._create_actions()
 
-    def _init_gui(self):
+    def _init_gui(self, is_surf):
         """Initialize GUI."""
         # set dialog title
         self.setWindowTitle("Intersect")
@@ -33,6 +33,17 @@ class IntersectDialog(QDialog):
         grid_layout.addWidget(self.mask_combo, 0, 1)
         grid_layout.addWidget(out_label, 1, 0)
         grid_layout.addWidget(self.out_edit, 1, 1)
+        if is_surf:
+            mask_label_label = QLabel('Mask label')
+            self.mask_label_edit = QLineEdit()
+            self.mask_label_edit.setText('nonzero')
+            substitution_label = QLabel('Substitution')
+            self.substitution_edit = QLineEdit()
+            self.substitution_edit.setText('0')
+            grid_layout.addWidget(mask_label_label, 2, 0)
+            grid_layout.addWidget(self.mask_label_edit, 2, 1)
+            grid_layout.addWidget(substitution_label, 3, 0)
+            grid_layout.addWidget(self.substitution_edit, 3, 1)
 
         # button config
         self.run_button = QPushButton("Run")
@@ -98,7 +109,7 @@ class VolIntersectDialog(IntersectDialog):
 class SurfIntersectDialog(IntersectDialog):
 
     def __init__(self, model, parent=None):
-        super(SurfIntersectDialog, self).__init__(model, parent)
+        super(SurfIntersectDialog, self).__init__(model, parent, True)
 
         self._index = self._model.current_index()
         depth = self._model.index_depth(self._index)
@@ -121,15 +132,30 @@ class SurfIntersectDialog(IntersectDialog):
     def _run_intersect(self):
         output_name = str(self.out_edit.text())
         if not output_name:
-            QMessageBox.critical(self, "No output name",
-                                 "Please specify output name!")
+            self.out_edit.setFocus()
             return None
+
+        mask_label = str(self.mask_label_edit.text())
+        if not mask_label:
+            self.mask_label_edit.setFocus()
+            return None
+        elif mask_label == 'nonzero':
+            mask_label = None
+        else:
+            mask_label = float(mask_label)
+
+        substitution = str(self.substitution_edit.text())
+        if not substitution:
+            self.substitution_edit.setFocus()
+            return None
+        elif substitution != 'min' and substitution != 'max':
+            substitution = float(substitution)
 
         mask_idx = self._model.index(self.mask_combo.currentIndex(), 0,
                                      self._model.get_surface_index(self._index))
         src_data = self._model.data(self._index, Qt.UserRole + 10)
         mask_data = self._model.data(mask_idx, Qt.UserRole + 10)
-        new_data = src_data * (mask_data > 0)
+        new_data = imtool.intersect2(src_data, mask_data, mask_label, substitution)
         self._model.add_item(self._index,
                             source=new_data,
                             name=output_name,
