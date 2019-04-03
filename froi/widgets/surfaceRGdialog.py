@@ -211,7 +211,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         else:
             # If the number of stop_criteria is not equal to seeds,
             # then we use its first stop criteria for all seeds.
-            self.stop_criteria = np.array(text_list[0], dtype="int")
+            self.stop_criteria = np.array([text_list[0]], dtype="int")
 
     def _set_seeds_id(self):
 
