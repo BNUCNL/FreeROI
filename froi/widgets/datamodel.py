@@ -202,6 +202,7 @@ class VolumeListModel(QAbstractListModel):
         elif role == Qt.UserRole + 9:
             if not self._data[row].get_time_point() == value:
                 self._data[row].set_time_point(value)
+                self.time_changed.emit()
             else:
                 return False
 

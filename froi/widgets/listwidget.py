@@ -277,8 +277,10 @@ class LayerView(QWidget):
                 if volume_idx != self._volume_index_spinbox.value():
                     self._volume_index_spinbox.setValue(volume_idx)
             else:
+                self._volume_index_spinbox.valueChanged.disconnect()
                 self._volume_index_spinbox.setValue(0)
                 self._volume_index_spinbox.setEnabled(False)
+                self._volume_index_spinbox.valueChanged.connect(self._set_volume_idx)
 
             self._list_view.setFocus()
 
