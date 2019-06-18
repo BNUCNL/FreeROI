@@ -243,6 +243,7 @@ class SurfaceTreeView(QWidget):
             # map index settings
             data = self._model.data(index, Qt.UserRole + 5)
             n_maps = 0 if data is None else data.shape[1]
+            self._map_idx_spinbox.valueChanged.disconnect()
             if n_maps > 1:
                 self._map_idx_spinbox.setEnabled(True)
                 self._map_idx_spinbox.setRange(0, n_maps - 1)
@@ -250,6 +251,7 @@ class SurfaceTreeView(QWidget):
             else:
                 self._map_idx_spinbox.setValue(0)
                 self._map_idx_spinbox.setEnabled(False)
+            self._map_idx_spinbox.valueChanged.connect(self._set_map_idx)
 
             # alpha slider setting
             current_alpha = self._model.data(index, Qt.UserRole + 2) * 100
