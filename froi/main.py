@@ -1066,12 +1066,6 @@ class BpMainWindow(QMainWindow):
         path, filter = QFileDialog.getSaveFileNameAndFilter(self, 'Save image as...',
                                                             file_path, file_types)
         if str(path) != '':
-            if filter == 'NIFTI file(*.nii)':
-                path += '.nii'
-            elif filter == 'FS label(*.label)':
-                path += '.label'
-            else:
-                path += '.nii.gz'
 
             if sys.platform == 'win32':
                 path = unicode(path).encode('gb2312')
