@@ -18,7 +18,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._surf_view = surf_view
         self.model = model
 
-        self.rg_type = 'arg'
+        self.rg_type = 'crg'
         self.seeds_id = []
         self.stop_criteria = [500]
         self.n_ring = 1
@@ -505,7 +505,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         name = 'rg_' + self.model.data(self.rg_qmodel_idx, QtCore.Qt.DisplayRole)
         if self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 11):
-            name += str(self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9))
+            map_idx = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9)
+            name += '_' + str(map_idx)
         self.model.add_item(self.rg_qmodel_idx, data, islabel=True, colormap='blue', name=name)
 
     def _on_clicked(self, event):
