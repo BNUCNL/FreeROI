@@ -18,7 +18,7 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._surf_view = surf_view
         self.model = model
 
-        self.rg_type = 'arg'
+        self.rg_type = 'crg'
         self.seeds_id = []
         self.stop_criteria = [500]
         self.n_ring = 1
@@ -53,6 +53,8 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._stop_label = QtGui.QLabel("stop_criteria:")
         self._stop_edit = QtGui.QLineEdit()
         self._stop_edit.setText(str(self.stop_criteria[0]))
+        self._stop_label.setVisible(False)
+        self._stop_edit.setVisible(False)
 
         ring_label = QtGui.QLabel("n_ring:")
         self._ring_spin = QtGui.QSpinBox()
@@ -62,20 +64,21 @@ class SurfaceRGDialog(QtGui.QDialog):
         self._data_label = QtGui.QLabel("data:")
         self._data_combo = QtGui.QComboBox()
         self._data_combo.addItems(self._data_selection)
+        self._data_label.setVisible(False)
+        self._data_combo.setVisible(False)
 
         self._mask_label = QtGui.QLabel("mask:")
         self._mask_combo = QtGui.QComboBox()
         self._fill_mask_box()
+        self._mask_label.setVisible(False)
+        self._mask_combo.setVisible(False)
 
         self._threshold_label = QtGui.QLabel("threshold:")
         self._threshold_edit = QtGui.QLineEdit()
-        self._threshold_label.setVisible(False)
-        self._threshold_edit.setVisible(False)
+        self._init_thr_editor()
 
         self._cutoff_button1 = QtGui.QPushButton('start cutoff')
         self._cutoff_button2 = QtGui.QPushButton('stop cutoff')
-        self._cutoff_button1.setVisible(False)
-        self._cutoff_button2.setVisible(False)
         self._cutoff_button2.setEnabled(False)
 
         self._ok_button = QtGui.QPushButton("OK")
@@ -505,7 +508,8 @@ class SurfaceRGDialog(QtGui.QDialog):
 
         name = 'rg_' + self.model.data(self.rg_qmodel_idx, QtCore.Qt.DisplayRole)
         if self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 11):
-            name += str(self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9))
+            map_idx = self.model.data(self.rg_qmodel_idx, QtCore.Qt.UserRole + 9)
+            name += '_' + str(map_idx)
         self.model.add_item(self.rg_qmodel_idx, data, islabel=True, colormap='blue', name=name)
 
     def _on_clicked(self, event):
