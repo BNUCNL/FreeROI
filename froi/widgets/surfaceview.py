@@ -98,7 +98,6 @@ class SurfaceView(QWidget):
         self.plot_start = None
         self.path = []
         self.cbar = None
-        self._view = None
         self._show_cbar = False
 
         hlayout = QHBoxLayout()
@@ -235,8 +234,6 @@ class SurfaceView(QWidget):
             # fig.scene.scene.interactor.add_observer('MouseMoveEvent', self._move_callback)
             fig.scene.picker.pointpicker.add_observer("EndPickEvent", self._picker_callback)
 
-        self._view = mlab.view()
-
     def _picker_callback(self, picker_obj, evt):
 
         picker_obj = tvtk.to_tvtk(picker_obj)
@@ -298,16 +295,16 @@ class SurfaceView(QWidget):
             # it will appear with strange size, and I can't adjust it by using 'position' and 'position2'.
             self.cbar.visible = True
 
-        self._view = mlab.view()
-        phi, theta = self._view[0], self._view[1]
-        self.surface_model.phi_theta_to_edit(phi, theta)
+        azimuth, elevation, distance, focalpoint = mlab.view()
+        roll = mlab.roll()
+        self.surface_model.camera_to_edit(azimuth, elevation, distance, focalpoint, roll)
 
     def _picker_callback_left(self, picker_obj):
         pass
 
     def _create_connections(self):
         self.surface_model.repaint_surface.connect(self._show_surface)
-        self.connect(self.surface_model, QtCore.SIGNAL("phi_theta_to_show"), self.set_phi_theta)
+        self.connect(self.surface_model, QtCore.SIGNAL("camera_to_show"), self.set_camera)
 
     def _plot_line(self):
         if self.plot_start is None:
@@ -360,16 +357,6 @@ class SurfaceView(QWidget):
     def get_faces(self):
         return self.faces
 
-    def set_phi_theta(self, phi, theta):
-        if self._view is not None:
-            mlab.view(phi, theta, *self._view[2:])
-
-
-if __name__ == "__main__":
-    surface_view = SurfaceView()
-    surface_view.setWindowTitle("surface view")
-    surface_view.setWindowIcon(QIcon("/nfs/j3/userhome/chenxiayu/workingdir/icon/QAli.png"))
-    surface_view.show()
-
-    qApp.exec_()
-    sys.exit()
+    def set_camera(self, azimuth, elevation, distance, focalpoint, roll):
+        mlab.view(azimuth, elevation, distance, focalpoint)
+        mlab.roll(roll)
