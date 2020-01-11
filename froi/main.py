@@ -840,7 +840,7 @@ class BpMainWindow(QMainWindow):
                 register_volume_dialog.exec_()
 
     def _add_surface_img(self, source, index=None, offset=None, vmin=None, vmax=None,
-                         colormap='jet', alpha=1.0, visible=True, islabel=False, view=(0, 0)):
+                         colormap='jet', alpha=1.0, visible=True, islabel=False):
         """ Add surface image."""
         # If model is NULL, then re-initialize it.
         if not self.surface_model:
@@ -902,7 +902,6 @@ class BpMainWindow(QMainWindow):
                     self.volume_view.setParent(None)
                 self.centralWidget().layout().addWidget(self.surface_view)
 
-            self.surface_view.set_phi_theta(*view)
             self._actions['remove_image'].setEnabled(True)
         else:
             QMessageBox.question(self,

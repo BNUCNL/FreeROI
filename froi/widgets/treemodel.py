@@ -359,8 +359,8 @@ class TreeModel(QAbstractItemModel):
     def get_point_id(self):
         return self._point_id
 
-    def phi_theta_to_show(self, phi, theta):
-        self.emit(SIGNAL("phi_theta_to_show"), phi, theta)
+    def camera_to_show(self, azimuth, elevation, distance, focalpoint, roll):
+        self.emit(SIGNAL("camera_to_show"), azimuth, elevation, distance, focalpoint, roll)
 
-    def phi_theta_to_edit(self, phi, theta):
-        self.emit(SIGNAL("phi_theta_to_edit"), phi, theta)
+    def camera_to_edit(self, azimuth, elevation, distance, focalpoint, roll):
+        self.emit(SIGNAL("camera_to_edit"), azimuth, elevation, distance, focalpoint, roll)

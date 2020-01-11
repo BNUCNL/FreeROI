@@ -133,17 +133,35 @@ class SurfaceTreeView(QWidget):
         cursor_group_box.setLayout(cursor_layout)
 
         # initialize widgets for camera view information
-        phi_label = QLabel('phi:')
-        self._phi_edit = QLineEdit()
-        theta_label = QLabel('theta:')
-        self._theta_edit = QLineEdit()
+        azimuth_label = QLabel('azimuth:')
+        self._azimuth_edit = QLineEdit()
+        elevation_label = QLabel('elevation:')
+        self._elevation_edit = QLineEdit()
+        distance_label = QLabel('distance:')
+        self._distance_edit = QLineEdit()
+        roll_label = QLabel('roll:')
+        self._roll_edit = QLineEdit()
+        focalpoint_label = QLabel('focalpoint:')
+        self._focalpoint_edit = QLineEdit()
 
         # layout for camera view information
-        camera_layout = QHBoxLayout()
-        camera_layout.addWidget(phi_label)
-        camera_layout.addWidget(self._phi_edit)
-        camera_layout.addWidget(theta_label)
-        camera_layout.addWidget(self._theta_edit)
+        camera_layout1 = QHBoxLayout()
+        camera_layout1.addWidget(azimuth_label)
+        camera_layout1.addWidget(self._azimuth_edit)
+        camera_layout1.addWidget(elevation_label)
+        camera_layout1.addWidget(self._elevation_edit)
+        camera_layout2 = QHBoxLayout()
+        camera_layout2.addWidget(distance_label)
+        camera_layout2.addWidget(self._distance_edit)
+        camera_layout2.addWidget(roll_label)
+        camera_layout2.addWidget(self._roll_edit)
+        camera_layout3 = QHBoxLayout()
+        camera_layout3.addWidget(focalpoint_label)
+        camera_layout3.addWidget(self._focalpoint_edit)
+        camera_layout = QVBoxLayout()
+        camera_layout.addLayout(camera_layout1)
+        camera_layout.addLayout(camera_layout2)
+        camera_layout.addLayout(camera_layout3)
         camera_group_box = QGroupBox('Camera')
         camera_group_box.setLayout(camera_layout)
 
@@ -191,9 +209,12 @@ class SurfaceTreeView(QWidget):
         self._visibility.sliderReleased.connect(self._set_alpha)
         self._up_button.clicked.connect(self._up_action)
         self._down_button.clicked.connect(self._down_action)
-        self._phi_edit.editingFinished.connect(self._set_phi_theta)
-        self._theta_edit.editingFinished.connect(self._set_phi_theta)
-        self.connect(self._model, SIGNAL("phi_theta_to_edit"), self._update_phi_theta)
+        self._azimuth_edit.editingFinished.connect(self._set_camera)
+        self._elevation_edit.editingFinished.connect(self._set_camera)
+        self._distance_edit.editingFinished.connect(self._set_camera)
+        self._roll_edit.editingFinished.connect(self._set_camera)
+        self._focalpoint_edit.editingFinished.connect(self._set_camera)
+        self.connect(self._model, SIGNAL("camera_to_edit"), self._update_camera)
         # When model is empty, we also have to update the current index for model.
         # Otherwise, the old current_index in model will refer to something that is unpredictable.
         self.connect(self._model, SIGNAL("modelEmpty"), self._disp_current_para)
@@ -310,16 +331,25 @@ class SurfaceTreeView(QWidget):
         value = self._visibility.value() / 100.
         self._model.setData(index, value, role=Qt.UserRole + 2)
 
-    def _set_phi_theta(self):
-        phi = self._phi_edit.text()
-        theta = self._theta_edit.text()
-        self._model.phi_theta_to_show(float(phi), float(theta))
+    def _set_camera(self):
+        azimuth = float(self._azimuth_edit.text())
+        elevation = float(self._elevation_edit.text())
+        distance = float(self._distance_edit.text())
+        roll = float(self._roll_edit.text())
+        focalpoint = [float(i) for i in self._focalpoint_edit.text().split(',')]
+        self._model.camera_to_show(azimuth, elevation, distance, focalpoint, roll)
 
-    def _update_phi_theta(self, phi, theta):
-        self._phi_edit.setText(str(phi))
-        self._phi_edit.setCursorPosition(0)
-        self._theta_edit.setText(str(theta))
-        self._theta_edit.setCursorPosition(0)
+    def _update_camera(self, azimuth, elevation, distance, focalpoint, roll):
+        self._azimuth_edit.setText(str(azimuth))
+        self._azimuth_edit.setCursorPosition(0)
+        self._elevation_edit.setText(str(elevation))
+        self._elevation_edit.setCursorPosition(0)
+        self._distance_edit.setText(str(distance))
+        self._distance_edit.setCursorPosition(0)
+        self._roll_edit.setText(str(roll))
+        self._roll_edit.setCursorPosition(0)
+        self._focalpoint_edit.setText(','.join([str(i) for i in focalpoint]))
+        self._focalpoint_edit.setCursorPosition(0)
 
     def _up_action(self):
         """Move selected item up for one step."""
