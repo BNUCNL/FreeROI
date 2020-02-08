@@ -802,10 +802,10 @@ class Scalar(object):
         return self._data[:, self._current_map_index]
 
     def set_vertices_value(self, vertices, value):
-        self._data[vertices, 0] = value
+        self._data[vertices, self._current_map_index] = value
 
     def get_roi_vertices(self, roi):
-        return self._data[:, 0] == roi
+        return self._data[:, self._current_map_index] == roi
 
     def get_name(self):
         return self._name
