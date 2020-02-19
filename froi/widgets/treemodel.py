@@ -176,12 +176,16 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
             elif role == Qt.UserRole:
-                if str(item.get_vmin()) != value:
+                if 'all' in value:
+                    item.set_vmin(value.strip('all'), 'all')
+                elif str(item.get_vmin()) != value:
                     item.set_vmin(value)
                 else:
                     return False
             elif role == Qt.UserRole + 1:
-                if str(item.get_vmax()) != value:
+                if 'all' in value:
+                    item.set_vmax(value.strip('all'), 'all')
+                elif str(item.get_vmax()) != value:
                     item.set_vmax(value)
                 else:
                     return False
