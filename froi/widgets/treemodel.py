@@ -176,12 +176,16 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
             elif role == Qt.UserRole:
-                if str(item.get_vmin()) != value:
+                if 'all' in value:
+                    item.set_vmin(value.strip('all'), 'all')
+                elif str(item.get_vmin()) != value:
                     item.set_vmin(value)
                 else:
                     return False
             elif role == Qt.UserRole + 1:
-                if str(item.get_vmax()) != value:
+                if 'all' in value:
+                    item.set_vmax(value.strip('all'), 'all')
+                elif str(item.get_vmax()) != value:
                     item.set_vmax(value)
                 else:
                     return False
@@ -196,7 +200,7 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
             elif role == Qt.UserRole + 4:
-                if item.current_map_index != value:
+                if item.current_map_index != value and item.get_data().shape[1] > value:
                     item.current_map_index = value
                     self.emit(SIGNAL("mapChanged"))
                 else:

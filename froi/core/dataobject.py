@@ -828,9 +828,12 @@ class Scalar(object):
         return self._vmin[map_index]
 
     def set_vmin(self, vmin, map_index=None):
-        if map_index is None:
-            map_index = self.current_map_index
-        self._vmin[map_index] = float(vmin)
+        if map_index == 'all':
+            self._vmin = np.ones((self._data.shape[1],)) * float(vmin)
+        else:
+            if map_index is None:
+                map_index = self.current_map_index
+            self._vmin[map_index] = float(vmin)
 
     def get_vmax(self, map_index=None):
         if map_index is None:
@@ -838,9 +841,12 @@ class Scalar(object):
         return self._vmax[map_index]
 
     def set_vmax(self, vmax, map_index=None):
-        if map_index is None:
-            map_index = self.current_map_index
-        self._vmax[map_index] = float(vmax)
+        if map_index == 'all':
+            self._vmax = np.ones((self._data.shape[1],)) * float(vmax)
+        else:
+            if map_index is None:
+                map_index = self.current_map_index
+            self._vmax[map_index] = float(vmax)
 
     def get_colormap(self):
         return self._colormap
