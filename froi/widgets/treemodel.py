@@ -196,7 +196,7 @@ class TreeModel(QAbstractItemModel):
                 else:
                     return False
             elif role == Qt.UserRole + 4:
-                if item.current_map_index != value:
+                if item.current_map_index != value and item.get_data().shape[1] > value:
                     item.current_map_index = value
                     self.emit(SIGNAL("mapChanged"))
                 else:

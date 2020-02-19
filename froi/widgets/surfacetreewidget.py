@@ -317,9 +317,17 @@ class SurfaceTreeView(QWidget):
         self._model.setData(index, colormap, role=Qt.UserRole + 3)
 
     def _set_map_idx(self):
-        idx = self._map_idx_spinbox.value()
-        qmodel_index = self._tree_view.currentIndex()
-        self._model.setData(qmodel_index, idx, role=Qt.UserRole + 4)
+        # set all series simultaneously
+        map_idx = self._map_idx_spinbox.value()
+        root_idx = QModelIndex()
+        n_surf = self._model.rowCount(root_idx)
+        for surf_i in range(n_surf):
+            surf_idx = self._model.index(surf_i, 0, root_idx)
+            n_scalar = self._model.rowCount(surf_idx)
+            for scalar_i in range(n_scalar):
+                scalar_idx = self._model.index(scalar_i, 0, surf_idx)
+                if self._model.data(scalar_idx, Qt.UserRole + 11):
+                    self._model.setData(scalar_idx, map_idx, role=Qt.UserRole + 4)
 
     def _update_colormap_box(self):
         self._scalar_colormap.addItems(self.builtin_colormap +
