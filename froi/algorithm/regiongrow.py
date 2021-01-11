@@ -229,8 +229,8 @@ class Region(object):
 
         Parameters
         ----------
-        v_id : integer
-            vertex number
+        v_id : int | tuple
+            vertex number or voxel position
         vtx_signal : dict
             vertices and their signals
         """
@@ -413,6 +413,87 @@ class RegionGrow(object):
         for v_id, r_id in enumerate(self.v_id2r_id):
             if r_id != -1:
                 self.regions[r_id].add_vertex(v_id, vtx_signal=vtx_signal)
+
+        # add neighbors
+        for r_id, region in enumerate(self.regions):
+            for neighbor_id in region_neighbors[r_id]:
+                region.add_neighbor(self.regions[neighbor_id])
+
+    def vol2regions(self, data, mask=None):
+        """
+        represent the volume to preliminary regions
+
+        Parameters
+        ----------
+        data : numpy array
+            XxYxZxM array
+            M is the number of measurements or time points.
+        mask : numpy bool array
+            XxYxZ array
+            specify a area where the ROI is in.
+        """
+        assert data.ndim == 4
+        if mask is not None:
+            assert mask.dtype == bool and data.shape[:3] == mask.shape
+        vol_shape = data.shape[:3]
+
+        neighbors = [[1, 0, 0],
+                     [-1, 0, 0],
+                     [0, 1, 0],
+                     [0, -1, 0],
+                     [0, 0, -1],
+                     [0, 0, 1],
+                     [1, 1, 0],
+                     [1, 1, 1],
+                     [1, 1, -1],
+                     [0, 1, 1],
+                     [-1, 1, 1],
+                     [1, 0, 1],
+                     [1, -1, 1],
+                     [-1, -1, 0],
+                     [-1, -1, -1],
+                     [-1, -1, 1],
+                     [0, -1, -1],
+                     [1, -1, -1],
+                     [-1, 0, -1],
+                     [-1, 1, -1],
+                     [0, 1, -1],
+                     [0, -1, 1],
+                     [1, 0, -1],
+                     [1, -1, 0],
+                     [-1, 0, 1],
+                     [-1, 1, 0]]
+
+        self.v_id2r_id = -np.ones(vol_shape, dtype=np.int)
+        if mask is None:
+            mask = np.any(data, 3)
+        mask_id = [i for i in zip(*np.where(mask))]
+        region_neighbors = []
+        for r_id, v_id in enumerate(mask_id):
+            self.v_id2r_id[v_id] = r_id
+            neighbor_v_ids = []
+            for n in neighbors:
+                n_id = tuple(i+j for i, j in zip(v_id, n))
+
+                # ensure the coordinate is in the vol
+                inside_flag = True
+                for i, pos in enumerate(n_id):
+                    if pos < 0 or pos >= vol_shape[i]:
+                        inside_flag = False
+
+                if inside_flag and mask[n_id]:
+                    neighbor_v_ids.append(n_id)
+
+            region_neighbors.append(neighbor_v_ids)
+
+        # warning: a region's neighbors is stored as a list rather than a set at here.
+        region_neighbors = [map(lambda x: self.v_id2r_id[x], ids) for ids in region_neighbors]
+
+        # initialize regions
+        n_regions = np.max(self.v_id2r_id) + 1
+        self.regions = [Region() for r_id in range(n_regions)]
+        for r_id, v_id in enumerate(mask_id):
+            self.regions[r_id].add_vertex(v_id, vtx_signal=data)
 
         # add neighbors
         for r_id, region in enumerate(self.regions):
@@ -650,7 +731,9 @@ class RegionGrow(object):
 
         mean_signal = [np.mean(region.mean_signal()) for region in self.regions]
         seed_r_id = np.argmax(mean_signal)
-        seed_v_id = np.where(self.v_id2r_id == seed_r_id)[0][0]
+        seed_v_id = list(zip(*np.where(self.v_id2r_id == seed_r_id)))[0]
+        if len(seed_v_id) == 1:
+            seed_v_id = seed_v_id[0]
         evolving_region = EvolvingRegion(seed_v_id)
         evolving_region.merge(self.regions[seed_r_id])
 
