@@ -211,6 +211,12 @@ class VolumeRGDialog(QDialog):
         self._data_label.setVisible(True)
         self._data_combo.setVisible(True)
 
+        self._mask_label = QLabel("mask:")
+        self._mask_combo = QComboBox()
+        self._fill_mask_box()
+        self._mask_label.setVisible(True)
+        self._mask_combo.setVisible(True)
+
         self._ok_button = QPushButton("OK")
         self._cancel_button = QPushButton("Cancel")
 
@@ -230,8 +236,10 @@ class VolumeRGDialog(QDialog):
         grid_layout.addWidget(self._stop_edit, 5, 1)
         grid_layout.addWidget(self._data_label, 6, 0)
         grid_layout.addWidget(self._data_combo, 6, 1)
-        grid_layout.addWidget(self._ok_button, 7, 0)
-        grid_layout.addWidget(self._cancel_button, 7, 1)
+        grid_layout.addWidget(self._mask_label, 7, 0)
+        grid_layout.addWidget(self._mask_combo, 7, 1)
+        grid_layout.addWidget(self._ok_button, 8, 0)
+        grid_layout.addWidget(self._cancel_button, 8, 1)
         self.setLayout(grid_layout)
 
     def _create_actions(self):
@@ -315,6 +323,29 @@ class VolumeRGDialog(QDialog):
             # then we use its first stop criteria for all seeds.
             self.stop_criteria = np.array([text_list[0]], dtype="int")
 
+    def _fill_mask_box(self):
+        self._mask_combo.clear()
+        overlay_name_list = self.model.getItemList()
+        self._mask_combo.addItem("None")
+        self._mask_combo.addItems(overlay_name_list)
+
+        index = self.model.currentIndex()
+        name = self.model.data(index, Qt.DisplayRole)
+        row = overlay_name_list.index(name) + 1
+        self._mask_combo.setCurrentIndex(row)
+
+    def _get_current_mask(self):
+        row = self._mask_combo.currentIndex()
+        if row == 0:
+            return None
+        else:
+            row -= 1
+            mask_idx = self.model.index(row)
+            mask = self.model.data(mask_idx, Qt.UserRole + 14)
+            threshold = self.model.data(mask_idx, Qt.UserRole)
+            mask = mask > threshold
+            return mask
+
     def _start_volRG(self):
         self.rg_qmodel_idx = self.model.currentIndex()
         if self._data_combo.currentText() == self._data_selection[0]:
@@ -322,12 +353,9 @@ class VolumeRGDialog(QDialog):
         else:
             data = self.model.data(self.rg_qmodel_idx, Qt.UserRole + 6)
         if data.ndim == 3:
-            threshold = self.model.data(self.rg_qmodel_idx, Qt.UserRole)
-            mask = data > threshold
             data = data[:, :, :, None]
-        else:
-            mask = None
         assert data.ndim == 4
+        mask = self._get_current_mask()
         self.vol_shape = data.shape[:3]
 
         rg = RegionGrow()
