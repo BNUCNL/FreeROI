@@ -147,6 +147,8 @@ class VolumeListModel(QAbstractListModel):
             return self._data[row]._data.min()
         elif role == Qt.UserRole + 13:
             return self._data[row]._data.max()
+        elif role == Qt.UserRole + 14:
+            return self._data[row].get_current_raw_vol()
 
         # return QVariant()
         return None

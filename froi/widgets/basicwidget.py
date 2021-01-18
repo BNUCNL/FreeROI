@@ -5,7 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from ..utils import *
-from growdialog import GrowDialog
+from growdialog import GrowDialog, VolumeRGDialog
 from watersheddialog import WatershedDialog
 from slicdialog import SLICDialog
 from clusterdialog import ClusterDialog
@@ -119,7 +119,8 @@ class BasicWidget(QDialog):
     def _grow_clicked(self):
         """Region growing clicked."""
         if self.grow_button.isEnabled():
-            new_dialog = GrowDialog(self._model, self._main_win)
+            # new_dialog = GrowDialog(self._model, self._main_win)
+            new_dialog = VolumeRGDialog(self._model)
             new_dialog.exec_()
 
     def _watershed_clicked(self):

@@ -161,7 +161,7 @@ class Region(object):
 
         return np.mean(self.vtx_signal.values(), axis=0)
 
-    def nearest_neighbor(self):
+    def nearest_neighbor(self, metric='euclidean'):
         """
         find the nearest neighbor of self
 
@@ -174,10 +174,10 @@ class Region(object):
         self_signal = np.atleast_2d(self.mean_signal())
 
         if self_signal.shape[1] > 1:
-            dist = cdist(self_signal, neighbor_signals, 'correlation')[0]
+            dist = cdist(self_signal, neighbor_signals, metric)[0]
         else:
             # TODO: only suitable for single feature at present
-            dist = cdist(self_signal, neighbor_signals)[0]
+            dist = cdist(self_signal, neighbor_signals, metric)[0]
             R_and_N_signals = neighbor_signals + self_signal
             normalize_scale = R_and_N_signals - np.min(R_and_N_signals) + 1
             dist = dist / normalize_scale[:, 0]
@@ -500,7 +500,8 @@ class RegionGrow(object):
             for neighbor_id in region_neighbors[r_id]:
                 region.add_neighbor(self.regions[neighbor_id])
 
-    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=0, assess_step=1):
+    def arg_parcel(self, seeds_id, stop_criteria, whole_results=False, half_width=0,
+                   assess_step=1, metric='euclidean'):
         """
         Adaptive region growing performs a segmentation of an object with respect to a set of points.
 
@@ -535,7 +536,7 @@ class RegionGrow(object):
 
         # call methods of the class
         evolved_regions, region_assessments, r_outer_mean, r_inner_min\
-            = self._compute(seeds_id, stop_criteria, assess_step)
+            = self._compute(seeds_id, stop_criteria, assess_step, metric=metric)
         max_assess_regions = [EvolvingRegion(r.get_seeds()) for r in evolved_regions]
         # find the max assessed value
         for r_idx, r in enumerate(evolved_regions):
@@ -552,7 +553,7 @@ class RegionGrow(object):
         else:
             return max_assess_regions
 
-    def srg_parcel(self, seeds_id, stop_criteria):
+    def srg_parcel(self, seeds_id, stop_criteria, metric='euclidean'):
         """
         Seed region growing performs a segmentation of an object with respect to a set of points.
 
@@ -571,7 +572,8 @@ class RegionGrow(object):
             Include all evolved regions after self._compute()
         """
         # call methods of the class
-        evolved_regions, _, _, _ = self._compute(seeds_id, stop_criteria)
+        evolved_regions, _, _, _ = self._compute(seeds_id, stop_criteria,
+                                                 metric=metric)
         return evolved_regions
 
     @staticmethod
@@ -605,7 +607,7 @@ class RegionGrow(object):
                 outmost_vtx = region.difference(region_old)
         return connected_regions
 
-    def _compute(self, seeds_id, stop_criteria, assess_step=0):
+    def _compute(self, seeds_id, stop_criteria, assess_step=0, metric='euclidean'):
         """
         do region growing
         """
@@ -675,7 +677,7 @@ class RegionGrow(object):
 
             for i in r_index:
                 # find the nearest neighbor for the each seed region
-                r_neighbor, r_dist, = evolving_regions[i].nearest_neighbor()
+                r_neighbor, r_dist, = evolving_regions[i].nearest_neighbor(metric)
                 dist[i] = r_dist
                 neighbor[i] = r_neighbor
 
