@@ -27,7 +27,7 @@ from widgets.intersectdialog import VolIntersectDialog, SurfIntersectDialog
 from widgets.localmaxdialog import LocalMaxDialog
 from widgets.no_gui_tools import gen_label_color
 from widgets.smoothingdialog import SmoothingDialog
-from widgets.growdialog import GrowDialog
+from widgets.growdialog import GrowDialog, VolumeRGDialog
 from widgets.watersheddialog import WatershedDialog
 from widgets.slicdialog import SLICDialog
 from widgets.clusterdialog import SurfClusterDialog, VolClusterDialog
@@ -1681,7 +1681,8 @@ class BpMainWindow(QMainWindow):
 
     def _region_grow(self):
         """Image region grow dialog."""
-        new_dialog = GrowDialog(self.volume_model, self)
+        # new_dialog = GrowDialog(self.volume_model, self)
+        new_dialog = VolumeRGDialog(self.volume_model)
         new_dialog.exec_()
 
     def _watershed(self):

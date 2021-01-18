@@ -90,11 +90,12 @@ class VolumeDataset(object):
         """
         if isinstance(source, np.ndarray):
             self._data = np.rot90(source)
-            if name == None:
+            if name is None:
                 self._name = 'new_image'
             else:
                 self._name = str(name)
-            if not isinstance(header, nib.nifti1.Nifti1Header):
+            if not isinstance(header, (nib.nifti1.Nifti1Header,
+                                       nib.nifti2.Nifti2Header)):
                 raise ValueError("Parameter header must be specified!")
             elif header.get_data_shape() == source.shape:
                 self._header = header
@@ -566,9 +567,16 @@ class VolumeDataset(object):
             for tp in self._loaded_time_list:
                 temp[..., tp] = self._data[..., tp]
         else:
-            temp = self._data.copy()
+            temp = self._data
 
         return np.rot90(temp, 3)
+
+    def get_current_raw_vol(self):
+        if self.is_4d():
+            temp = np.rot90(self._data, 3)[..., self._time_point]
+        else:
+            temp = np.rot90(self._data, 3)
+        return temp
 
     def get_value_label(self, value):
         """Return the label of the given value."""
