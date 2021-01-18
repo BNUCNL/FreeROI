@@ -8,7 +8,7 @@ from PyQt4.QtGui import *
 
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider, MultiCursor
-# from froi.algorithm import regiongrow as rg
+from froi.algorithm import regiongrow as rg
 from froi.algorithm.regiongrow import RegionGrow
 from froi.algorithm.tools import slide_win_smooth, VlineMover
 
@@ -144,19 +144,7 @@ class GrowDialog(QDialog):
         source_row = self.source_combo.currentIndex()
         source_data = self._model.data(self._model.index(source_row),
                                        Qt.UserRole + 5)
-        # new_vol =rg.region_growing(source_data, (pointx,pointy,pointz),number)
-
-        raw_shape = source_data.shape
-        if source_data.ndim == 3:
-            source_data = source_data[:, :, :, None]
-        assert source_data.ndim == 4
-        rg = RegionGrow()
-        rg.vol2regions(source_data)
-        rg_result = rg.srg_parcel([[(pointx, pointy, pointz)]], number)[0]
-        new_vol = np.zeros(raw_shape)
-        for v_id in rg_result.get_vertices():
-            new_vol[v_id] = 1
-
+        new_vol =rg.region_growing(source_data, (pointx,pointy,pointz),number)
         self._model.addItem(new_vol,
                             None,
                             vol_name,
