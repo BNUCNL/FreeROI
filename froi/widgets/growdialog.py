@@ -217,6 +217,11 @@ class VolumeRGDialog(QDialog):
         self._mask_label.setVisible(True)
         self._mask_combo.setVisible(True)
 
+        self._metric_label = QLabel("metric:")
+        self._metric_combo = QComboBox()
+        self._metric_combo.addItems(['euclidean', 'correlation', 'cityblock'])
+        self._metric_combo.setEditable(True)
+
         self._ok_button = QPushButton("OK")
         self._cancel_button = QPushButton("Cancel")
 
@@ -238,8 +243,10 @@ class VolumeRGDialog(QDialog):
         grid_layout.addWidget(self._data_combo, 6, 1)
         grid_layout.addWidget(self._mask_label, 7, 0)
         grid_layout.addWidget(self._mask_combo, 7, 1)
-        grid_layout.addWidget(self._ok_button, 8, 0)
-        grid_layout.addWidget(self._cancel_button, 8, 1)
+        grid_layout.addWidget(self._metric_label, 8, 0)
+        grid_layout.addWidget(self._metric_combo, 8, 1)
+        grid_layout.addWidget(self._ok_button, 9, 0)
+        grid_layout.addWidget(self._cancel_button, 9, 1)
         self.setLayout(grid_layout)
 
     def _create_actions(self):
@@ -356,6 +363,7 @@ class VolumeRGDialog(QDialog):
             data = data[:, :, :, None]
         assert data.ndim == 4
         mask = self._get_current_mask()
+        rg_metric = str(self._metric_combo.currentText())
         self.vol_shape = data.shape[:3]
 
         rg = RegionGrow()
@@ -372,7 +380,7 @@ class VolumeRGDialog(QDialog):
                 rg.set_assessment(assess_type)
                 rg.vol2regions(data, mask)
                 rg_result, self.evolved_regions, self.region_assessments, self.assess_step, r_outer_mean, r_inner_min\
-                    = rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True)
+                    = rg.arg_parcel(self.seeds_id, self.stop_criteria, whole_results=True, metric=rg_metric)
 
                 # -----------------plot diagrams------------------
                 num_axes = len(self.evolved_regions)
@@ -422,7 +430,7 @@ class VolumeRGDialog(QDialog):
 
         elif self.rg_type == 'srg':
             rg.vol2regions(data, mask)
-            rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria)
+            rg_result = rg.srg_parcel(self.seeds_id, self.stop_criteria, metric=rg_metric)
 
         else:
             raise RuntimeError("The region growing type must be arg, srg and crg at present!")
