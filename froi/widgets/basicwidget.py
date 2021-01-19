@@ -8,7 +8,7 @@ from ..utils import *
 from growdialog import GrowDialog, VolumeRGDialog
 from watersheddialog import WatershedDialog
 from slicdialog import SLICDialog
-from clusterdialog import ClusterDialog
+from clusterdialog import VolClusterDialog
 from intersectdialog import IntersectDialog
 from localmaxdialog import LocalMaxDialog
 from smoothingdialog import SmoothingDialog
@@ -137,7 +137,7 @@ class BasicWidget(QDialog):
 
     def _cluster_clicked(self):
         """Run cluster labeling."""
-        new_dialog = ClusterDialog(self._model)
+        new_dialog = VolClusterDialog(self._model)
         new_dialog.exec_()
 
     def _localmax_clicked(self):
