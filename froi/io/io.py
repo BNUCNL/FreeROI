@@ -26,14 +26,16 @@ class GiftiReader(object):
     @property
     def coords(self):
         if self._fpath.endswith('.surf.gii'):
-            return self.full_data.darrays[0].data
+            return self.full_data.get_arrays_from_intent('NIFTI_INTENT_POINTSET')[0].data
+            # return self.full_data.darrays[0].data
         else:
             return None
 
     @property
     def faces(self):
         if self._fpath.endswith('.surf.gii'):
-            return self.full_data.darrays[1].data
+            return self.full_data.get_arrays_from_intent('NIFTI_INTENT_TRIANGLE')[0].data
+            # return self.full_data.darrays[1].data
         else:
             return None
 

@@ -667,7 +667,14 @@ class Geometry(object):
             curv_name = '{}.curv'.format(self._hemi_rl)
         elif self._suffix == 'gii':
             # GIFTI style geometry filename
-            self._hemi_rl = 'lh' if name_split[1] == 'L' else 'rh'
+            if '.L.' in self._name or '_hemi-L_' in self._name:
+                self._hemi_rl = 'lh'
+            elif '.R.' in self._name or '_hemi-R_' in self._name:
+                self._hemi_rl = 'rh'
+            else:
+                raise ValueError("FreeROI can't judge which hemisphere the geometry belongs to from your filename.\n"
+                                 "Please rename your file just like *.L.*.surf.gii or *_hemi-L_*.surf.gii "
+                                 "which indicates left hemisphere.")
             name_split[2] = 'curvature'
             name_split[-2] = 'shape'
             curv_name = '.'.join(name_split)
